@@ -1,0 +1,180 @@
+{
+ "file_label": "SPSS I/O fixture",
+ "notes": [],
+ "number_rows": 3,
+ "file_encoding": "UTF-8",
+ "variables": [
+  {
+   "name": "id",
+   "label": "Respondent",
+   "format": "F4.0",
+   "type": "double",
+   "measure": "scale",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "gender",
+   "label": "Gender",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "nominal",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [
+    [
+     1.0,
+     "Male"
+    ],
+    [
+     2.0,
+     "Female"
+    ],
+    [
+     9.0,
+     "No answer"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": 9.0,
+     "hi": 9.0
+    }
+   ]
+  },
+  {
+   "name": "income",
+   "label": "",
+   "format": "DOLLAR12.2",
+   "type": "double",
+   "measure": "scale",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": [
+    {
+     "lo": "-Infinity",
+     "hi": 0.0
+    }
+   ]
+  },
+  {
+   "name": "region",
+   "label": "",
+   "format": "A12",
+   "type": "string",
+   "measure": "nominal",
+   "display_width": 12,
+   "alignment": "unknown",
+   "storage_width": 16,
+   "value_labels": [
+    [
+     "North",
+     "উত্তর"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": "none",
+     "hi": "none"
+    }
+   ]
+  },
+  {
+   "name": "essay",
+   "label": "Open answer (বাংলা)",
+   "format": "A700",
+   "type": "string",
+   "measure": "nominal",
+   "display_width": 40,
+   "alignment": "unknown",
+   "storage_width": 700,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "q1_a_long_variable_name",
+   "label": "Question 1",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "ordinal",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "when",
+   "label": "",
+   "format": "ADATE10",
+   "type": "double",
+   "measure": "scale",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "wt",
+   "label": "",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "scale",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  }
+ ],
+ "data": {
+  "id": [
+   1.0,
+   2.0,
+   3.0
+  ],
+  "gender": [
+   1.0,
+   2.0,
+   9.0
+  ],
+  "income": [
+   52000.5,
+   null,
+   -1.0
+  ],
+  "region": [
+   "North",
+   "South east",
+   ""
+  ],
+  "essay": [
+   "আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা আমরা end",
+   "short",
+   "Crème brûlée"
+  ],
+  "q1_a_long_variable_name": [
+   3.0,
+   5.0,
+   1.0
+  ],
+  "when": [
+   13797302400.0,
+   null,
+   12219379200.0
+  ],
+  "wt": [
+   1.0,
+   2.5,
+   0.5
+  ]
+ },
+ "weight_var": "wt"
+}
