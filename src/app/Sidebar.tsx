@@ -1,0 +1,82 @@
+// Collapsible variable list: search, measure icons, click to select in the grid, double-click
+// to open in Variable View.
+import { useMemo, useState } from 'react';
+import { useStore } from '../core/store';
+import { VarMeasureIcon } from '../ui/MeasureIcon';
+import { Icon } from '../ui/Icon';
+import { useUi } from './ui-store';
+
+export function Sidebar() {
+  const ds = useStore((s) => s.dataset);
+  const setTab = useStore((s) => s.setTab);
+  const tab = useStore((s) => s.tab);
+  const open = useUi((s) => s.sidebarOpen);
+  const setOpen = useUi((s) => s.setSidebarOpen);
+  const current = useUi((s) => s.currentVarId);
+  const focusGrid = useUi((s) => s.focusGrid);
+  const focusVariableView = useUi((s) => s.focusVariableView);
+  const [q, setQ] = useState('');
+  const vars = useMemo(() => {
+    if (!ds) return [];
+    const t = q.trim().toLowerCase();
+    return t ? ds.variables.filter((v) => v.name.toLowerCase().includes(t) || v.label.toLowerCase().includes(t)) : ds.variables;
+  }, [ds, q]);
+
+  if (!ds) return null;
+  if (!open)
+    return (
+      <aside className="sidebar sidebar-collapsed" aria-label="Variables">
+        <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => setOpen(true)} aria-label="Show variable list" title="Show variable list">
+          <Icon name="sidebar" />
+        </button>
+      </aside>
+    );
+
+  return (
+    <aside className="sidebar" aria-label="Variables">
+      <div className="sidebar-head">
+        <span className="eyebrow">Variables</span>
+        <span className="faint num" style={{ fontSize: 'var(--fs-xs)' }}>{vars.length === ds.variables.length ? ds.variables.length : `${vars.length} of ${ds.variables.length}`}</span>
+        <span className="spacer" />
+        <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => setOpen(false)} aria-label="Hide variable list" title="Hide variable list">
+          <Icon name="sidebar" size={15} />
+        </button>
+      </div>
+      <div className="varpicker-search sidebar-search">
+        <Icon name="search" size={14} />
+        <input className="varpicker-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or label" aria-label="Search variables" />
+        {q ? <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => setQ('')} aria-label="Clear search"><Icon name="x" size={12} /></button> : null}
+      </div>
+      <div className="sidebar-list" role="listbox" aria-label="Variable list">
+        {vars.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="option"
+            aria-selected={current === v.id}
+            className={`sidebar-var ${current === v.id ? 'on' : ''}`}
+            title={`${v.name}${v.label ? `: ${v.label}` : ''}\nClick: show in Data View. Double-click: edit in Variable View.`}
+            onClick={() => {
+              if (tab === 'variables') focusVariableView(v.id);
+              else {
+                focusGrid({ varId: v.id });
+                if (tab !== 'data') setTab('data');
+              }
+            }}
+            onDoubleClick={() => {
+              focusVariableView(v.id);
+              setTab('variables');
+            }}
+          >
+            <VarMeasureIcon v={v} />
+            <span className="sidebar-var-text">
+              <span className="sidebar-var-name mono">{v.name}{ds.weightVarId === v.id ? <span className="badge sidebar-tag">weight</span> : null}{ds.filterVarId === v.id ? <span className="badge sidebar-tag">filter</span> : null}</span>
+              {v.label ? <span className="sidebar-var-label">{v.label}</span> : null}
+            </span>
+          </button>
+        ))}
+        {!vars.length ? <div className="help" style={{ padding: 12 }}>{ds.variables.length ? 'No variable matches.' : 'No variables yet.'}</div> : null}
+      </div>
+    </aside>
+  );
+}

@@ -62,7 +62,8 @@ export interface AppState {
   redo: () => void;
 
   // output
-  addOutput: (item: OutputItem) => void;
+  /** Append an output item. By default it is focused and the Output tab opens; pass `{ focus: false }` to log quietly. */
+  addOutput: (item: OutputItem, opts?: { focus?: boolean }) => void;
   removeOutput: (id: string) => void;
   clearOutputs: () => void;
   moveOutput: (id: string, toIndex: number) => void;
@@ -241,7 +242,12 @@ export const useStore = create<AppState>((set, get) => ({
     set({ dataset: future[0], future: future.slice(1), past: [...past, dataset].slice(-HISTORY_LIMIT) });
   },
 
-  addOutput: (item) => set({ outputs: [...get().outputs, item], focusOutputId: item.id, tab: 'output' }),
+  addOutput: (item, opts) =>
+    set(
+      opts?.focus === false
+        ? { outputs: [...get().outputs, item] }
+        : { outputs: [...get().outputs, item], focusOutputId: item.id, tab: 'output' },
+    ),
   removeOutput: (id) => set({ outputs: get().outputs.filter((o) => o.id !== id) }),
   clearOutputs: () => set({ outputs: [] }),
   moveOutput: (id, toIndex) => {

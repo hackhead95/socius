@@ -1,0 +1,75 @@
+/* Shared components built on base.css: variable picker, view toolbars, dialog layouts. */
+
+/* Variable picker (src/ui/VarPicker.tsx) */
+.varpicker { display: flex; flex-direction: column; min-width: 0; }
+.varpicker-search {
+  display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 1px solid var(--border-strong);
+  border-radius: var(--r-md); background: var(--surface); color: var(--muted);
+}
+.varpicker-search:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px var(--accent-soft); }
+.varpicker-input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-size: var(--fs-sm); color: var(--text); height: 100%; }
+.varpicker-bulk { display: inline-flex; gap: 8px; }
+.varpicker-list {
+  margin-top: 6px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: 3px;
+}
+.varpicker-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 28px; padding: 3px 8px; border: 0; background: none;
+  border-radius: var(--r-sm); text-align: left; cursor: pointer; color: var(--text); font-size: var(--fs-sm);
+}
+.varpicker-item:hover { background: var(--surface-2); }
+.varpicker-item.on { background: var(--accent-soft); }
+.varpicker-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.varpicker-name { font-size: var(--fs-sm); flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.varpicker-label { color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.varpicker-order { font-size: 10px; color: var(--accent); font-weight: 600; }
+.varpicker-box {
+  width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid var(--border-strong); display: inline-grid; place-items: center; flex: none;
+  color: var(--accent-text);
+}
+.varpicker-box.on { background: var(--accent); border-color: var(--accent); }
+.varpicker-empty { padding: 10px; color: var(--muted); font-size: var(--fs-sm); }
+
+/* View toolbars (Data View, Variable View) */
+.view-toolbar {
+  display: flex; align-items: center; gap: 4px; padding: 6px var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border);
+  overflow-x: auto; min-height: 40px; flex: none; scrollbar-width: thin;
+}
+.toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex: none; }
+.toolbar-status { font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; padding-left: 8px; }
+
+/* Dialog layouts */
+.dialog-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.dialog-cols-main { grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); }
+.radio-list { display: flex; flex-direction: column; gap: 6px; }
+.radio-list .check .help { margin-left: 4px; }
+.footer-error { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--bad); font-size: var(--fs-sm); }
+.out-names { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+.out-name-row { display: flex; align-items: center; gap: 8px; }
+.out-name-row .input { flex: 1; min-width: 0; }
+.out-src { font-size: var(--fs-sm); min-width: 72px; overflow: hidden; text-overflow: ellipsis; }
+.preview-table { font-size: var(--fs-xs); }
+.preview-table th, .preview-table td { padding: 3px 8px; }
+.raw-preview {
+  margin: 0; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
+  font-family: var(--font-mono); font-size: 11.5px; overflow-x: auto; max-height: 130px; white-space: pre; color: var(--text-2);
+}
+.import-preview { border: 1px solid var(--border); border-radius: var(--r-md); max-height: 260px; overflow: auto; }
+.import-preview .table th { white-space: nowrap; }
+.import-preview .table td { white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Value-label editor */
+.vl-add { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.vl-list { border: 1px solid var(--border); border-radius: var(--r-md); max-height: 300px; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.vl-row { display: flex; align-items: center; gap: 6px; }
+
+/* Mini bar used in previews and quick stats */
+.stats-bar { display: block; height: 8px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
+.stats-bar > span { display: block; height: 100%; background: var(--accent); opacity: 0.75; }
+
+@media (max-width: 760px) {
+  .dialog-cols, .dialog-cols-main { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .modal-backdrop { padding: 0; align-items: stretch; }
+  .modal { max-height: 100%; border-radius: 0; }
+  .modal-footer { border-radius: 0; }
+  .modal-header, .modal-body, .modal-footer { padding-left: var(--space-4); padding-right: var(--space-4); }
+}

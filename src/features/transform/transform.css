@@ -1,0 +1,24 @@
+/* Transformation dialogs: expression editor, rule builders. */
+
+.expr-input { font-size: 13px; line-height: 1.5; min-height: 64px; }
+.expr-input.has-error { border-color: var(--bad); }
+.expr-error { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); color: var(--bad); }
+.expr-mirror {
+  display: block; font-family: var(--font-mono); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 4px 8px;
+}
+.expr-mirror mark { background: var(--bad-soft); color: var(--bad); border-bottom: 2px solid var(--bad); padding: 0 1px; }
+
+.expr-helper { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.expr-helper .tabs { margin-bottom: 4px; }
+.expr-list { max-height: 280px; }
+.expr-doc { min-height: 48px; padding: 6px 2px; }
+.expr-ops { display: flex; flex-wrap: wrap; gap: 4px; }
+.expr-ops .btn { min-width: 34px; padding: 0 6px; }
+
+.from-editor { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rule-builder { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); }
+.rule-side { display: flex; flex-direction: column; gap: 4px; }
+.rule-list { border: 1px solid var(--border); border-radius: var(--r-md); max-height: 220px; overflow-y: auto; padding: 3px; display: flex; flex-direction: column; gap: 2px; }
+.rule-row { display: flex; align-items: center; gap: 8px; padding: 3px 4px 3px 8px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.rule-row:hover { background: var(--surface-2); }

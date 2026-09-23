@@ -90,7 +90,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Modal */
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(12, 18, 28, 0.45); display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; background: var(--backdrop); display: flex; align-items: center; justify-content: center;
   padding: 16px; z-index: 100;
 }
 .modal {
@@ -120,6 +120,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .callout-warn { border-left-color: var(--warn); background: var(--warn-soft); }
 .callout-bad { border-left-color: var(--bad); background: var(--bad-soft); }
 .callout-good { border-left-color: var(--good); background: var(--good-soft); }
+
+/* Small shared helpers */
+.linkish { background: none; border: 0; padding: 0; color: var(--accent); font-size: var(--fs-xs); font-weight: 500; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.linkish:hover { color: var(--accent-hover); }
+.text-bad { color: var(--bad); }
+.btn-toggle-on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn-toggle-on:hover { background: var(--accent-soft); border-color: var(--accent-hover); }
+.details summary { cursor: pointer; font-size: var(--fs-sm); color: var(--text-2); }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--accent); display: inline-block; animation: spin 0.8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.skip-link { position: absolute; left: -9999px; top: 4px; z-index: 200; background: var(--surface); padding: 6px 10px; border-radius: var(--r-md); border: 1px solid var(--focus); }
+.skip-link:focus { left: 8px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
