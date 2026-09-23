@@ -39,15 +39,17 @@
   --bad: #b3372f;
   --bad-soft: #f9e3e1;
 
-  /* data viz categorical (validated for both themes by the charts module) */
-  --viz-1: #2c4a9e;
-  --viz-2: #d9822b;
-  --viz-3: #2a9d8f;
-  --viz-4: #c2456b;
-  --viz-5: #7a5cc4;
-  --viz-6: #6b8e23;
-  --viz-7: #8d6e63;
-  --viz-8: #4a90c2;
+  /* data viz categorical: fixed order, never cycled. Validated with the dataviz palette validator
+     (lightness band, chroma floor, adjacent CVD separation, normal-vision floor) against --surface
+     in both themes. Slots 1 (blue) and 8 (red) are also the diverging poles for heatmaps. */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #eda100;
+  --viz-5: #e87ba4;
+  --viz-6: #008300;
+  --viz-7: #4a3aa7;
+  --viz-8: #e34948;
   --viz-grid: #e3e7ec;
   --viz-axis: #8a94a3;
 
@@ -76,6 +78,18 @@
   --shadow-1: 0 1px 2px rgba(20, 30, 50, 0.08);
   --shadow-2: 0 8px 28px rgba(20, 30, 50, 0.18);
   --topbar-h: 48px;
+
+  /* shell-specific (derived from the palette above) */
+  --measure-scale: var(--accent);
+  --measure-ordinal: #9a6200;
+  --measure-nominal: #2a7d74;
+  --measure-string: var(--muted);
+  --grid-line: #e2e6ec;
+  --grid-head: #eef1f5;
+  --grid-sel: #dbe4f7;
+  --grid-rownum: #f4f6f9;
+  --backdrop: rgba(12, 18, 28, 0.45);
+  --row-h: 26px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -104,16 +118,23 @@
     --warn-soft: #33290f;
     --bad: #ef7d74;
     --bad-soft: #3a1c1a;
-    --viz-1: #8fa9f2;
-    --viz-2: #f0a35e;
-    --viz-3: #4fc1b2;
-    --viz-4: #e27796;
-    --viz-5: #a68ae6;
-    --viz-6: #9dc25a;
-    --viz-7: #bb9a8e;
-    --viz-8: #7ab8e6;
+    --viz-1: #3987e5;
+    --viz-2: #d95926;
+    --viz-3: #199e70;
+    --viz-4: #c98500;
+    --viz-5: #d55181;
+    --viz-6: #008300;
+    --viz-7: #9085e9;
+    --viz-8: #e66767;
     --viz-grid: #262d39;
     --viz-axis: #6d7787;
+    --measure-ordinal: #e0b04e;
+    --measure-nominal: #5fc4b8;
+    --grid-line: #262d38;
+    --grid-head: #1f252f;
+    --grid-sel: #243152;
+    --grid-rownum: #1b2029;
+    --backdrop: rgba(0, 0, 0, 0.6);
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.55);
   }
@@ -144,16 +165,23 @@
   --warn-soft: #33290f;
   --bad: #ef7d74;
   --bad-soft: #3a1c1a;
-  --viz-1: #8fa9f2;
-  --viz-2: #f0a35e;
-  --viz-3: #4fc1b2;
-  --viz-4: #e27796;
-  --viz-5: #a68ae6;
-  --viz-6: #9dc25a;
-  --viz-7: #bb9a8e;
-  --viz-8: #7ab8e6;
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-4: #c98500;
+  --viz-5: #d55181;
+  --viz-6: #008300;
+  --viz-7: #9085e9;
+  --viz-8: #e66767;
   --viz-grid: #262d39;
   --viz-axis: #6d7787;
+  --measure-ordinal: #e0b04e;
+  --measure-nominal: #5fc4b8;
+  --grid-line: #262d38;
+  --grid-head: #1f252f;
+  --grid-sel: #243152;
+  --grid-rownum: #1b2029;
+  --backdrop: rgba(0, 0, 0, 0.6);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.55);
 }

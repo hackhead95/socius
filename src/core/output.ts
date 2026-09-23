@@ -94,6 +94,8 @@ export type ChartSpec =
       yLabel: string;
       /** Points; optional group name for colouring. Keep <= 20k points. */
       points: Array<{ x: number; y: number; group?: string }>;
+      /** Optional group order for colours and legend (default: order of first appearance). */
+      groups?: string[];
       /** Fit line y = a + b x drawn across the x-range. */
       fit?: { a: number; b: number; r2?: number };
     }
@@ -121,6 +123,22 @@ export type ChartSpec =
       scale: 'diverging' | 'sequential';
       min?: number;
       max?: number;
+    }
+  | {
+      /** Population pyramid: horizontal bars mirrored around a centre line (e.g. age groups x sex). */
+      type: 'pyramid';
+      title: string;
+      /** Axis title for the value axis (e.g. "Count" or "Percent of total"). */
+      xLabel?: string;
+      /** Axis title for the category axis (e.g. "Age group"). */
+      yLabel?: string;
+      /** Category bands from the BOTTOM of the pyramid (youngest) to the top. */
+      groups: string[];
+      /** Left and right halves; values align with `groups`. */
+      left: { name: string; values: number[] };
+      right: { name: string; values: number[] };
+      /** Values are percentages. */
+      percent?: boolean;
     };
 
 export type OutputBlock =
