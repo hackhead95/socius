@@ -557,7 +557,7 @@ function apaText(
   const s: string[] = [];
   const Fs = (x: LinearFit) => `F(${dfText(x.dfReg)}, ${dfText(x.dfRes)}) = ${num(x.F, 2)}, ${fmtP(x.pF)}`;
   if (fits.length === 1) {
-    s.push(`A multiple linear regression was conducted to predict ${depText}. The model explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}.`);
+    s.push(`A ${f.dfReg === 1 ? 'simple' : 'multiple'} linear regression was conducted to predict ${depText}. The model explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}.`);
   } else if (method === 'enter') {
     s.push(`A hierarchical multiple regression was conducted to predict ${depText}. In Step 1 the model explained ${pct(fits[0].r2)} of the variance, ${Fs(fits[0])}.`);
     for (let b = 1; b < fits.length; b++) {
