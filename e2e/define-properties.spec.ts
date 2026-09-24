@@ -154,7 +154,7 @@ test('define variable properties: search finds it by its words', async ({ page }
   const box = palette.getByRole('combobox', { name: 'Search Socius' });
   await box.fill('value labels');
   // The guide section "Value labels" may come first; the command is the first command.
-  await expect(palette.getByRole('option', { name: /Define variable properties/ })).toContainText('Data');
+  await expect(palette.getByRole('option', { name: /^Define variable properties/ })).toContainText('Data');
   await box.fill('define properties');
   const first = palette.getByRole('option').first();
   await expect(first).toContainText('Define variable properties');
