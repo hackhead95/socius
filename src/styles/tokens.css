@@ -1,0 +1,187 @@
+/* Socius design tokens.
+   Concept: a researcher's desk. Cool index-card paper, ink-blue for actions, highlighter colours for
+   qualitative codes, manuscript serif for reports (APA output), monospace for data.
+   Every colour used anywhere must come from these tokens so light and dark both work. */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #eef1f4;            /* desk */
+  --surface: #ffffff;       /* paper */
+  --surface-2: #f5f7f9;     /* raised/secondary paper */
+  --surface-3: #e6eaef;     /* pressed / table header */
+  --border: #d5dbe3;
+  --border-strong: #b7c0cc;
+
+  /* text */
+  --text: #19202b;
+  --text-2: #3d4757;
+  --muted: #5d6878;
+  --faint: #8a94a3;
+
+  /* accent: ink blue */
+  --accent: #2c4a9e;
+  --accent-hover: #233d85;
+  --accent-soft: #e3e9f8;
+  --accent-text: #ffffff;
+  --focus: #5b7fe0;
+
+  /* highlighter (selection, search hits) */
+  --highlight: #fff0a3;
+  --highlight-text: #3b3000;
+
+  /* semantic */
+  --good: #1f7a4d;
+  --good-soft: #e0f2e8;
+  --warn: #9a6200;
+  --warn-soft: #fbf0d9;
+  --bad: #b3372f;
+  --bad-soft: #f9e3e1;
+
+  /* data viz categorical: fixed order, never cycled. Validated with the dataviz palette validator
+     (lightness band, chroma floor, adjacent CVD separation, normal-vision floor) against --surface
+     in both themes. Slots 1 (blue) and 8 (red) are also the diverging poles for heatmaps. */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #eda100;
+  --viz-5: #e87ba4;
+  --viz-6: #008300;
+  --viz-7: #4a3aa7;
+  --viz-8: #e34948;
+  --viz-grid: #e3e7ec;
+  --viz-axis: #8a94a3;
+
+  /* type */
+  --font-ui: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-report: 'Source Serif 4', 'Georgia', 'Times New Roman', serif;
+
+  --fs-xs: 11px;
+  --fs-sm: 12.5px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+
+  /* shape & space */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --shadow-1: 0 1px 2px rgba(20, 30, 50, 0.08);
+  --shadow-2: 0 8px 28px rgba(20, 30, 50, 0.18);
+  --topbar-h: 48px;
+
+  /* shell-specific (derived from the palette above) */
+  --measure-scale: var(--accent);
+  --measure-ordinal: #9a6200;
+  --measure-nominal: #2a7d74;
+  --measure-string: var(--muted);
+  --grid-line: #e2e6ec;
+  --grid-head: #eef1f5;
+  --grid-sel: #dbe4f7;
+  --grid-rownum: #f4f6f9;
+  --backdrop: rgba(12, 18, 28, 0.45);
+  --row-h: 26px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #11151b;
+    --surface: #181d25;
+    --surface-2: #1e242e;
+    --surface-3: #262d39;
+    --border: #2f3744;
+    --border-strong: #434d5d;
+    --text: #e5e9ef;
+    --text-2: #c3cad5;
+    --muted: #97a1b0;
+    --faint: #6d7787;
+    --accent: #8fa9f2;
+    --accent-hover: #a9bdf6;
+    --accent-soft: #232f4f;
+    --accent-text: #0f1420;
+    --focus: #8fa9f2;
+    --highlight: #5c4f12;
+    --highlight-text: #fff3bf;
+    --good: #5cc592;
+    --good-soft: #17301f;
+    --warn: #e0b04e;
+    --warn-soft: #33290f;
+    --bad: #ef7d74;
+    --bad-soft: #3a1c1a;
+    --viz-1: #3987e5;
+    --viz-2: #d95926;
+    --viz-3: #199e70;
+    --viz-4: #c98500;
+    --viz-5: #d55181;
+    --viz-6: #008300;
+    --viz-7: #9085e9;
+    --viz-8: #e66767;
+    --viz-grid: #262d39;
+    --viz-axis: #6d7787;
+    --measure-ordinal: #e0b04e;
+    --measure-nominal: #5fc4b8;
+    --grid-line: #262d38;
+    --grid-head: #1f252f;
+    --grid-sel: #243152;
+    --grid-rownum: #1b2029;
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.55);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #11151b;
+  --surface: #181d25;
+  --surface-2: #1e242e;
+  --surface-3: #262d39;
+  --border: #2f3744;
+  --border-strong: #434d5d;
+  --text: #e5e9ef;
+  --text-2: #c3cad5;
+  --muted: #97a1b0;
+  --faint: #6d7787;
+  --accent: #8fa9f2;
+  --accent-hover: #a9bdf6;
+  --accent-soft: #232f4f;
+  --accent-text: #0f1420;
+  --focus: #8fa9f2;
+  --highlight: #5c4f12;
+  --highlight-text: #fff3bf;
+  --good: #5cc592;
+  --good-soft: #17301f;
+  --warn: #e0b04e;
+  --warn-soft: #33290f;
+  --bad: #ef7d74;
+  --bad-soft: #3a1c1a;
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-4: #c98500;
+  --viz-5: #d55181;
+  --viz-6: #008300;
+  --viz-7: #9085e9;
+  --viz-8: #e66767;
+  --viz-grid: #262d39;
+  --viz-axis: #6d7787;
+  --measure-ordinal: #e0b04e;
+  --measure-nominal: #5fc4b8;
+  --grid-line: #262d38;
+  --grid-head: #1f252f;
+  --grid-sel: #243152;
+  --grid-rownum: #1b2029;
+  --backdrop: rgba(0, 0, 0, 0.6);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.55);
+}

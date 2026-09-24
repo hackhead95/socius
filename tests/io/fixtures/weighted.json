@@ -1,0 +1,47 @@
+{
+ "file_label": "",
+ "notes": [],
+ "number_rows": 4,
+ "file_encoding": "UTF-8",
+ "variables": [
+  {
+   "name": "wt",
+   "label": "",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "y",
+   "label": "",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  }
+ ],
+ "data": {
+  "wt": [
+   1.0,
+   2.5,
+   0.5,
+   1.0
+  ],
+  "y": [
+   1.0,
+   2.0,
+   3.0,
+   4.0
+  ]
+ },
+ "weight_var": "wt"
+}

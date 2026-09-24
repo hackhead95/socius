@@ -1,0 +1,48 @@
+{
+ "file_label": "",
+ "notes": [],
+ "number_rows": 5,
+ "file_encoding": "UTF-8",
+ "variables": [
+  {
+   "name": "n",
+   "label": "",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "s",
+   "label": "",
+   "format": "A10",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 16,
+   "value_labels": [],
+   "missing": []
+  }
+ ],
+ "data": {
+  "n": [
+   1.0,
+   2.0,
+   null,
+   10000000000.0,
+   -0.5
+  ],
+  "s": [
+   "a",
+   "bb",
+   "",
+   "dddddddddd",
+   "e"
+  ]
+ }
+}

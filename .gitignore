@@ -1,0 +1,9 @@
+node_modules
+dist
+dist-artifact
+test-results
+playwright-report
+*.log
+.DS_Store
+scripts/oracle/__pycache__
+site

@@ -1,0 +1,380 @@
+{
+ "file_label": "Socius test fixture: বাংলা",
+ "notes": [
+  "First document line.",
+  "Second line with Unicode: আমি বাংলায় কথা বলি"
+ ],
+ "number_rows": 0,
+ "file_encoding": "UTF-8",
+ "variables": [
+  {
+   "name": "id",
+   "label": "Respondent ID",
+   "format": "F6.0",
+   "type": "double",
+   "measure": "scale",
+   "display_width": 6,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "gender",
+   "label": "Respondent gender",
+   "format": "F1.0",
+   "type": "double",
+   "measure": "nominal",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [
+    [
+     1.0,
+     "Male"
+    ],
+    [
+     2.0,
+     "Female"
+    ],
+    [
+     9.0,
+     "No answer"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": 9.0,
+     "hi": 9.0
+    }
+   ]
+  },
+  {
+   "name": "likert",
+   "label": "Agree with statement (1-5)",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "ordinal",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [
+    [
+     1.0,
+     "Strongly disagree"
+    ],
+    [
+     2.0,
+     "Disagree"
+    ],
+    [
+     3.0,
+     "Neutral"
+    ],
+    [
+     4.0,
+     "Agree"
+    ],
+    [
+     5.0,
+     "Strongly agree"
+    ],
+    [
+     8.0,
+     "Don't know"
+    ],
+    [
+     -1.0,
+     "Refused"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": 8.0,
+     "hi": 9.0
+    },
+    {
+     "lo": -1.0,
+     "hi": -1.0
+    }
+   ]
+  },
+  {
+   "name": "income",
+   "label": "Household income in rupees",
+   "format": "DOLLAR12.2",
+   "type": "double",
+   "measure": "scale",
+   "display_width": 12,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": [
+    {
+     "lo": "-Infinity",
+     "hi": 0.0
+    }
+   ]
+  },
+  {
+   "name": "score",
+   "label": "Test score",
+   "format": "F8.3",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [
+    [
+     -99.0,
+     "Not tested"
+    ],
+    [
+     0.125,
+     "One eighth"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": -99.0,
+     "hi": -99.0
+    },
+    {
+     "lo": 150.0,
+     "hi": 150.0
+    },
+    {
+     "lo": 151.0,
+     "hi": 151.0
+    }
+   ]
+  },
+  {
+   "name": "a_very_long_variable_name_for_testing",
+   "label": "A variable with a long name",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "বয়স",
+   "label": "বয়স (বছর)",
+   "format": "F8.2",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [
+    [
+     23.0,
+     "তেইশ"
+    ]
+   ],
+   "missing": []
+  },
+  {
+   "name": "s1",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "s8",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "s9",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "s255",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "s256",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "s600",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "sex_str",
+   "label": "",
+   "format": "A1",
+   "type": "string",
+   "measure": "nominal",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [
+    [
+     "m",
+     "Male"
+    ],
+    [
+     "f",
+     "Female"
+    ],
+    [
+     "x",
+     "Other/unknown"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": "x",
+     "hi": "x"
+    }
+   ]
+  },
+  {
+   "name": "region",
+   "label": "Region of residence",
+   "format": "A12",
+   "type": "string",
+   "measure": "nominal",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 16,
+   "value_labels": [
+    [
+     "North region",
+     "উত্তর"
+    ],
+    [
+     "South region",
+     "दक्षिण"
+    ]
+   ],
+   "missing": [
+    {
+     "lo": "unknown",
+     "hi": "unknown"
+    }
+   ]
+  },
+  {
+   "name": "text_bn",
+   "label": "Open-ended answer: नमस्ते दुनिया",
+   "format": "A30",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 30,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "d",
+   "label": "Interview date",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "ts",
+   "label": "Interview start",
+   "format": "DATETIME20",
+   "type": "double",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  },
+  {
+   "name": "t",
+   "label": "Interview duration",
+   "format": "A1",
+   "type": "string",
+   "measure": "unknown",
+   "display_width": 8,
+   "alignment": "unknown",
+   "storage_width": 8,
+   "value_labels": [],
+   "missing": []
+  }
+ ],
+ "data": {
+  "id": [],
+  "gender": [],
+  "likert": [],
+  "income": [],
+  "score": [],
+  "a_very_long_variable_name_for_testing": [],
+  "বয়স": [],
+  "s1": [],
+  "s8": [],
+  "s9": [],
+  "s255": [],
+  "s256": [],
+  "s600": [],
+  "sex_str": [],
+  "region": [],
+  "text_bn": [],
+  "d": [],
+  "ts": [],
+  "t": []
+ }
+}
