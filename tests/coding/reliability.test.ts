@@ -79,4 +79,37 @@ describe('compareCoders', () => {
     // Units: s1 both, s2 B only, s3 A only, s4 neither
     expect(r.perCode[0]).toMatchObject({ both: 1, onlyA: 1, onlyB: 1, neither: 1 });
   });
+
+  // The 20 responses two coders coded in the QA run (response id, Coder 1's codes, Priya's codes).
+  // Two responses were coded by only one coder (1007 by Priya, 1018 by Coder 1); three by neither.
+  const QA: Array<[string, string[], string[]]> = [
+    ['1001', ['safety', 'lights'], ['safety']], ['1002', ['flood'], ['flood']], ['1003', ['rent'], ['rent']], ['1004', ['water'], ['air', 'water']],
+    ['1005', ['safety'], ['safety']], ['1007', [], ['traffic']], ['1008', ['flood'], ['flood']], ['1009', [], []], ['1010', ['flood'], ['flood']],
+    ['1011', ['flood'], ['flood']], ['1012', ['water'], ['water']], ['1013', ['traffic'], ['traffic']], ['1014', ['flood', 'waste', 'water'], ['flood', 'safety', 'waste', 'water']],
+    ['1015', [], []], ['1016', ['safety', 'lights', 'waste'], ['safety', 'lights', 'waste']], ['1017', ['traffic'], ['traffic']], ['1018', ['rent', 'waste'], []],
+    ['1019', ['flood'], ['flood']], ['1020', [], []], ['1021', ['flood'], ['flood']],
+  ];
+  const qaDocs: TextDoc[] = QA.map(([id]) => ({ id, name: `resp_id ${id}`, kind: 'response', text: `answer ${id}`, createdAt: 0 }));
+  const qaSegs: CodedSegment[] = QA.flatMap(([id, a, b]) => [...a.map((k) => seg(id, 'C1', k)), ...b.map((k) => seg(id, 'Priya', k))]);
+  const qaCodes = ['water', 'waste', 'lights', 'flood', 'traffic', 'safety', 'rent', 'air'];
+  it('reports sources only one coder coded, and can include them (values from sklearn and krippendorff)', () => {
+    const both = compareCoders(qaDocs, qaSegs, 'C1', 'Priya', qaCodes);
+    expect(both.docIds.length).toBe(15);
+    expect(both.oneSided).toEqual({ a: ['1018'], b: ['1007'] });
+    expect(both.scope).toBe('both');
+    expect(both.units.length).toBe(15);
+    expect(both.pooledAlpha).toBeCloseTo(0.912121583527393, 12);
+    const either = compareCoders(qaDocs, qaSegs, 'C1', 'Priya', qaCodes, { units: 'either' });
+    expect(either.docIds.length).toBe(17);
+    const k = Object.fromEntries(either.perCode.map((c) => [c.codeId, [c.kappa, c.alpha]]));
+    expect(k.waste[0]).toBeCloseTo(0.7671232876712328, 12);
+    expect(k.waste[1]).toBeCloseTo(0.7724137931034483, 12);
+    expect(k.lights[0]).toBeCloseTo(0.6382978723404256, 12);
+    expect(k.safety[0]).toBeCloseTo(0.8210526315789474, 12);
+    expect(k.safety[1]).toBeCloseTo(0.8253968253968254, 12);
+    expect(k.rent[1]).toBeCloseTo(0.6451612903225807, 12);
+    expect(k.air[0]).toBeCloseTo(0, 12);
+    expect(either.pooledAlpha).toBeCloseTo(0.8379186602870814, 12);
+    expect(either.disagreements.filter((d) => d.unit.docId === '1018').map((d) => d.codeId).sort()).toEqual(['rent', 'waste']);
+  });
 });

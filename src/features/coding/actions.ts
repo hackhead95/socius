@@ -275,8 +275,29 @@ export function removeCoder(name: string): void {
   });
 }
 
+/**
+ * Switch who is coding. Not an undo step of its own: the undo history is rebased onto the new coder
+ * so Ctrl+Z still works after switching (undoing restores the codes, not the previous coder).
+ */
 export function setActiveCoder(name: string): void {
-  useStore.getState().updateCoding((p) => ({ ...p, activeCoder: name, coders: p.coders.includes(name) ? p.coders : [...p.coders, name] }));
+  const before = useStore.getState().coding;
+  if (before.activeCoder === name) return;
+  const withCoder = (p: CodingProject): CodingProject => ({ ...p, activeCoder: name, coders: p.coders.includes(name) ? p.coders : [...p.coders, name] });
+  const after = withCoder(before);
+  useStore.getState().setCoding(after);
+  // Older states that do not know this coder yet (before "Add coder") keep their own active coder.
+  const rebase = (p: CodingProject): CodingProject => (p.coders.includes(name) ? { ...p, activeCoder: name } : p);
+  const ui = useCodingUi.getState();
+  const top = ui.history[ui.history.length - 1];
+  if (top && top.after === before) {
+    const rebased = new Map<CodingProject, CodingProject>([[before, after]]);
+    const map = (p: CodingProject) => {
+      let r = rebased.get(p);
+      if (!r) rebased.set(p, (r = rebase(p)));
+      return r;
+    };
+    ui.set({ history: ui.history.map((h) => ({ ...h, before: map(h.before), after: map(h.after) })) });
+  }
 }
 
 // ---------- Memos ----------

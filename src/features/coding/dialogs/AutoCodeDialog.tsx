@@ -118,7 +118,7 @@ export function AutoCodeDialog(props: { onClose: () => void }) {
             ) : null}
             <div className="cw-form-grid">
               <div className="field">
-                <label htmlFor="cw-scope">Code</label>
+                <label htmlFor="cw-scope">What gets coded</label>
                 <select id="cw-scope" className="select" value={scope} onChange={(e) => setScope(e.target.value as AutoScope)}>
                   <option value="text">the whole response or document</option>
                   <option value="sentence">the sentence with the match</option>
@@ -126,7 +126,7 @@ export function AutoCodeDialog(props: { onClose: () => void }) {
                 </select>
               </div>
               <div className="field">
-                <label htmlFor="cw-sources">In</label>
+                <label htmlFor="cw-sources">Search in</label>
                 <select id="cw-sources" className="select" value={sources} onChange={(e) => setSources(e.target.value as Sources)}>
                   <option value="all">all sources</option>
                   {hasDocuments ? <option value="document">documents only</option> : null}

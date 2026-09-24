@@ -18,7 +18,7 @@ import {
 import type { CodingProject } from '../../core/coding-types';
 import { codeFrequencies } from './analysis';
 import { buildCodeTree, flattenTree } from './tree';
-import type { ReportData } from './exports';
+import { reportCodeMeta, reportFrequencyTable, type ReportData } from './exports';
 
 const FONT = 'Calibri';
 
@@ -58,7 +58,7 @@ export async function codebookDocx(project: CodingProject, opts: CodebookDocxOpt
   const nodes = flattenTree(buildCodeTree(project.codes));
   const freq = new Map(codeFrequencies(project.codes, project.docs, project.segments).rows.map((r) => [r.codeId, r]));
   const header = ['Code', 'Definition', 'Include when', 'Exclude when', 'Example'];
-  if (opts.includeCounts) header.push('Segments', 'Documents');
+  if (opts.includeCounts) header.push('Segments', 'Sources');
   const widths = opts.includeCounts ? [16, 22, 16, 16, 18, 6, 6] : [18, 24, 18, 18, 22];
   const rows = [
     new TableRow({ tableHeader: true, children: header.map((h, i) => tcell(h, { header: true, width: widths[i] })) }),
@@ -96,6 +96,7 @@ export async function codebookDocx(project: CodingProject, opts: CodebookDocxOpt
 
 /** The same report as a Word document. */
 export async function reportDocx(data: ReportData): Promise<Uint8Array> {
+  const freqTable = reportFrequencyTable(data);
   const children: Array<Paragraph | Table> = [
     new Paragraph({ heading: HeadingLevel.TITLE, children: [run(data.title, { bold: true, size: 36 })] }),
     para(
@@ -106,11 +107,11 @@ export async function reportDocx(data: ReportData): Promise<Uint8Array> {
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
-        new TableRow({ tableHeader: true, children: ['Code', 'Segments', 'Sources', '% of sources'].map((h, i) => tcell(h, { header: true, width: i === 0 ? 55 : 15 })) }),
-        ...data.codes.map(
-          (c) =>
+        new TableRow({ tableHeader: true, children: freqTable.header.map((h, i) => tcell(h, { header: true, width: i === 0 ? 40 : Math.floor(60 / (freqTable.header.length - 1)) })) }),
+        ...freqTable.rows.map(
+          (r, k) =>
             new TableRow({
-              children: [tcell(c.code.name, { indent: c.depth * 240 }), tcell(String(c.segments)), tcell(String(c.docs)), tcell(`${c.pctDocs.toFixed(1)}%`)],
+              children: r.map((v, i) => tcell(v, i === 0 ? { indent: data.codes[k].depth * 240 } : {})),
             }),
         ),
       ],
@@ -124,7 +125,7 @@ export async function reportDocx(data: ReportData): Promise<Uint8Array> {
         spacing: { before: 200, after: 60 },
         children: [run(c.path, { bold: true, size: c.depth === 0 ? 24 : 22 })],
       }),
-      para(`${c.segments} segments in ${c.docs} sources (${c.pctDocs.toFixed(1)}%)`, { italics: true, size: 18 }),
+      para(reportCodeMeta(data, c), { italics: true, size: 18 }),
     );
     children.push(para(c.code.description || 'No definition written yet.'));
     if (c.code.inclusion) children.push(new Paragraph({ spacing: { after: 60 }, children: [run('Include when: ', { bold: true }), run(c.code.inclusion)] }));

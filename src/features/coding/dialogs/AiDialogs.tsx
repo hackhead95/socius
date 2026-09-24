@@ -40,7 +40,9 @@ export function AiCodebookDialog(props: { onClose: () => void }) {
     try {
       const raw = await askClaudeJson(prompt, { signal: ctrl.signal, modelTier: 'complex' });
       const parsed = parseCodebookSuggestions(raw);
-      setItems(parsed.map((p) => ({ ...p, pick: true })));
+      // Names already in the codebook start unticked (adding them would change nothing).
+      const have = new Set(project.codes.map((c) => c.name.trim().toLowerCase()));
+      setItems(parsed.map((p) => ({ ...p, pick: !have.has(p.name.trim().toLowerCase()) })));
       setState({ running: false, used, error: parsed.length ? undefined : 'Claude did not suggest any codes. Try again, or add a research focus.' });
     } catch (e: any) {
       setState({ running: false, used, error: aiErrorMessage(e?.code ?? 'unavailable') });
@@ -122,6 +124,7 @@ export function AiCodebookDialog(props: { onClose: () => void }) {
                     <span className="row" style={{ gap: 6 }}>
                       <input className="input input-sm" value={it.name} onChange={(e) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} aria-label="Code name" />
                       {it.parent ? <span className="badge">under {it.parent}</span> : null}
+                      {project.codes.some((c) => c.name.trim().toLowerCase() === it.name.trim().toLowerCase()) ? <span className="badge">already in your codebook</span> : null}
                     </span>
                     {it.description ? <span>{it.description}</span> : null}
                     {it.inclusion ? <span className="help"><b>Include:</b> {it.inclusion}</span> : null}

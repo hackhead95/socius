@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useStore } from '../../core/store';
 import { askClaude, aiErrorMessage, copyToClipboard } from '../../platform/host';
-import { attributeKeys, attributeValues } from '../../lib/coding/analysis';
+import { attributeKeys, attributeValues, constantAttributeKeys, orderedAttributes } from '../../lib/coding/analysis';
 import { codePath, descendantIds } from '../../lib/coding/tree';
 import { originLabel, segmentTable } from '../../lib/coding/exports';
 import { buildSummaryPrompt, spreadSample } from '../../lib/coding/ai';
@@ -29,6 +29,9 @@ export function RetrievalView() {
   const code = project.codes.find((c) => c.id === selectedCodeId) ?? null;
   const docs = useMemo(() => new Map(project.docs.map((d) => [d.id, d])), [project.docs]);
   const attrKeysList = useMemo(() => attributeKeys(project.docs), [project.docs]);
+  // Per kind of source: attributes shared by every interview (a study title) are not shown on quotes.
+  const constant = useMemo(() => ({ document: constantAttributeKeys(project.docs.filter((d) => d.kind === 'document')), response: constantAttributeKeys(project.docs.filter((d) => d.kind === 'response')) }), [project.docs]);
+  const shownAttrs = (d: (typeof project.docs)[number]) => orderedAttributes(d.attributes, constant[d.kind]).filter(([k]) => !constant[d.kind].has(k));
   const attrVals = useMemo(() => (attrKey ? attributeValues(project.docs, attrKey) : []), [project.docs, attrKey]);
 
   const segs = useMemo(() => {
@@ -57,7 +60,11 @@ export function RetrievalView() {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    const quotes = spreadSample(segs, 80).map((s) => ({ source: `${docs.get(s.docId)!.name}${Object.keys(docs.get(s.docId)!.attributes ?? {}).length ? `; ${Object.entries(docs.get(s.docId)!.attributes ?? {}).slice(0, 3).map(([k, v]) => `${k} ${v}`).join(', ')}` : ''}`, text: quoteText(s) }));
+    const quotes = spreadSample(segs, 80).map((s) => {
+      const d = docs.get(s.docId)!;
+      const a = shownAttrs(d).slice(0, 3);
+      return { source: `${d.name}${a.length ? `; ${a.map(([k, v]) => `${k} ${v}`).join(', ')}` : ''}`, text: quoteText(s) };
+    });
     const { prompt, used } = buildSummaryPrompt(code, quotes);
     setSummary({ text: '', running: true, used });
     try {
@@ -165,7 +172,7 @@ export function RetrievalView() {
                   <blockquote>{quoteText(s)}</blockquote>
                   <div className="cw-quote-meta">
                     <b>{d.name}</b>
-                    {Object.entries(d.attributes ?? {}).slice(0, 4).map(([k, v]) => <span key={k} className="cw-attr">{k}: {v}</span>)}
+                    {shownAttrs(d).slice(0, 4).map(([k, v]) => <span key={k} className="cw-attr" title={`${k}: ${v}`}>{k}: {v}</span>)}
                     {c && c.id !== code.id ? <span className="cw-attr">{c.name}</span> : null}
                     <span className="faint">{s.coder} · {originLabel(s.origin)}</span>
                     <span className="spacer" />

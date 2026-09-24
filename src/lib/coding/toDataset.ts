@@ -43,7 +43,8 @@ export function codeVarStem(name: string): string {
  * TextDoc.varId). Cases with a response get 0 or 1; cases without a response are system-missing.
  * A response is linked only when its variable exists and the case's current answer still matches
  * the response text (so deleted or re-sorted cases are not mislabelled).
- * Optionally adds a count variable (number of the chosen codes mentioned).
+ * Optionally adds a count variable (number of the chosen codes mentioned). With `members`, a theme's
+ * variable is 1 when the theme or any of its sub-codes was applied.
  */
 export function buildCodeVariables(
   ds: Dataset,
@@ -51,7 +52,14 @@ export function buildCodeVariables(
   docs: TextDoc[],
   segments: CodedSegment[],
   codeIds: string[],
-  opts: { sourceVarId?: string; coder?: string | null; countVariable?: boolean; countName?: string } = {},
+  opts: {
+    sourceVarId?: string;
+    coder?: string | null;
+    countVariable?: boolean;
+    countName?: string;
+    /** Theme variables: code id -> the codes that count for it (the theme and its sub-codes). */
+    members?: Record<string, string[]>;
+  } = {},
 ): CodeVariableBuild {
   const linked = new Map<string, number>(); // docId -> case index
   let nMismatched = 0;
@@ -95,16 +103,20 @@ export function buildCodeVariables(
     const code = codes.find((c) => c.id === codeId);
     if (!code) continue;
     const col = new Float64Array(ds.nCases).fill(NaN);
-    const set = mentioned.get(codeId) ?? new Set<number>();
+    const group = opts.members?.[codeId];
+    const set = new Set<number>();
+    for (const id of group ?? [codeId]) for (const i of mentioned.get(id) ?? []) set.add(i);
+    // The count adds each chosen code once, by its own coding (a theme's sub-codes are counted
+    // as themselves, not again through the theme).
+    const own = mentioned.get(codeId);
     for (let i = 0; i < ds.nCases; i++) {
       if (!hasAnswer[i]) continue;
-      const v = set.has(i) ? 1 : 0;
-      col[i] = v;
-      counts[i] += v;
+      col[i] = set.has(i) ? 1 : 0;
+      if (own?.has(i)) counts[i] += 1;
     }
     const variable = makeVariable({
       name: reserve(codeVarStem(code.name)),
-      label: code.name.slice(0, 250),
+      label: (group && group.length > 1 ? `${code.name} (theme, incl. sub-codes)` : code.name).slice(0, 250),
       type: 'numeric',
       width: 1,
       decimals: 0,

@@ -106,8 +106,9 @@ export function wordFrequencies(texts: string[], options: WordFreqOptions = {}):
 }
 
 /**
- * Bigram frequencies: pairs of adjacent words within one sentence. With stopword removal, pairs
- * containing a stopword are skipped (they are not bridged over).
+ * Bigram frequencies: pairs of adjacent words within one sentence, not separated by punctuation
+ * ("irregular, sometimes" is not a pair). With stopword removal, pairs containing a stopword are
+ * skipped (they are not bridged over).
  */
 export function bigramFrequencies(texts: string[], options: WordFreqOptions = {}): WordCount[] {
   const { opts, extra } = resolve(options);
@@ -115,8 +116,11 @@ export function bigramFrequencies(texts: string[], options: WordFreqOptions = {}
   for (const t of texts) {
     const seen = new Set<string>();
     for (const sent of splitSentences(t)) {
-      const toks = tokenize(t.slice(sent.start, sent.end));
+      const st = t.slice(sent.start, sent.end);
+      const toks = tokenize(st);
       for (let i = 0; i + 1 < toks.length; i++) {
+        // Adjacent words only: a comma, dash or bracket between them ends the phrase.
+        if (!/^\s+$/.test(st.slice(toks[i].end, toks[i + 1].start))) continue;
         const a = toks[i].norm, b = toks[i + 1].norm;
         if (!keepWord(a, opts, extra) || !keepWord(b, opts, extra)) continue;
         const key = `${a} ${b}`;

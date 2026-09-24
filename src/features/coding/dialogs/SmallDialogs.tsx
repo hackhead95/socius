@@ -131,7 +131,7 @@ export function CodeEditDialog(props: { codeId?: string; parentId?: string; onCl
           title={`Delete "${existing.name}"?`}
           danger
           confirmLabel="Delete code"
-          message={`This removes the code and its ${nSegs} coded segments. Sub-codes move up one level. You can undo this with Undo in the coding toolbar.`}
+          message={`This removes the code and its ${plural(nSegs, 'coded segment')}. Sub-codes move up one level. You can undo this with Undo in the coding toolbar.`}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={() => {
             deleteCode(existing.id, { keepChildren: true });
@@ -295,7 +295,7 @@ export function CodersDialog(props: { onClose: () => void }) {
           title={`Remove ${confirm}?`}
           danger
           confirmLabel="Remove coder"
-          message={`This also deletes their ${counts.get(confirm) ?? 0} coded segments. You can undo this with Undo in the coding toolbar.`}
+          message={`This also deletes their ${plural(counts.get(confirm) ?? 0, 'coded segment')}. You can undo this with Undo in the coding toolbar.`}
           onCancel={() => setConfirm(null)}
           onConfirm={() => { removeCoder(confirm); setConfirm(null); }}
         />

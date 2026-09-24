@@ -201,9 +201,12 @@ export function reliabilityOutput(codes: CodeDef[], r: ReliabilityResult): Outpu
   const units = [r.nResponseUnits ? `${r.nResponseUnits} responses` : '', r.nSentenceUnits ? `${r.nSentenceUnits} sentences` : ''].filter(Boolean).join(' and ');
   const weak = r.perCode.filter((c) => Number.isFinite(c.kappa) && c.kappa < 0.6).map((c) => `"${byId.get(c.codeId)?.name}"`);
   const interp =
-    `${r.coderA} and ${r.coderB} were compared on ${r.docIds.length} source${r.docIds.length === 1 ? '' : 's'} that both coded (${units}). ` +
+    `${r.coderA} and ${r.coderB} were compared on ${r.docIds.length} source${r.docIds.length === 1 ? '' : 's'} ${r.scope === 'either' ? 'that at least one of them coded' : 'that both coded'} (${units}). ` +
     `Overall Krippendorff's alpha = ${fmtR(r.pooledAlpha)} and mean Cohen's kappa = ${fmtR(r.meanKappa)} (${landisKoch(r.meanKappa)} agreement by the Landis and Koch rule of thumb). ` +
-    (weak.length ? `Agreement is below .60 for ${weak.slice(0, 6).join(', ')}${weak.length > 6 ? ' and others' : ''}; review the disagreements and sharpen those code definitions.` : 'All codes reach at least moderate agreement.');
+    (weak.length ? `Agreement is below .60 for ${weak.slice(0, 6).join(', ')}${weak.length > 6 ? ' and others' : ''}; review the disagreements and sharpen those code definitions.` : 'Cohen\'s kappa is at least .60 for every code where it can be computed.') +
+    (r.oneSided.a.length + r.oneSided.b.length
+      ? ` ${r.oneSided.a.length + r.oneSided.b.length} source${r.oneSided.a.length + r.oneSided.b.length === 1 ? ' was' : 's were'} coded by only one of the two coders and ${r.scope === 'either' ? 'included (the other coder\'s silence counts as "not applied").' : 'left out.'}`
+      : '');
   return item(
     `Intercoder reliability: ${r.coderA} vs ${r.coderB}`,
     [
@@ -216,6 +219,9 @@ export function reliabilityOutput(codes: CodeDef[], r: ReliabilityResult): Outpu
           rows,
           footnotes: [
             'Unit of analysis: each open-ended response is one unit; interview documents are split into sentences and each sentence is one unit. A unit counts as coded when the coder applied the code anywhere in it.',
+            r.scope === 'either'
+              ? 'Sources compared: every source at least one of the two coders coded; a source one coder left uncoded counts as "not applied" by that coder.'
+              : 'Sources compared: those both coders coded (each applied at least one code). Sources only one coder coded are left out.',
             'κ is not computable (".") when both coders used a single category for every unit.',
           ],
         },

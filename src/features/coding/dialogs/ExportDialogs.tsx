@@ -9,6 +9,7 @@ import { reportData, reportHtml, segmentTable } from '../../../lib/coding/export
 import { codebookToCsv, codebookToJson, mergeCodebook, parseCodebookCsv, parseCodebookJson } from '../../../lib/coding/codebookIO';
 import { decodeText } from '../../../lib/coding/importers';
 import { buildCodeVariables } from '../../../lib/coding/toDataset';
+import { descendantIds } from '../../../lib/coding/tree';
 import { replaceCodebook } from '../actions';
 import { useOrderedCodes, saveAndReport, saveCsv, saveXlsx, toast, plural } from '../hooks';
 import { Segmented, Swatch } from '../ui';
@@ -135,10 +136,20 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
   const questions = useMemo(() => [...new Set(linked.map((d) => d.varId!))], [linked]);
   const [question, setQuestion] = useState(questions[0] ?? '');
   const linkedIds = useMemo(() => new Set(linked.filter((d) => d.varId === question).map((d) => d.id)), [linked, question]);
+  // Themes (codes with sub-codes) get a variable that is 1 when the theme or any sub-code applies.
+  const members = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const n of nodes) {
+      const d = descendantIds(project.codes, n.code.id);
+      if (d.length) m[n.code.id] = [n.code.id, ...d];
+    }
+    return m;
+  }, [nodes, project.codes]);
   const usedCodes = useMemo(() => {
     const used = new Set(project.segments.filter((s) => linkedIds.has(s.docId)).map((s) => s.codeId));
-    return nodes.filter((n) => used.has(n.code.id)).map((n) => n.code);
-  }, [project.segments, linkedIds, nodes]);
+    return nodes.filter((n) => (members[n.code.id] ?? [n.code.id]).some((id) => used.has(id))).map((n) => n.code);
+  }, [project.segments, linkedIds, nodes, members]);
+  const depthOf = useMemo(() => new Map(nodes.map((n) => [n.code.id, n.depth])), [nodes]);
   const [chosen, setChosen] = useState<Set<string>>(() => new Set(usedCodes.map((c) => c.id)));
   const [coder, setCoder] = useState('');
   const [countVar, setCountVar] = useState(true);
@@ -147,8 +158,8 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
   const build = useMemo(() => {
     if (!ds || !question) return null;
     const ids = usedCodes.filter((c) => chosen.has(c.id)).map((c) => c.id);
-    return buildCodeVariables(ds, project.codes, project.docs, project.segments, ids, { sourceVarId: question, coder: coder || null, countVariable: countVar });
-  }, [ds, question, usedCodes, chosen, project, coder, countVar]);
+    return buildCodeVariables(ds, project.codes, project.docs, project.segments, ids, { sourceVarId: question, coder: coder || null, countVariable: countVar, members });
+  }, [ds, question, usedCodes, chosen, project, coder, countVar, members]);
 
   if (!ds || !linked.length) {
     return (
@@ -230,7 +241,7 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
               return (
                 <tr key={c.id}>
                   <td><input type="checkbox" checked={chosen.has(c.id)} onChange={() => setChosen((s) => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })} aria-label={`Export ${c.name}`} /></td>
-                  <td><span className="row" style={{ gap: 6 }}><Swatch color={c.color} />{c.name}</span></td>
+                  <td style={{ paddingLeft: 8 + (depthOf.get(c.id) ?? 0) * 16 }}><span className="row" style={{ gap: 6 }}><Swatch color={c.color} />{c.name}{members[c.id] ? <span className="faint">theme: 1 if any of its sub-codes applies</span> : null}</span></td>
                   <td className="mono">{plan?.variable.name ?? ''}</td>
                   <td className="num">{plan ? `${plan.nMentioned} of ${build!.nLinked}` : ''}</td>
                 </tr>

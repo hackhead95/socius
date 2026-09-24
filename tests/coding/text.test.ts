@@ -85,3 +85,16 @@ describe('KWIC', () => {
     expect(searchRegex('a+b')!.test('a+b')).toBe(true);
   });
 });
+
+describe('bigrams and punctuation', () => {
+  it('does not pair words across a comma, dash or bracket', () => {
+    const b = bigramFrequencies(['Water supply is irregular, sometimes twice a week - tanker water (costly) helps'], { removeStopwords: true, minLength: 3 });
+    const terms = b.map((x) => x.term);
+    expect(terms).toContain('water supply');
+    expect(terms).toContain('tanker water');
+    expect(terms).not.toContain('irregular sometimes');
+    expect(terms).not.toContain('week tanker');
+    expect(terms).not.toContain('water costly');
+  });
+});
+

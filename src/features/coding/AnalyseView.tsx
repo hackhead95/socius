@@ -11,8 +11,6 @@ import { useOrderedCodes, useVisibleSegments, plural, saveCsv } from './hooks';
 import { useCodingUi, jumpTo, type AnalyseTab } from './uiStore';
 import { Bar, Swatch } from './ui';
 
-type Kind = 'all' | 'document' | 'response';
-
 const TABS: Array<{ id: AnalyseTab; label: string }> = [
   { id: 'frequencies', label: 'Code frequencies' },
   { id: 'cooccurrence', label: 'Co-occurrence' },
@@ -25,10 +23,25 @@ export function AnalyseView() {
   const tab = useCodingUi((s) => s.analyseTab);
   const set = useCodingUi((s) => s.set);
   const allDocs = useStore((s) => s.coding.docs);
+  const dataset = useStore((s) => s.dataset);
   const hasBoth = allDocs.some((d) => d.kind === 'document') && allDocs.some((d) => d.kind === 'response');
-  const [kind, setKind] = useState<Kind>('all');
-  const docs = useMemo(() => (kind === 'all' ? allDocs : allDocs.filter((d) => d.kind === kind)), [allDocs, kind]);
-  const unitLabel = kind === 'response' || (!hasBoth && allDocs[0]?.kind === 'response') ? 'responses' : kind === 'document' || !hasBoth ? 'documents' : 'sources';
+  // Open-ended questions the responses come from (one entry per string variable or imported file).
+  const questions = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const d of allDocs) if (d.kind === 'response') m.set(d.varId ?? '', (m.get(d.varId ?? '') ?? 0) + 1);
+    return [...m.entries()].map(([varId, n]) => ({ varId, n, label: dataset?.variables.find((v) => v.id === varId)?.name ?? (varId ? 'an earlier import' : 'imported file') }));
+  }, [allDocs, dataset]);
+  const stored = useCodingUi((s) => s.analyseSources);
+  const valid = stored === 'all' || stored === 'document' || stored === 'response' || (stored.startsWith('q:') && questions.length > 1 && questions.some((q) => `q:${q.varId}` === stored));
+  const kind = valid ? stored : 'all';
+  const docs = useMemo(
+    () => (kind === 'all' ? allDocs : kind.startsWith('q:') ? allDocs.filter((d) => d.kind === 'response' && (d.varId ?? '') === kind.slice(2)) : allDocs.filter((d) => d.kind === kind)),
+    [allDocs, kind],
+  );
+  const onlyResponses = kind === 'response' || kind.startsWith('q:') || (!hasBoth && allDocs[0]?.kind === 'response');
+  const unitLabel = onlyResponses ? 'responses' : kind === 'document' || !hasBoth ? 'documents' : 'sources';
+  // Answers to several questions pooled: a respondent counts once per question answered.
+  const pooledQuestions = questions.length > 1 && (kind === 'all' || kind === 'response');
 
   return (
     <div className="cw-analyse">
@@ -40,14 +53,20 @@ export function AnalyseView() {
         ))}
       </div>
       <div className="cw-view">
-      {hasBoth ? (
+      {hasBoth || questions.length > 1 ? (
         <div className="cw-view-tools">
           <label className="label" htmlFor="cw-kind">Sources</label>
-          <select id="cw-kind" className="select input-sm" value={kind} onChange={(e) => setKind(e.target.value as Kind)}>
-            <option value="all">Documents and responses</option>
-            <option value="document">Documents only</option>
-            <option value="response">Open-ended responses only</option>
+          <select id="cw-kind" className="select input-sm" value={kind} onChange={(e) => set({ analyseSources: e.target.value })}>
+            <option value="all">{hasBoth ? 'Documents and responses' : 'All responses'}</option>
+            {hasBoth ? <option value="document">Documents only</option> : null}
+            {hasBoth ? <option value="response">Open-ended responses only</option> : null}
+            {questions.length > 1 ? questions.map((q) => <option key={q.varId} value={`q:${q.varId}`}>Responses to {q.label} ({q.n.toLocaleString()})</option>) : null}
           </select>
+        </div>
+      ) : null}
+      {pooledQuestions && (tab === 'frequencies' || tab === 'attribute' || tab === 'cooccurrence') ? (
+        <div className="callout callout-warn">
+          Answers to {questions.length} questions are counted together, so a respondent who answered more than one counts once per answer and percentages mix the questions. Choose one question under Sources.
         </div>
       ) : null}
       {!allDocs.length ? (
@@ -62,7 +81,7 @@ export function AnalyseView() {
       ) : tab === 'attribute' ? (
         <ByAttribute docs={docs} unitLabel={unitLabel} />
       ) : tab === 'words' ? (
-        <Words docs={docs} />
+        <Words docs={docs} unitLabel={unitLabel} />
       ) : (
         <Kwic docs={docs} />
       )}
@@ -71,11 +90,11 @@ export function AnalyseView() {
   );
 }
 
-function SendButton({ make }: { make: () => import('../../core/output').OutputItem }) {
+function SendButton({ make, disabled }: { make: () => import('../../core/output').OutputItem; disabled?: boolean }) {
   const addOutput = useStore((s) => s.addOutput);
   const dsName = useStore((s) => s.dataset?.name);
   return (
-    <button className="btn btn-sm btn-primary" onClick={() => addOutput({ ...make(), datasetName: dsName })}>
+    <button className="btn btn-sm btn-primary" disabled={disabled} onClick={() => addOutput({ ...make(), datasetName: dsName })}>
       Send to Output
     </button>
   );
@@ -156,9 +175,15 @@ function Cooccurrence({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string 
   const segs = useVisibleSegments();
   const [mode, setMode] = useState<CooccurrenceMode>('document');
   const [level, setLevel] = useState<'used' | 'top'>('used');
+  const allCodes = useStore((s) => s.coding.codes);
   const used = useMemo(() => new Set(segs.map((s) => s.codeId)), [segs]);
-  const codes = useMemo(() => nodes.filter((n) => used.has(n.code.id) && (level === 'used' || n.depth === 0)).map((n) => n.code).slice(0, 40), [nodes, used, level]);
-  const m = useMemo(() => cooccurrence(codes.map((c) => c.id), docs, segs, mode), [codes, docs, segs, mode]);
+  // Top-level themes include their sub-codes (a theme is "used" when any of its sub-codes is).
+  const members = useMemo(() => (level === 'top' ? Object.fromEntries(nodes.filter((n) => n.depth === 0).map((n) => [n.code.id, [n.code.id, ...descendantIds(allCodes, n.code.id)]])) : undefined), [level, nodes, allCodes]);
+  const codes = useMemo(
+    () => nodes.filter((n) => (level === 'used' ? used.has(n.code.id) : n.depth === 0 && members![n.code.id].some((id) => used.has(id)))).map((n) => n.code).slice(0, 40),
+    [nodes, used, level, members],
+  );
+  const m = useMemo(() => cooccurrence(codes.map((c) => c.id), docs, segs, mode, members), [codes, docs, segs, mode, members]);
   const max = Math.max(1, ...m.flatMap((r, i) => r.filter((_, j) => j !== i)));
   if (codes.length < 2) return <div className="cw-empty-small help">Code at least two different codes to see how they occur together.</div>;
   return (
@@ -170,10 +195,10 @@ function Cooccurrence({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string 
         </select>
         <select className="select input-sm" value={level} onChange={(e) => setLevel(e.target.value as any)} aria-label="Codes to include">
           <option value="used">All codes in use</option>
-          <option value="top">Top-level themes only</option>
+          <option value="top">Themes (sub-codes counted in their theme)</option>
         </select>
         <span className="spacer" />
-        <SendButton make={() => cooccurrenceOutput(codes, m, mode, `${docs.length} ${unitLabel}`)} />
+        <SendButton make={() => cooccurrenceOutput(codes, m, mode, `${docs.length} ${unitLabel}${level === 'top' ? '; sub-codes counted in their theme' : ''}`)} />
       </div>
       <p className="help">
         {mode === 'document'
@@ -223,9 +248,26 @@ function ByAttribute({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }
   const keys = useMemo(() => attributeKeys(docs), [docs]);
   const [key, setKey] = useState('');
   const k = keys.includes(key) ? key : keys[0] ?? '';
+  const allCodes = useStore((s) => s.coding.codes);
+  const dataset = useStore((s) => s.dataset);
   const used = useMemo(() => new Set(segs.map((s) => s.codeId)), [segs]);
-  const codes = useMemo(() => nodes.filter((n) => used.has(n.code.id)).map((n) => n.code), [nodes, used]);
-  const r = useMemo(() => (k ? codeByAttribute(codes.map((c) => c.id), docs, segs, k) : null), [codes, docs, segs, k]);
+  // Themes (codes with sub-codes) count a source when the theme or any of its sub-codes is applied.
+  const members = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const n of nodes) {
+      const d = descendantIds(allCodes, n.code.id);
+      if (d.length) m[n.code.id] = [n.code.id, ...d];
+    }
+    return m;
+  }, [nodes, allCodes]);
+  const codes = useMemo(() => nodes.filter((n) => (members[n.code.id] ?? [n.code.id]).some((id) => used.has(id))).map((n) => n.code), [nodes, used, members]);
+  const depth = useMemo(() => new Map(nodes.map((n) => [n.code.id, n.depth])), [nodes]);
+  // Groups in the order of the dataset's value labels (Man, Woman, Other...) when the attribute came from it.
+  const valueOrder = useMemo(() => {
+    const v = dataset?.variables.find((x) => x.name === k);
+    return v?.valueLabels.length ? [...v.valueLabels].sort((a, b) => Number(a.value) - Number(b.value) || String(a.value).localeCompare(String(b.value))).map((l) => l.label) : undefined;
+  }, [dataset, k]);
+  const r = useMemo(() => (k ? codeByAttribute(codes.map((c) => c.id), docs, segs, k, valueOrder, members) : null), [codes, docs, segs, k, valueOrder, members]);
   if (!keys.length) return <div className="cw-empty-small help">None of these sources have attributes. Import responses with attributes (gender, city...) or add attributes to documents.</div>;
   if (!codes.length || !r) return <div className="cw-empty-small help">Code some text first.</div>;
   return (
@@ -236,7 +278,7 @@ function ByAttribute({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }
           {keys.map((x) => <option key={x} value={x}>{x}</option>)}
         </select>
         <span className="spacer" />
-        <SendButton make={() => codeByAttributeOutput(codes, k, r, unitLabel)} />
+        <SendButton make={() => codeByAttributeOutput(codes.map((c) => (members[c.id] ? { ...c, name: `${c.name} (with sub-codes)` } : c)), k, r, unitLabel)} />
       </div>
       {r.values.length > 20 ? <div className="callout callout-warn">This attribute has {r.values.length} different values. Tables are easier to read with a grouping attribute (gender, region, age group).</div> : null}
       <div className="scroll-x">
@@ -260,10 +302,11 @@ function ByAttribute({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }
           <tbody>
             {codes.map((c, i) => (
               <tr key={c.id}>
-                <td>
+                <td style={{ paddingLeft: 10 + (depth.get(c.id) ?? 0) * 16 }}>
                   <span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
                     <Swatch color={c.color} />
                     {c.name}
+                    {members[c.id] ? <span className="faint" title="Counts sources coded with this theme or any of its sub-codes">with sub-codes</span> : null}
                   </span>
                 </td>
                 {r.values.flatMap((v, j) => [
@@ -282,7 +325,7 @@ function ByAttribute({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }
   );
 }
 
-function Words({ docs }: { docs: TextDoc[] }) {
+function Words({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }) {
   const project = useStore((s) => s.coding);
   const nodes = useOrderedCodes();
   const segs = useVisibleSegments();
@@ -305,7 +348,7 @@ function Words({ docs }: { docs: TextDoc[] }) {
   const words = useMemo(() => wordFrequencies(texts, opts), [texts, stop, minLen, deferredExtra]);
   const pairs = useMemo(() => (bigrams ? bigramFrequencies(texts, opts) : null), [texts, stop, minLen, deferredExtra, bigrams]);
   const maxCount = words[0]?.count ?? 1;
-  const scopeNote = source ? `Text coded with ${project.codes.find((c) => c.id === source)?.name ?? ''}` : `${docs.length} sources`;
+  const scopeNote = source ? `Text coded with ${project.codes.find((c) => c.id === source)?.name ?? ''}` : `${docs.length.toLocaleString()} ${unitLabel}`;
   return (
     <div className="stack">
       <div className="cw-view-tools">
@@ -392,7 +435,7 @@ function Kwic({ docs }: { docs: TextDoc[] }) {
           </select>
         </label>
         <button className="btn btn-sm" disabled={!lines.length} onClick={() => void saveCsv(`kwic ${query.trim()}.csv`, ['Source', 'Left context', 'Keyword', 'Right context'], withSource.map((l) => [l.source, l.left, l.match, l.right]))}>Export CSV</button>
-        <SendButton make={() => kwicOutput(query.trim(), withSource)} />
+        <SendButton disabled={!lines.length} make={() => kwicOutput(query.trim(), withSource)} />
       </div>
       {query.trim() ? <p className="help">{plural(lines.length, 'match', 'matches')} in {plural(nDocs, 'source')}. Click a line to open it in context.</p> : <p className="help">Type a word to see every place it is used, with the words around it.</p>}
       <div className="cw-kwic" role="list">

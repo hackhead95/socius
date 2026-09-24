@@ -55,13 +55,18 @@ export function codeFrequencies(codes: CodeDef[], docs: TextDoc[], segments: Cod
 export type CooccurrenceMode = 'document' | 'overlap';
 
 /**
- * Code co-occurrence matrix.
+ * Code co-occurrence matrix. With `members`, each row counts its member codes together.
  * - 'document': cell (i, j) = number of documents coded with both codes; diagonal = documents with code i.
  * - 'overlap': cell (i, j) = number of pairs of overlapping segments (code i with code j) in the same
  *   document; diagonal = number of segments of code i.
  */
-export function cooccurrence(codeIds: string[], docs: TextDoc[], segments: CodedSegment[], mode: CooccurrenceMode): number[][] {
-  const idx = new Map(codeIds.map((id, i) => [id, i]));
+export function cooccurrence(codeIds: string[], docs: TextDoc[], segments: CodedSegment[], mode: CooccurrenceMode, members?: Record<string, string[]>): number[][] {
+  // `members` rolls codes up into a row (e.g. a theme and all its sub-codes): segments of any member
+  // count for that row. Without it each row is just its own code.
+  const idx = new Map<string, number>();
+  codeIds.forEach((id, i) => {
+    for (const m of members?.[id] ?? [id]) if (!idx.has(m)) idx.set(m, i);
+  });
   const k = codeIds.length;
   const m = Array.from({ length: k }, () => new Array<number>(k).fill(0));
   const docIds = new Set(docs.map((d) => d.id));
@@ -106,7 +111,7 @@ export interface CodeByAttribute {
 }
 
 /** Codes by a document attribute (e.g. gender): documents coded, with column percentages. */
-export function codeByAttribute(codeIds: string[], docs: TextDoc[], segments: CodedSegment[], attribute: string, valueOrder?: string[]): CodeByAttribute {
+export function codeByAttribute(codeIds: string[], docs: TextDoc[], segments: CodedSegment[], attribute: string, valueOrder?: string[], members?: Record<string, string[]>): CodeByAttribute {
   const valueOf = (d: TextDoc) => (d.attributes?.[attribute] ?? '').trim();
   const inScope = docs.filter((d) => valueOf(d) !== '');
   const nMissing = docs.length - inScope.length;
@@ -120,17 +125,23 @@ export function codeByAttribute(codeIds: string[], docs: TextDoc[], segments: Co
     bases[vi]++;
     docVal.set(d.id, vi);
   }
-  const cIdx = new Map(codeIds.map((id, i) => [id, i]));
+  // A row counts documents coded with any of its member codes (a theme with its sub-codes), once each.
+  const rowsOf = new Map<string, number[]>();
+  codeIds.forEach((id, i) => {
+    for (const m of members?.[id] ?? [id]) rowsOf.set(m, [...(rowsOf.get(m) ?? []), i]);
+  });
   const counts = codeIds.map(() => new Array<number>(values.length).fill(0));
   const seen = new Set<string>();
   for (const s of segments) {
     const vi = docVal.get(s.docId);
-    const ci = cIdx.get(s.codeId);
-    if (vi === undefined || ci === undefined) continue;
-    const key = `${s.docId}\u0000${s.codeId}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    counts[ci][vi]++;
+    const rows = rowsOf.get(s.codeId);
+    if (vi === undefined || !rows) continue;
+    for (const ci of rows) {
+      const key = `${s.docId}\u0000${ci}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      counts[ci][vi]++;
+    }
   }
   const colPct = counts.map((row) => row.map((c, j) => (bases[j] ? (100 * c) / bases[j] : 0)));
   return { values, bases, counts, colPct, nMissing };
@@ -155,4 +166,25 @@ export function attributeValues(docs: TextDoc[], key: string): string[] {
 
 export function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+/**
+ * Attribute keys that are the same on every one of `docs` (for example a study title shared by all
+ * interviews). They say nothing about which source is which, so lists show them last.
+ * With fewer than two sources nothing is treated as constant.
+ */
+export function constantAttributeKeys(docs: TextDoc[]): Set<string> {
+  const out = new Set<string>();
+  if (docs.length < 2) return out;
+  for (const k of attributeKeys(docs)) {
+    const first = docs[0].attributes?.[k];
+    if (first !== undefined && docs.every((d) => d.attributes?.[k] === first)) out.add(k);
+  }
+  return out;
+}
+
+/** A source's attributes with the informative ones (those that differ between sources) first. */
+export function orderedAttributes(attributes: Record<string, string> | undefined, constant: Set<string>): Array<[string, string]> {
+  const e = Object.entries(attributes ?? {});
+  return [...e.filter(([k]) => !constant.has(k)), ...e.filter(([k]) => constant.has(k))];
 }

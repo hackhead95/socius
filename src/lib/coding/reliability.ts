@@ -5,7 +5,9 @@
 //   code by a coder when that coder has any segment of the code in it.
 // - Documents: one unit per sentence (see splitSentences). A sentence counts as coded with a code
 //   by a coder when one of that coder's segments of the code overlaps any character of it.
-// Only documents that both coders have coded (at least one segment each) are compared.
+// By default only documents that both coders have coded (at least one segment each) are compared;
+// documents coded by only one of them are reported in `oneSided` so the UI can say so, and with
+// `{ units: 'either' }` they are compared too (the other coder's silence counts as "not applied").
 // For each code, each unit gives a pair of binary ratings (applied / not applied).
 
 import type { CodedSegment, TextDoc } from '../../core/coding-types';
@@ -128,6 +130,15 @@ export interface ReliabilityResult {
   /** Mean of the defined per-code kappas. */
   meanKappa: number;
   disagreements: Disagreement[];
+  /** Documents only one coder has coded: left out with units 'both', included with 'either'. */
+  oneSided: { a: string[]; b: string[] };
+  /** Which sources were compared. */
+  scope: 'both' | 'either';
+}
+
+export interface CompareOptions {
+  /** 'both' (default): sources both coders coded. 'either': sources at least one of them coded. */
+  units?: 'both' | 'either';
 }
 
 function overlaps(s: CodedSegment, u: Range): boolean {
@@ -135,7 +146,8 @@ function overlaps(s: CodedSegment, u: Range): boolean {
 }
 
 /** Compare two coders over the documents both have coded. `codeIds` = codes to compare. */
-export function compareCoders(docs: TextDoc[], segments: CodedSegment[], coderA: string, coderB: string, codeIds: string[]): ReliabilityResult {
+export function compareCoders(docs: TextDoc[], segments: CodedSegment[], coderA: string, coderB: string, codeIds: string[], opts: CompareOptions = {}): ReliabilityResult {
+  const either = opts.units === 'either';
   const byDoc = new Map<string, { a: CodedSegment[]; b: CodedSegment[] }>();
   for (const s of segments) {
     if (s.coder !== coderA && s.coder !== coderB) continue;
@@ -148,9 +160,14 @@ export function compareCoders(docs: TextDoc[], segments: CodedSegment[], coderA:
   const unitSegs: Array<{ a: CodedSegment[]; b: CodedSegment[] }> = [];
   const docIds: string[] = [];
   let nResp = 0, nSent = 0;
+  const oneSided = { a: [] as string[], b: [] as string[] };
   for (const d of docs) {
     const e = byDoc.get(d.id);
-    if (!e || !e.a.length || !e.b.length) continue;
+    if (!e || (!e.a.length && !e.b.length)) continue;
+    if (!e.a.length || !e.b.length) {
+      (e.a.length ? oneSided.a : oneSided.b).push(d.id);
+      if (!either) continue;
+    }
     docIds.push(d.id);
     const us: Range[] = d.kind === 'response' ? [{ start: 0, end: d.text.length }] : splitSentences(d.text);
     for (const u of us) {
@@ -206,5 +223,7 @@ export function compareCoders(docs: TextDoc[], segments: CodedSegment[], coderA:
     pooledAgreement: percentAgreement(pooledA, pooledB),
     meanKappa: defined.length ? defined.reduce((s, x) => s + x, 0) / defined.length : NaN,
     disagreements,
+    oneSided,
+    scope: either ? 'either' : 'both',
   };
 }

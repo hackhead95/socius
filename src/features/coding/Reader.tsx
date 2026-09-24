@@ -9,6 +9,7 @@ import type { CodedSegment, TextDoc } from '../../core/coding-types';
 import { splitLines, assignLanes, trimRange, type Range } from '../../lib/coding/segments';
 import { codePath } from '../../lib/coding/tree';
 import { tokenize } from '../../lib/coding/text';
+import { constantAttributeKeys, orderedAttributes } from '../../lib/coding/analysis';
 import { applyCode, createCode, removeSegment, setSegmentMemo, uncodeRange, createMemo } from './actions';
 import { fillOf, useCodeMap, useSegmentIndex, plural } from './hooks';
 import { useCodingUi, openLocalDialog } from './uiStore';
@@ -327,7 +328,9 @@ export const Reader = memo(function Reader({ doc }: { doc: TextDoc }) {
   };
 
   const words = useMemo(() => tokenize(doc.text).length, [doc.text]);
-  const attrs = Object.entries(doc.attributes ?? {});
+  const allDocs = useStore((s) => s.coding.docs);
+  const constant = useMemo(() => constantAttributeKeys(allDocs.filter((d) => d.kind === doc.kind)), [allDocs, doc.kind]);
+  const attrs = orderedAttributes(doc.attributes, constant);
   const [showAllAttrs, setShowAllAttrs] = useState(false);
   const codesUsed = useMemo(() => new Set(segs.map((s) => s.codeId)).size, [segs]);
 
@@ -351,7 +354,7 @@ export const Reader = memo(function Reader({ doc }: { doc: TextDoc }) {
             <span>{plural(segs.length, 'coded segment')}</span>
             <span>{plural(codesUsed, 'code')}</span>
             {attrs.slice(0, showAllAttrs ? attrs.length : 4).map(([k, v]) => (
-              <span key={k} className="cw-attr">
+              <span key={k} className="cw-attr" title={`${k}: ${v}`}>
                 {k}: {v}
               </span>
             ))}

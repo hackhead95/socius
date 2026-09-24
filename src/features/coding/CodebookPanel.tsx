@@ -7,7 +7,7 @@ import { canReparent, descendantIds } from '../../lib/coding/tree';
 import { CODE_PALETTE } from '../../lib/coding/palette';
 import { ConfirmDialog } from '../../ui/Modal';
 import { applyCode, createCode, createMemo, deleteCode, moveCode, updateCode } from './actions';
-import { useOrderedCodes, useVisibleSegments, toast } from './hooks';
+import { useOrderedCodes, useVisibleSegments, toast, plural } from './hooks';
 import { useCodingUi, openLocalDialog } from './uiStore';
 import { MenuButton, Floating } from './ui';
 
@@ -261,7 +261,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
           message={
             <div className="stack" style={{ gap: 8 }}>
               <span>
-                This removes the code and its {counts.seg.get(confirmDel.code.id) ?? 0} coded segments. You can undo this with Undo in the coding toolbar.
+                This removes the code and its {plural(counts.seg.get(confirmDel.code.id) ?? 0, 'coded segment')}. You can undo this with Undo in the coding toolbar.
               </span>
               {childCount.get(confirmDel.code.id) ? (
                 <label className="check">

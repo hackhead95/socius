@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { codeByAttribute, codeFrequencies, cooccurrence } from '../../src/lib/coding/analysis';
+import { codeByAttribute, codeFrequencies, constantAttributeKeys, cooccurrence, orderedAttributes } from '../../src/lib/coding/analysis';
 import type { CodeDef, CodedSegment, TextDoc } from '../../src/core/coding-types';
 
 const code = (id: string, parentId: string | null = null): CodeDef => ({ id, name: id.toUpperCase(), description: '', color: '#000', parentId, createdAt: 0 });
@@ -51,5 +51,45 @@ describe('code by attribute', () => {
     ]);
     expect(r.colPct[0]).toEqual([0, 50]);
     expect(r.nMissing).toBe(1);
+  });
+});
+
+describe('themes rolled up with their sub-codes', () => {
+  it('co-occurrence of top-level themes counts sub-code segments in their theme', () => {
+    // Theme a has sub-code c; d3 is coded c and b, so theme a co-occurs with b in d1 and d3.
+    const m = cooccurrence(['a', 'b'], docs, segments, 'document', { a: ['a', 'c'], b: ['b'] });
+    expect(m).toEqual([
+      [2, 2],
+      [2, 3],
+    ]);
+    // Without roll-up, d3 does not count for a.
+    expect(cooccurrence(['a', 'b'], docs, segments, 'document')).toEqual([
+      [1, 1],
+      [1, 3],
+    ]);
+  });
+  it('codes by attribute: theme rows count sources with the theme or a sub-code, in value-label order', () => {
+    const r = codeByAttribute(['a', 'c'], docs, segments, 'gender', ['Man', 'Woman'], { a: ['a', 'c'] });
+    expect(r.values).toEqual(['Man', 'Woman']);
+    expect(r.counts).toEqual([
+      [0, 2],
+      [0, 1],
+    ]);
+    // A source coded with both the theme and a sub-code counts once.
+    const r2 = codeByAttribute(['a'], docs, [...segments, seg('d1', 'c')], 'gender', undefined, { a: ['a', 'c'] });
+    expect(r2.counts[0]).toEqual([0, 2]);
+  });
+});
+
+describe('informative attributes', () => {
+  it('puts attributes shared by every source last', () => {
+    const ds: TextDoc[] = [
+      { id: '1', name: 'I1', kind: 'document', text: '', attributes: { study: 'Belonging study', age: '58', gender: 'Woman' }, createdAt: 0 },
+      { id: '2', name: 'I2', kind: 'document', text: '', attributes: { study: 'Belonging study', age: '26', gender: 'Man' }, createdAt: 0 },
+    ];
+    const constant = constantAttributeKeys(ds);
+    expect([...constant]).toEqual(['study']);
+    expect(orderedAttributes(ds[0].attributes, constant).map(([k]) => k)).toEqual(['age', 'gender', 'study']);
+    expect(constantAttributeKeys(ds.slice(0, 1)).size).toBe(0);
   });
 });

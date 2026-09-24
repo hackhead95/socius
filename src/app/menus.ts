@@ -2,7 +2,7 @@
 import { useStore } from '../core/store';
 import type { ProcedureMenu } from '../core/procedure';
 import { procedures } from '../procedures';
-import { codingMenuItems } from '../features/coding/menu';
+import { aiMenuAvailable, codingMenuItems } from '../features/coding/menu';
 import type { MenuItem } from '../ui/Menu';
 import { useUi, type ThemePref } from './ui-store';
 import {
@@ -166,7 +166,7 @@ export function useMenus(): TopMenu[] {
     .map((p) => needData({ id: p.id, label: `${p.title}...`, title: hasData ? p.description : NEED_DATA, onSelect: openProc(p.id) }));
   if (!graphs.length) graphs.push({ id: 'g-none', label: 'No charts are available in this build', disabled: true });
 
-  const coding: MenuItem[] = codingMenuItems.map((c) => ({
+  const coding: MenuItem[] = codingMenuItems.filter((c) => !c.ai || aiMenuAvailable()).map((c) => ({
     id: `c-${c.id}`,
     label: c.label,
     separator: c.separator,

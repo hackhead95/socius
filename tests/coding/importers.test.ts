@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync, unzipSync, strFromU8 } from 'fflate';
 import { decodeText, extractDocxText, normaliseText, parseCsv, toCsv } from '../../src/lib/coding/importers';
-import { reportData, reportHtml, segmentTable } from '../../src/lib/coding/exports';
+import { reportCodeMeta, reportData, reportFrequencyTable, reportHtml, segmentTable } from '../../src/lib/coding/exports';
 import { codebookDocx, reportDocx } from '../../src/lib/coding/docxExports';
 import type { CodingProject } from '../../src/core/coding-types';
 
@@ -83,5 +83,21 @@ describe('exports', () => {
     const text = extractDocxText(await reportDocx(data));
     expect(text).toContain('Include when: Paid work');
     expect(text).toContain('"found a job"');
+  });
+  it('report counts documents and responses separately and shows themes with their sub-codes', () => {
+    const mixed = {
+      ...project,
+      docs: [...project.docs, { id: 'r1', name: 'R1', kind: 'response' as const, text: 'no job here', createdAt: 0 }, { id: 'r2', name: 'R2', kind: 'response' as const, text: 'fine', createdAt: 0 }],
+      segments: [...project.segments, { id: 'sr1', docId: 'r1', codeId: project.segments[0].codeId, start: 0, end: 11, coder: 'Coder 1', origin: 'manual' as const, createdAt: 0 }],
+    };
+    const data = reportData(mixed);
+    const t = reportFrequencyTable(data);
+    expect(t.header).toEqual(['Code', 'Segments', `Documents (of ${data.nDocuments})`, 'Responses (of 2)']);
+    const sub = data.codes.find((c) => c.code.id === project.segments[0].codeId)!;
+    expect(sub).toMatchObject({ documents: 1, responses: 1, pctResponses: 50 });
+    const theme = data.codes.find((c) => c.code.id === sub.code.parentId)!;
+    expect(theme.hasChildren).toBe(true);
+    expect(reportCodeMeta(data, theme)).toContain('with its sub-codes');
+    expect(reportHtml(data)).toContain('Responses (of 2)');
   });
 });

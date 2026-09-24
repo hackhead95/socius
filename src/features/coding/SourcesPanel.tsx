@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useStore } from '../../core/store';
-import { attributeKeys, attributeValues } from '../../lib/coding/analysis';
+import { attributeKeys, attributeValues, constantAttributeKeys, orderedAttributes } from '../../lib/coding/analysis';
 import { deleteDocs } from './actions';
 import { useSegmentIndex, plural } from './hooks';
 import { useCodingUi, openLocalDialog } from './uiStore';
@@ -18,6 +18,7 @@ export function SourcesPanel() {
   const documents = useMemo(() => docs.filter((d) => d.kind === 'document'), [docs]);
   const nResponses = docs.length - documents.length;
   const attrKeys = useMemo(() => attributeKeys(documents), [documents]);
+  const constant = useMemo(() => constantAttributeKeys(documents), [documents]);
   const attrValues = useMemo(() => (docAttr ? attributeValues(documents, docAttr.key) : []), [documents, docAttr]);
 
   const shown = useMemo(() => {
@@ -92,7 +93,7 @@ export function SourcesPanel() {
                 <span className="cw-docname">{d.name}</span>
                 <span className="cw-docmeta">
                   {n ? plural(n, 'segment') : 'Not coded yet'}
-                  {Object.values(d.attributes ?? {}).length ? ` · ${Object.values(d.attributes ?? {}).slice(0, 3).join(', ')}` : ''}
+                  {docSummary(orderedAttributes(d.attributes, constant).filter(([k]) => !constant.has(k)))}
                 </span>
               </button>
               <MenuButton
@@ -142,4 +143,10 @@ export function SourcesPanel() {
       ) : null}
     </section>
   );
+}
+
+/** Up to three distinguishing attribute values for the source list ("58, Woman, Kolkata"). */
+function docSummary(entries: Array<[string, string]>): string {
+  const vals = entries.map(([, v]) => v.trim()).filter((v) => v && v.length <= 40).slice(0, 3);
+  return vals.length ? ` · ${vals.join(', ')}` : '';
 }

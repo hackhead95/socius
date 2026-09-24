@@ -80,8 +80,23 @@ export interface ReportData {
     segments: number;
     docs: number;
     pctDocs: number;
+    /** Documents (interviews, notes) coded with the code, and with the code or any sub-code. */
+    documents: number;
+    documentsInclSub: number;
+    /** Open-ended responses coded with the code (and % of all responses), and incl. sub-codes. */
+    responses: number;
+    pctResponses: number;
+    responsesInclSub: number;
+    pctResponsesInclSub: number;
+    hasChildren: boolean;
     quotes: Array<{ source: string; text: string }>;
   }>;
+}
+
+/** "12 (15 with sub-codes)" for themes whose sub-codes add sources; plain count otherwise. */
+export function countWithSub(own: number, inclSub: number, pct?: number, pctInclSub?: number): string {
+  const f = (n: number, p?: number) => (p === undefined ? `${n}` : `${n} (${p.toFixed(1)}%)`);
+  return inclSub !== own ? `${f(own, pct)}; with sub-codes ${f(inclSub, pctInclSub)}` : f(own, pct);
 }
 
 /** Assemble report content (shared by the HTML and DOCX renderers). */
@@ -89,6 +104,11 @@ export function reportData(project: CodingProject, title = 'Qualitative coding r
   const nodes = flattenTree(buildCodeTree(project.codes));
   const freq = codeFrequencies(project.codes, project.docs, project.segments);
   const fr = new Map(freq.rows.map((r) => [r.codeId, r]));
+  // Interviews and survey answers are counted separately: "3 of 630 sources" mixes units.
+  const byKind = (kind: TextDoc['kind']) => new Map(codeFrequencies(project.codes, project.docs.filter((d) => d.kind === kind), project.segments).rows.map((r) => [r.codeId, r]));
+  const frD = byKind('document');
+  const frR = byKind('response');
+  const parents = new Set(project.codes.map((c) => c.parentId).filter(Boolean));
   return {
     title,
     generated: new Date().toISOString().slice(0, 10),
@@ -103,6 +123,13 @@ export function reportData(project: CodingProject, title = 'Qualitative coding r
       segments: fr.get(n.code.id)?.segments ?? 0,
       docs: fr.get(n.code.id)?.docs ?? 0,
       pctDocs: fr.get(n.code.id)?.pctDocs ?? 0,
+      documents: frD.get(n.code.id)?.docs ?? 0,
+      documentsInclSub: frD.get(n.code.id)?.docsInclSub ?? 0,
+      responses: frR.get(n.code.id)?.docs ?? 0,
+      pctResponses: frR.get(n.code.id)?.pctDocs ?? 0,
+      responsesInclSub: frR.get(n.code.id)?.docsInclSub ?? 0,
+      pctResponsesInclSub: frR.get(n.code.id)?.pctDocsInclSub ?? 0,
+      hasChildren: parents.has(n.code.id),
       quotes: exampleQuotes(project, n.code.id, quotesPerCode).map((q) => ({ source: q.doc.name, text: q.text })),
     })),
   };
@@ -122,10 +149,12 @@ export function reportHtml(data: ReportData): string {
     `${data.nSegments} coded segments`,
     data.coders.length ? `coded by ${data.coders.join(', ')}` : '',
   ].filter(Boolean).join(' · ');
-  const codeRows = data.codes
-    .map(
-      (c) => `<tr><td style="padding-left:${8 + c.depth * 16}px"><span class="sw" style="background:${e(c.code.color)}"></span>${e(c.code.name)}</td><td class="n">${c.segments}</td><td class="n">${c.docs}</td><td class="n">${c.pctDocs.toFixed(1)}%</td></tr>`,
-    )
+  const { header: fh, rows: fr } = reportFrequencyTable(data);
+  const codeRows = fr
+    .map((r, i) => {
+      const c = data.codes[i];
+      return `<tr><td style="padding-left:${8 + c.depth * 16}px"><span class="sw" style="background:${e(c.code.color)}"></span>${e(r[0])}</td>${r.slice(1).map((v) => `<td class="n">${e(v)}</td>`).join('')}</tr>`;
+    })
     .join('');
   const sections = data.codes
     .map((c) => {
@@ -139,7 +168,7 @@ export function reportHtml(data: ReportData): string {
         ? c.quotes.map((q) => `<blockquote>${e(q.text)}<cite>${e(q.source)}</cite></blockquote>`).join('')
         : '<p class="muted">No coded segments yet.</p>';
       const h = c.depth === 0 ? 'h3' : 'h4';
-      return `<section><${h}><span class="sw" style="background:${e(c.code.color)}"></span>${e(c.path)}</${h}><p class="meta">${c.segments} segment${c.segments === 1 ? '' : 's'} in ${c.docs} source${c.docs === 1 ? '' : 's'} (${c.pctDocs.toFixed(1)}%)</p>${defs}${quotes}</section>`;
+      return `<section><${h}><span class="sw" style="background:${e(c.code.color)}"></span>${e(c.path)}</${h}><p class="meta">${e(reportCodeMeta(data, c))}</p>${defs}${quotes}</section>`;
     })
     .join('\n');
   return `<!doctype html>
@@ -158,8 +187,37 @@ cite{display:block;font-style:normal;font-size:12px;color:#5d6878;margin-top:4px
 <h1>${e(data.title)}</h1>
 <p class="meta">${e(summary)}. Generated ${e(data.generated)} with Socius.</p>
 <h2>Code frequencies</h2>
-<table><thead><tr><th>Code</th><th class="n">Segments</th><th class="n">Sources</th><th class="n">% of sources</th></tr></thead><tbody>${codeRows}</tbody></table>
+<table><thead><tr>${fh.map((h, i) => `<th${i ? ' class="n"' : ''}>${e(h)}</th>`).join('')}</tr></thead><tbody>${codeRows}</tbody></table>
 <h2>Codebook with example quotes</h2>
 ${sections}
 </body></html>`;
+}
+
+/** The report's code frequency table as text cells: separate columns for documents and responses. */
+export function reportFrequencyTable(data: ReportData): { header: string[]; rows: string[][] } {
+  const header = ['Code', 'Segments'];
+  if (data.nDocuments) header.push(`Documents (of ${data.nDocuments})`);
+  if (data.nResponses) header.push(`Responses (of ${data.nResponses})`);
+  const rows = data.codes.map((c) => {
+    const r = [c.code.name, String(c.segments)];
+    if (data.nDocuments) r.push(countWithSub(c.documents, c.documentsInclSub));
+    if (data.nResponses) r.push(countWithSub(c.responses, c.responsesInclSub, c.pctResponses, c.pctResponsesInclSub));
+    return r;
+  });
+  return { header, rows };
+}
+
+/** "4 segments in 2 of 3 documents and 40 of 630 responses (6.3%)", mentioning sub-codes for themes. */
+export function reportCodeMeta(data: ReportData, c: ReportData['codes'][number]): string {
+  const parts: string[] = [];
+  if (data.nDocuments) parts.push(`${c.documents} of ${data.nDocuments} document${data.nDocuments === 1 ? '' : 's'}`);
+  if (data.nResponses) parts.push(`${c.responses} of ${data.nResponses} response${data.nResponses === 1 ? '' : 's'} (${c.pctResponses.toFixed(1)}%)`);
+  let t = `${c.segments} segment${c.segments === 1 ? '' : 's'} in ${parts.join(' and ') || 'no sources'}`;
+  if (c.hasChildren && (c.documentsInclSub !== c.documents || c.responsesInclSub !== c.responses)) {
+    const sub: string[] = [];
+    if (data.nDocuments) sub.push(`${c.documentsInclSub} document${c.documentsInclSub === 1 ? '' : 's'}`);
+    if (data.nResponses) sub.push(`${c.responsesInclSub} response${c.responsesInclSub === 1 ? '' : 's'} (${c.pctResponsesInclSub.toFixed(1)}%)`);
+    t += `; with its sub-codes ${sub.join(' and ')}`;
+  }
+  return t;
 }

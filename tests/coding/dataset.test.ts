@@ -62,6 +62,24 @@ describe('export codes to dataset', () => {
     expect(work.variable).toMatchObject({ label: 'Work', measure: 'nominal', type: 'numeric', decimals: 0 });
     expect(work.variable.valueLabels).toEqual([{ value: 0, label: 'Not mentioned' }, { value: 1, label: 'Mentioned' }]);
   });
+  it('adds a theme variable that is 1 when the theme or any sub-code applies, without double counting', () => {
+    const ds = dataset();
+    const { docs } = buildResponseDocs(ds, 'v_ans', [], null, []);
+    const codes: CodeDef[] = [
+      { id: 't', name: 'Infrastructure', description: '', color: '#000', parentId: null, createdAt: 0 },
+      { id: 'w', name: 'Water', description: '', color: '#000', parentId: 't', createdAt: 0 },
+      { id: 'f', name: 'Flooding', description: '', color: '#000', parentId: 't', createdAt: 0 },
+    ];
+    const seg = (d: number, codeId: string): CodedSegment => ({ id: `${d}${codeId}`, docId: docs[d].id, codeId, start: 0, end: docs[d].text.length, coder: 'A', origin: 'manual', createdAt: 0 });
+    const out = buildCodeVariables(ds, codes, docs, [seg(0, 'w'), seg(2, 'w'), seg(2, 'f')], ['t', 'w', 'f'], { countVariable: true, members: { t: ['t', 'w', 'f'] } });
+    const [theme, water, flood, count] = out.plans;
+    expect(theme.variable.label).toBe('Infrastructure (theme, incl. sub-codes)');
+    expect(Array.from(theme.column)).toEqual([1, NaN, 0, 1, NaN]);
+    expect(theme.nMentioned).toBe(2);
+    expect(Array.from(water.column)).toEqual([1, NaN, 0, 1, NaN]);
+    expect(Array.from(flood.column)).toEqual([0, NaN, 0, 1, NaN]);
+    expect(Array.from(count.column)).toEqual([1, NaN, 0, 2, NaN]);
+  });
   it('skips responses whose case no longer matches', () => {
     const ds = dataset();
     const { docs } = buildResponseDocs(ds, 'v_ans', [], null, []);

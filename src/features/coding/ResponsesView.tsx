@@ -73,6 +73,16 @@ export function ResponsesView() {
     if (focus >= rows.length) setFocus(Math.max(0, rows.length - 1));
   }, [rows.length, focus]);
 
+  // A new search or filter starts at the top of the list (coding inside a filter does not).
+  const filterKey = `${question}\u0000${search}\u0000${codeFilter}\u0000${attrKey}\u0000${attrVal}`;
+  const lastFilter = useRef(filterKey);
+  useEffect(() => {
+    if (lastFilter.current === filterKey) return;
+    lastFilter.current = filterKey;
+    setFocus(0);
+    virt.scrollToOffset(0);
+  }, [filterKey, virt]);
+
   const move = (to: number) => {
     const i = Math.max(0, Math.min(rows.length - 1, to));
     setFocus(i);
@@ -193,7 +203,21 @@ export function ResponsesView() {
             })}
           </select>
         ) : null}
-        <input className="input input-sm cw-resp-search" placeholder="Search responses" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search responses" />
+        <input
+          className="input input-sm cw-resp-search"
+          placeholder="Search responses"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter or Down goes from the search box to the list, ready for number keys.
+            if ((e.key === 'Enter' || e.key === 'ArrowDown') && rows.length) {
+              e.preventDefault();
+              scrollRef.current?.focus();
+            }
+          }}
+          aria-label="Search responses (Enter to go to the list)"
+          title="Enter or Down arrow moves to the list"
+        />
         <select className="select input-sm" value={codeFilter} onChange={(e) => setCodeFilter(e.target.value)} aria-label="Filter by code">
           <option value="">All responses</option>
           <option value="__uncoded">Not coded yet</option>

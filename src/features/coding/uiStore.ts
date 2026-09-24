@@ -45,6 +45,8 @@ interface CodingUiState {
   docAttr: { key: string; value: string } | null;
   /** Keyword-in-context search term. */
   kwicQuery: string;
+  /** Sources analysed in the Analyse view: 'all', 'document', 'response' or 'q:<varId>' (one question). */
+  analyseSources: string;
   set: (patch: Partial<CodingUiState>) => void;
 }
 
@@ -65,6 +67,7 @@ export const useCodingUi = create<CodingUiState>((set) => ({
   docFilter: 'all',
   docAttr: null,
   kwicQuery: '',
+  analyseSources: 'all',
   set: (patch) => set(patch),
 }));
 
