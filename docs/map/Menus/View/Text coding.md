@@ -21,6 +21,8 @@ area: app
 ## Tested by
 - [[ai-features.spec.ts]] · menu label
 - [[ai.spec.ts]] · menu label
+- [[coding-output-fixes.spec.ts]] · menu label
+- [[commands-smoke-app.spec.ts]] · menu label
 - [[data.spec.ts]] · menu label
 - [[qual.spec.ts]] · menu label
 - [[search.spec.ts]] · menu label

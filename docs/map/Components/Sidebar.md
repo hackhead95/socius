@@ -2,34 +2,33 @@
 id: "src/app/Sidebar.tsx#Sidebar"
 type: component
 file: src/app/Sidebar.tsx
-line: 9
+line: 10
 area: app
 ---
 
 # <Sidebar>
 
-*React component* · defined in [[Sidebar.tsx]] (line 9) · area [[Areas/app|app]]
+*React component* · defined in [[Sidebar.tsx]] (line 10) · area [[Areas/app|app]]
 
 - **Exported:** yes
 
 ## Calls
+- [[useNarrow|useNarrow()]]
 - [[useStore]]
 - [[useUi]]
 
 ## Renders
 - [[Icon|<Icon>]]
-- [[VarMeasureIcon|<VarMeasureIcon>]]
+- [[VariableDrawer|<VariableDrawer>]]
+- [[VariableList|<VariableList>]]
 
 ## Reads
 - [[dataset|useStore.dataset]] · selector
-- [[useStore/tab|useStore.tab]] · selector
-- [[currentVarId|useUi.currentVarId]] · selector
+- [[drawerOpen|useUi.drawerOpen]] · selector
 - [[sidebarOpen|useUi.sidebarOpen]] · selector
 
 ## Calls store actions
-- [[setTab()|useStore.setTab()]] · selector
-- [[focusGrid()|useUi.focusGrid()]] · selector
-- [[focusVariableView()|useUi.focusVariableView()]] · selector
+- [[setDrawerOpen()|useUi.setDrawerOpen()]] · selector
 - [[setSidebarOpen()|useUi.setSidebarOpen()]] · selector
 
 ## Rendered by

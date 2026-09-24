@@ -2,13 +2,13 @@
 id: "store-key:useUi.cleanDataset"
 type: store-key
 file: src/app/ui-store.ts
-line: 34
+line: 40
 area: app
 ---
 
 # useUi.cleanDataset
 
-*Store state key* · defined in [[ui-store.ts]] (line 34) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 40) · area [[Areas/app|app]]
 
 > Dataset object as last opened/saved; anything else counts as modified.
 

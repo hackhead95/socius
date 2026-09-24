@@ -34,7 +34,7 @@ export function applyProposal(p: Proposal, store: () => StoreApi): ApplyResult {
   }
   const res = built.result;
   const name = st.dataset.name;
-  st.mutateDataset(() => res.dataset);
+  st.mutateDataset(() => res.dataset, { label: `Assistant: ${transformName(p.spec, built.target)}` });
   st.addOutput(transformLogItem(res, name), { focus: false });
   st.toast(`${res.summary} Undo with Edit > Undo.`, 'success');
   for (const w of res.warnings.slice(0, 3)) st.toast(w, 'warning');
@@ -48,4 +48,20 @@ export function addToOutput(item: OutputItem, store: () => Pick<AppState, 'addOu
   const copy: OutputItem = existing ? { ...item, id: `${item.id}_${Date.now().toString(36)}`, createdAt: Date.now() } : { ...item, createdAt: Date.now() };
   st.addOutput(copy, { focus });
   return copy.id;
+}
+
+/** The menu words for a proposed transform, for Edit > Undo ("Undo Assistant: Compute variable trust_mean"). */
+function transformName(spec: Extract<Proposal, { kind: 'transform' }>['spec'], target: string): string {
+  switch (spec.kind) {
+    case 'compute':
+      return `Compute variable ${target}`.trim();
+    case 'recode':
+      return `Recode into different variables ${target}`.trim();
+    case 'reverse':
+      return 'Reverse-code items';
+    case 'scale':
+      return `Create scale ${target}`.trim();
+    default:
+      return 'Transform';
+  }
 }

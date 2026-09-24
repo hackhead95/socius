@@ -6,22 +6,22 @@ area: features/ai
 
 # Area: features/ai
 
-12 files, 2025 lines.
+14 files, 2434 lines.
 
 ## Depends on (module imports)
-- [[platform]]: 24
-- [[core]]: 8
+- [[platform]]: 29
+- [[core]]: 9
+- [[features - project|features/project]]: 3
+- [[ui]]: 3
 - [[features - assistant|features/assistant]]: 2
 - [[features - coding|features/coding]]: 2
 - [[features - output|features/output]]: 2
-- [[ui]]: 2
 - [[Areas/app|app]]: 1
 - [[features - charts|features/charts]]: 1
-- [[features - project|features/project]]: 1
 
 ## Used by areas
 - [[features - coding|features/coding]]: 10
-- [[Areas/app|app]]: 5
+- [[Areas/app|app]]: 6
 - [[features - output|features/output]]: 4
 - [[features - assistant|features/assistant]]: 2
 
@@ -37,13 +37,15 @@ area: features/ai
 - [[features.ts]]: The AI features offered app-wide (AI menu, the AI chip in the top bar, the "AI is ready. Try it" panel, the search palette): what each does,…
 - [[ai/hooks.ts]]: React bindings for the AI provider layer (src/platform/ai.ts) and the AI settings dialog.
 - [[LocalSetup.tsx]]: AI assistant settings > Other service, when the address is a program on this computer (Ollama, LM Studio, or another local OpenAI-compatible…
+- [[StorageBanner.tsx]]: One banner when autosave is paused because browser storage is full (see persistence.ts), with the two ways out: free space (Browser storage,…
+- [[StorageManager.tsx]]: Browser storage: what Socius keeps in this browser (downloaded on-device AI models, projects and autosave, the error log and settings), how …
 - [[WebLlmSetup.tsx]]: AI assistant settings > On this computer: whether this browser can run the on-device model (and exactly why not), the model choice, and the …
 
 ## Components
-[[AiChip|<AiChip>]] · [[AiErrorDetails|<AiErrorDetails>]] · [[AiLoadProgress|<AiLoadProgress>]] · [[AiPrereqDialog|<AiPrereqDialog>]] · [[AiPrivacyNotice|<AiPrivacyNotice>]] · [[AiProviderNote|<AiProviderNote>]] · [[AiSettingsDialog|<AiSettingsDialog>]] · [[AiSettingsHost|<AiSettingsHost>]] · [[AiSetupButton|<AiSetupButton>]] · [[AiText|<AiText>]] · [[ConnectionChecklist|<ConnectionChecklist>]] · [[CopyLine|<CopyLine>]] · [[ExplainPanel|<ExplainPanel>]] · [[ExplainPickDialog|<ExplainPickDialog>]] · [[FeatureButtons|<FeatureButtons>]] · [[FixList|<FixList>]] · [[GeminiSection|<GeminiSection>]] · [[KeyField|<KeyField>]] · [[LocalSetup|<LocalSetup>]] · [[OllamaOriginsFix|<OllamaOriginsFix>]] · [[OpenAiSection|<OpenAiSection>]] · [[ReadyPanel|<ReadyPanel>]] · [[StepIcon|<StepIcon>]] · [[StepRow|<StepRow>]] · [[WebLlmSetup|<WebLlmSetup>]]
+[[AiActivityLine|<AiActivityLine>]] · [[AiChip|<AiChip>]] · [[AiErrorDetails|<AiErrorDetails>]] · [[AiLoadProgress|<AiLoadProgress>]] · [[AiPrereqDialog|<AiPrereqDialog>]] · [[AiPrivacyNotice|<AiPrivacyNotice>]] · [[AiProviderNote|<AiProviderNote>]] · [[AiSettingsDialog|<AiSettingsDialog>]] · [[AiSettingsHost|<AiSettingsHost>]] · [[AiSetupButton|<AiSetupButton>]] · [[AiText|<AiText>]] · [[ConnectionChecklist|<ConnectionChecklist>]] · [[CopyLine|<CopyLine>]] · [[ExplainPanel|<ExplainPanel>]] · [[ExplainPickDialog|<ExplainPickDialog>]] · [[FeatureButtons|<FeatureButtons>]] · [[FixList|<FixList>]] · [[GeminiSection|<GeminiSection>]] · [[KeyField|<KeyField>]] · [[LocalSetup|<LocalSetup>]] · [[OllamaOriginsFix|<OllamaOriginsFix>]] · [[OpenAiSection|<OpenAiSection>]] · [[ReadyPanel|<ReadyPanel>]] · [[RememberKey|<RememberKey>]] · [[StepIcon|<StepIcon>]] · [[StepRow|<StepRow>]] · [[StorageDialogHost|<StorageDialogHost>]] · [[StorageFullBanner|<StorageFullBanner>]] · [[StorageManager|<StorageManager>]] · [[WebLlmSetup|<WebLlmSetup>]]
 
 ## Hooks
-[[useAiStatus|useAiStatus()]] · [[useWebLlmState|useWebLlmState()]]
+[[useAiActivity|useAiActivity()]] · [[useAiStatus|useAiStatus()]] · [[useAutosaveState|useAutosaveState()]] · [[useWebLlmState|useWebLlmState()]]
 
 ## Stores
-[[useAiSettingsDialog]] · [[useExplain]]
+[[useAiSettingsDialog]] · [[useExplain]] · [[useStorageDialog]]

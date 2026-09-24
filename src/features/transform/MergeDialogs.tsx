@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useStore } from '../../core/store';
 import type { Dataset } from '../../core/types';
 import { importFile } from '../../lib/io';
-import { addCases, addVariables, aggregate, AGG_FUNCTIONS, pairVariables, type AggFunction, type AggItem } from '../../lib/transform';
+import { addCases, addVariables, aggNeedsSource, aggregate, AGG_FUNCTIONS, pairVariables, STRING_AGG_FUNCTIONS, type AggFunction, type AggItem } from '../../lib/transform';
 import { useUi } from '../../app/ui-store';
 import { DATA_ACCEPT, pickFile } from '../project/fileActions';
 import { VarPicker } from '../../ui/VarPicker';
@@ -55,7 +55,7 @@ export function MergeCasesDialog({ ds, onClose }: { ds: Dataset; onClose: () => 
   const run = () =>
     tryRun(() => {
       if (!other) throw new Error('Choose the file whose cases you want to add.');
-      applyTransform(addCases(ds, other.ds, { keepUnpaired, sourceVar: indicator ? indName : undefined, otherName: other.name }));
+      applyTransform(addCases(ds, other.ds, { keepUnpaired, sourceVar: indicator ? indName : undefined, otherName: other.name }), 'Merge files: add cases');
       onClose();
     }, setError);
   return (
@@ -127,7 +127,7 @@ export function MergeVariablesDialog({ ds, onClose }: { ds: Dataset; onClose: ()
         mode === 'order'
           ? addVariables(ds, other.ds, { mode: 'order', otherName: other.name })
           : addVariables(ds, other.ds, { mode: 'key', key: keyName, lookup, keepUnmatchedOther: lookup ? false : keepOther, otherName: other.name });
-      applyTransform(res);
+      applyTransform(res, 'Merge files: add variables');
       onClose();
     }, setError);
   return (
@@ -172,8 +172,9 @@ export function AggregateDialog({ ds, onClose }: { ds: Dataset; onClose: () => v
   const [error, setError] = useState<string | null>(null);
   const add = () => {
     const v = ds.variables.find((x) => x.id === src);
-    const needsSrc = fn !== 'n' && fn !== 'nu';
+    const needsSrc = aggNeedsSource(fn);
     if (needsSrc && !v) return setError('Choose a variable to summarise.');
+    if (needsSrc && v!.type === 'string' && !STRING_AGG_FUNCTIONS.includes(fn)) return setError(`${v!.name} is a text variable. For text, choose First value, Last value, Minimum, Maximum, Number of valid values or Number of missing values.`);
     const base = needsSrc ? `${v!.name}_${fn}` : fn === 'n' ? 'N_BREAK' : 'NU_BREAK';
     let name = base;
     for (let i = 1; items.some((it) => it.name === name) || ds.variables.some((x) => x.name.toLowerCase() === name.toLowerCase()); i++) name = `${base}_${i}`;
@@ -195,9 +196,9 @@ export function AggregateDialog({ ds, onClose }: { ds: Dataset; onClose: () => v
         confirmLabel: 'Replace',
       });
       if (!ok) return;
-      applyTransform({ ...res, dataset: res.newDataset });
+      applyTransform({ ...res, dataset: res.newDataset }, 'Aggregate');
       useStore.getState().setTab('data');
-    } else applyTransform(res);
+    } else applyTransform(res, 'Aggregate');
     onClose();
   };
   return (
@@ -214,7 +215,7 @@ export function AggregateDialog({ ds, onClose }: { ds: Dataset; onClose: () => v
             <select className="select" value={fn} onChange={(e) => setFn(e.target.value as AggFunction)} aria-label="Function">
               {AGG_FUNCTIONS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
             </select>
-            {fn !== 'n' && fn !== 'nu' ? <div style={{ flex: '1 1 160px', minWidth: 0 }}><VarSelect ds={ds} value={src} onChange={setSrc} label="Variable to summarise" /></div> : null}
+            {aggNeedsSource(fn) ? <div style={{ flex: '1 1 160px', minWidth: 0 }}><VarSelect ds={ds} value={src} onChange={setSrc} label="Variable to summarise" filter={STRING_AGG_FUNCTIONS.includes(fn) ? undefined : (v) => v.type === 'numeric'} /></div> : null}
             <button type="button" className="btn" onClick={add}><Icon name="plus" size={14} /> Add</button>
           </div>
           <div className="rule-list">

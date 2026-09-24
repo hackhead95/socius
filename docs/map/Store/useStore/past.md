@@ -2,13 +2,13 @@
 id: "store-key:useStore.past"
 type: store-key
 file: src/core/store.ts
-line: 79
+line: 81
 area: core
 ---
 
 # useStore.past
 
-*Store state key* · defined in [[store.ts]] (line 79) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 81) · area [[core]]
 
 > Undo/redo stacks of previous dataset states.
 
@@ -30,6 +30,7 @@ area: core
 - [[fileActions.ts#startFresh|startFresh()]] · setState
 - [[navigation-audit.test.tsx]] · setState
 - [[shell-fixes.test.ts]] · setState
+- [[data-fixes.test.ts]] · setState
 - [[mutateDataset()|useStore.mutateDataset()]]
 - [[redo()|useStore.redo()]]
 - [[setDataset()|useStore.setDataset()]]

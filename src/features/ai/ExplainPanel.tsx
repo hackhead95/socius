@@ -6,7 +6,7 @@ import { aiPromptBudget } from '../../platform/ai';
 import { copyToClipboard } from '../../platform/host';
 import { useStore } from '../../core/store';
 import { openAssistant } from '../assistant/open';
-import { AiErrorDetails, AiLoadProgress, AiProviderNote, SET_UP_AI } from './AiBits';
+import { AiActivityLine, AiErrorDetails, AiLoadProgress, AiProviderNote, SET_UP_AI } from './AiBits';
 import { AiText } from './AiText';
 import { buildExplainPrompt, byteLength, plainText } from './explainPrompt';
 import { useExplain } from './explainStore';
@@ -75,8 +75,8 @@ export function ExplainPanel({ item }: { item: OutputItem }) {
         <div className="stack ai-explain-body" aria-live="polite" aria-busy={panel.phase === 'running'}>
           {panel.phase === 'running' && !panel.text ? (
             <>
-              <AiLoadProgress onCancel={() => ex.stop(item.id)} />
-              <p className="help">Reading the result…</p>
+              <AiLoadProgress onCancel={() => ex.stop(item.id)} activity={false} />
+              <p className="help ai-explain-wait"><AiActivityLine op="explain" fallback="Reading the result…" /></p>
             </>
           ) : null}
           {panel.text ? <AiText text={panel.text} className="ai-explain-text" /> : null}

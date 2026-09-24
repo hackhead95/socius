@@ -6,12 +6,17 @@
 // - gemini  : Google Gemini with the user's own free key from Google AI Studio.
 // - openai  : any OpenAI-compatible chat service (Groq, OpenRouter, a local Ollama / LM Studio...).
 //
-// Settings, including keys, live only in this browser's localStorage (never in project files or
-// exports). Components follow changes through subscribeAi / getAiStatus.
+// Settings live only in this browser (never in project files or exports). API keys are kept in memory
+// and in this tab's sessionStorage (gone when the tab closes) unless the user ticks "Remember this key
+// on this computer", which keeps them in localStorage. Every GitHub Pages site on hackhead95.github.io
+// shares one browser origin, so a remembered key could be read by the other sites there. Components
+// follow changes through subscribeAi / getAiStatus.
 
 import { AiUnavailableError, askClaude, askClaudeJson, claudeGlobal, claudeSampleAvailable } from './claude';
-import { askGemini, askOpenAiCompatible, geminiModelName, geminiPreference, lastResolvedGeminiModel, normaliseBaseUrl, sanitizeApiKey } from './ai-http';
-import { logError } from './errorlog';
+import { askGemini, askOpenAiCompatible, geminiModelName, geminiPreference, keyHash, lastResolvedGeminiModel, normaliseBaseUrl, sanitizeApiKey } from './ai-http';
+import { logError, logWarn } from './errorlog';
+import { startAiTiming, type AiTiming } from './ai-timing';
+import type { ThinkingEffort } from './ai-http';
 import {
   DEFAULT_WEBLLM_MODEL, WEBLLM_IN_BUILD, WEBLLM_MAX_TOKENS, WEBLLM_PROMPT_BUDGET_BYTES, askWebLlm, detectWebGpu, isWebLlmCached, webLlmChoice, type WebGpuStatus,
 } from './ai-webllm';
@@ -27,11 +32,19 @@ export interface AiSettings {
   gemini: { apiKey: string; model: string };
   openai: { preset: OpenAiPreset; baseUrl: string; apiKey: string; model: string };
   webllm: { model: string };
+  /** Keep the key in localStorage ("Remember this key on this computer"). Off: this tab only. */
+  remember: { gemini: boolean; openai: boolean };
+  /** A one-time note for AI settings: 'flash-to-lite' when a saved Flash preference was changed to Flash-Lite. */
+  notice: string | null;
 }
 
+/** Version of the stored settings (2: keys remembered only on request; Flash-Lite is the automatic default). */
+export const AI_SETTINGS_VERSION = 2;
+
 /**
- * Empty = choose automatically, favouring the newest Flash-Lite model the key can use (more free
- * requests per day); 'auto-flash' = automatic, favouring Flash for single requests. See ai-http.
+ * Empty = choose automatically, favouring the newest Flash-Lite model the key can use (fastest, many
+ * more free requests); 'auto-flash' = automatic, favouring Flash (slower, about 5 requests a minute on
+ * the free tier). Settings saved before version 2 with 'auto-flash' become Flash-Lite. See ai-http.
  */
 export const DEFAULT_GEMINI_MODEL = '';
 export const GEMINI_AUTO_FLASH = 'auto-flash';
@@ -96,17 +109,38 @@ export const DEFAULT_SETTINGS: AiSettings = {
   gemini: { apiKey: '', model: DEFAULT_GEMINI_MODEL },
   openai: { preset: 'groq', baseUrl: OPENAI_PRESETS.groq.baseUrl, apiKey: '', model: OPENAI_PRESETS.groq.model },
   webllm: { model: DEFAULT_WEBLLM_MODEL },
+  remember: { gemini: false, openai: false },
+  notice: null,
 };
 
-// ---------- settings persistence (localStorage only) ----------
+// ---------- settings persistence ----------
 
 export const AI_SETTINGS_KEY = 'socius.ai';
+/** Keys that are not remembered: this tab only (sessionStorage). */
+export const AI_SESSION_KEYS = 'socius.ai.keys';
 
 function storage(): Storage | null {
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;
   } catch {
     return null;
+  }
+}
+
+function sessionStore(): Storage | null {
+  try {
+    return typeof sessionStorage !== 'undefined' ? sessionStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function readSessionKeys(): { gemini: string; openai: string } {
+  try {
+    const o = sessionStore() ? JSON.parse(sessionStorage.getItem(AI_SESSION_KEYS) ?? 'null') : null;
+    return { gemini: str(o?.gemini, ''), openai: str(o?.openai, '') };
+  } catch {
+    return { gemini: '', openai: '' };
   }
 }
 
@@ -122,16 +156,43 @@ export function parseAiSettings(raw: string | null): AiSettings {
   }
   if (!o || typeof o !== 'object') return structuredClone(DEFAULT_SETTINGS);
   const preset: OpenAiPreset = o.openai?.preset in OPENAI_PRESETS ? o.openai.preset : DEFAULT_SETTINGS.openai.preset;
+  const version = typeof o.v === 'number' ? o.v : 1;
+  let model = str(o.gemini?.model, DEFAULT_GEMINI_MODEL).trim();
+  let notice: string | null = typeof o.notice === 'string' ? o.notice : null;
+  if (OLD_DEFAULT_GEMINI_MODELS.has(model)) model = DEFAULT_GEMINI_MODEL;
+  // Before version 2, "Automatic: Flash" was offered as the better choice. Flash is much slower and has
+  // about 5 free requests a minute, so it becomes Flash-Lite, with a one-time note in AI settings.
+  // (Choosing Flash again after this change is kept.)
+  if (version < 2 && /^auto-flash$/i.test(model)) {
+    model = DEFAULT_GEMINI_MODEL;
+    notice = 'flash-to-lite';
+  }
+  const geminiKey = str(o.gemini?.apiKey, '');
+  const openaiKey = str(o.openai?.apiKey, '');
+  // Keys saved by earlier versions (always in localStorage) count as remembered, so nothing breaks.
+  const rem = (which: 'gemini' | 'openai', key: string) => (typeof o.remember?.[which] === 'boolean' ? o.remember[which] : !!key);
   return {
     provider: PROVIDERS.includes(o.provider) ? o.provider : null,
-    gemini: { apiKey: str(o.gemini?.apiKey, ''), model: OLD_DEFAULT_GEMINI_MODELS.has(str(o.gemini?.model, '').trim()) ? DEFAULT_GEMINI_MODEL : str(o.gemini?.model, DEFAULT_GEMINI_MODEL).trim() },
+    gemini: { apiKey: geminiKey, model },
     openai: {
       preset,
       baseUrl: str(o.openai?.baseUrl, OPENAI_PRESETS[preset].baseUrl),
-      apiKey: str(o.openai?.apiKey, ''),
+      apiKey: openaiKey,
       model: str(o.openai?.model, OPENAI_PRESETS[preset].model),
     },
     webllm: { model: webLlmChoice(str(o.webllm?.model, DEFAULT_WEBLLM_MODEL)).id },
+    remember: { gemini: rem('gemini', geminiKey), openai: rem('openai', openaiKey) },
+    notice,
+  };
+}
+
+/** What goes into localStorage: the settings, with keys only where the user asked to remember them. */
+export function storedAiSettings(s: AiSettings): Record<string, unknown> {
+  return {
+    v: AI_SETTINGS_VERSION,
+    ...s,
+    gemini: { ...s.gemini, apiKey: s.remember.gemini ? s.gemini.apiKey : '' },
+    openai: { ...s.openai, apiKey: s.remember.openai ? s.openai.apiKey : '' },
   };
 }
 
@@ -144,7 +205,28 @@ export function loadAiSettings(): AiSettings {
   } catch {
     raw = null;
   }
-  return parseAiSettings(raw);
+  const s = parseAiSettings(raw);
+  // Keys that are not remembered come from this tab's sessionStorage.
+  const tab = readSessionKeys();
+  if (!s.gemini.apiKey && tab.gemini) s.gemini.apiKey = tab.gemini;
+  if (!s.openai.apiKey && tab.openai) s.openai.apiKey = tab.openai;
+  return s;
+}
+
+function persistSettings(s: AiSettings): void {
+  try {
+    storage()?.setItem(AI_SETTINGS_KEY, JSON.stringify(storedAiSettings(s)));
+  } catch {
+    /* storage unavailable: settings last for this visit only */
+  }
+  try {
+    if (sessionStore()) {
+      if (s.gemini.apiKey || s.openai.apiKey) sessionStorage.setItem(AI_SESSION_KEYS, JSON.stringify({ gemini: s.gemini.apiKey, openai: s.openai.apiKey }));
+      else sessionStorage.removeItem(AI_SESSION_KEYS);
+    }
+  } catch {
+    /* kept in memory for this visit */
+  }
 }
 
 export function getAiSettings(): AiSettings {
@@ -171,25 +253,33 @@ export function saveAiSettings(patch: Partial<AiSettings>): AiSettings {
     gemini: { ...settings.gemini, ...(patch.gemini ?? {}) },
     openai: { ...settings.openai, ...(patch.openai ?? {}) },
     webllm: { ...settings.webllm, ...(patch.webllm ?? {}) },
+    remember: { ...settings.remember, ...(patch.remember ?? {}) },
   };
-  try {
-    storage()?.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    /* storage unavailable: settings last for this visit only */
-  }
+  persistSettings(settings);
   notifySettings();
   void refreshAiStatus();
   return settings;
 }
 
-/** Remove a stored key from this browser. */
+/** Remove a stored key from this browser (localStorage and this tab). */
 export function forgetAiKey(which: 'gemini' | 'openai'): AiSettings {
   return saveAiSettings(which === 'gemini' ? { gemini: { ...settings.gemini, apiKey: '' } } : { openai: { ...settings.openai, apiKey: '' } });
+}
+
+/** "Remember this key on this computer": keep it in localStorage (true) or in this tab only (false). */
+export function setRememberKey(which: 'gemini' | 'openai', remember: boolean): AiSettings {
+  return saveAiSettings({ remember: { ...settings.remember, [which]: remember } });
+}
+
+/** Clear the one-time note shown in AI settings. */
+export function dismissAiNotice(): AiSettings {
+  return saveAiSettings({ notice: null });
 }
 
 /** Test hook: re-read settings from storage and reset the status. */
 export function __reloadAiSettings(): void {
   settings = loadAiSettings();
+  lastCheck = readCheck();
   status = initialStatus();
 }
 
@@ -294,11 +384,122 @@ export interface AiStatus {
   /** On-device only: WebGPU check and whether the model is already downloaded. */
   webgpu?: WebGpuStatus;
   modelCached?: boolean;
+  /**
+   * The last Test connection or AI request with this exact set-up (provider, key, model): 'untested'
+   * (none yet), 'ok' (the AI answered) or 'failed' (see connectionError). "ready" above only means the
+   * set-up is complete enough to try.
+   */
+  connection: AiConnection;
+  /** Plain-language reason of the last failure. */
+  connectionError?: string;
 }
+
+export type AiConnection = 'untested' | 'ok' | 'failed';
 
 function initialStatus(): AiStatus {
   const p = effectiveProvider();
-  return { provider: p, ready: p ? 'unknown' : 'no', label: providerLabel(p), privacy: providerPrivacy(p) };
+  return { provider: p, ready: p ? 'unknown' : 'no', label: providerLabel(p), privacy: providerPrivacy(p), ...connectionOf(p, settings) };
+}
+
+// ---------- the last connection result, per set-up ----------
+
+export const AI_CHECK_KEY = 'socius.ai.check';
+
+/** A fingerprint of the set-up (keys only as a hash): a new key or model means "not tested yet". */
+export function setupSignature(p: AiProviderId | null, s: AiSettings = settings): string {
+  switch (p) {
+    case 'gemini':
+      return `gemini|${keyHash(sanitizeApiKey(s.gemini.apiKey))}|${s.gemini.model}`;
+    case 'openai':
+      return `openai|${normaliseBaseUrl(s.openai.baseUrl)}|${s.openai.model}|${keyHash(sanitizeApiKey(s.openai.apiKey))}`;
+    case 'webllm':
+      return `webllm|${s.webllm.model}`;
+    case 'claude':
+      return 'claude';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Codes that point to a problem in Socius itself (a request Google's service did not understand): these
+ * are errors in Help > Error log. Everything else (a wrong key, no connection, a rate limit, a busy
+ * service...) is an expected, user-side problem, logged as a warning (no red dot on the Help menu).
+ */
+const APP_FAULT_CODES = new Set(['bad_request', 'endpoint_missing', 'field_unsupported', 'thinking_unsupported', 'malformed_call']);
+
+/** Is this AI error a fault in the app (rather than the key, the network, a limit...)? */
+export function aiErrorIsAppFault(e: unknown): boolean {
+  const code = (e as { code?: unknown } | null)?.code;
+  if (typeof code !== 'string') return true;
+  if (APP_FAULT_CODES.has(code)) return true;
+  // An unexplained failure (for example an HTTP 500 from the service) is kept as an error, to be looked at.
+  return code === 'unavailable';
+}
+
+/** Log an AI error at the right level (see aiErrorIsAppFault). Returns the error. */
+export function logAiError<T>(e: T, context: Parameters<typeof logError>[2] = {}): T {
+  if (aiErrorIsAppFault(e)) return logError('ai', e, context);
+  logWarn('ai', e, context);
+  return e;
+}
+
+/** Error codes that mean the AI could not be reached or used with this set-up (not a busy service or a bad prompt). */
+const CONNECTION_FAILURES = new Set([
+  'not_configured', 'invalid_key', 'key_not_accepted', 'referrer_blocked', 'key_restricted', 'api_disabled', 'key_suspended', 'bad_key_format', 'region', 'network', 'offline',
+  'local_forbidden', 'local_unreachable', 'no_free_quota', 'permission', 'bad_model', 'payment_required', 'endpoint_missing', 'timeout', 'webgpu_unavailable', 'model_download_failed',
+  'model_storage_full', 'webgpu_out_of_memory', 'not_granted',
+]);
+
+interface CheckRecord {
+  sig: string;
+  state: 'ok' | 'failed';
+  code?: string;
+  at: number;
+}
+
+function readCheck(): CheckRecord | null {
+  try {
+    const o = JSON.parse(storage()?.getItem(AI_CHECK_KEY) ?? 'null');
+    return o && typeof o.sig === 'string' && (o.state === 'ok' || o.state === 'failed') ? o : null;
+  } catch {
+    return null;
+  }
+}
+
+let lastCheck: CheckRecord | null = readCheck();
+
+function connectionOf(p: AiProviderId | null, s: AiSettings): Pick<AiStatus, 'connection' | 'connectionError'> {
+  if (p === 'claude') return { connection: 'ok' };
+  const sig = setupSignature(p, s);
+  if (!p || !lastCheck || lastCheck.sig !== sig) return { connection: 'untested' };
+  return lastCheck.state === 'ok' ? { connection: 'ok' } : { connection: 'failed', connectionError: aiErrorMessage(lastCheck.code ?? 'unavailable') };
+}
+
+/**
+ * Remember how the last Test connection or AI request went with the current set-up. Errors that do
+ * not say anything about the connection (Stop, a busy service, a too long prompt, a rate limit, which
+ * means the key works) are ignored or count as connected.
+ */
+export function recordAiConnection(ok: boolean, error?: { code?: string } | null, s: AiSettings = settings): void {
+  const p = effectiveProvider(s);
+  if (!p) return;
+  const code = error?.code;
+  if (!ok && (!code || code === 'cancelled')) return;
+  let state: 'ok' | 'failed' = ok ? 'ok' : 'failed';
+  if (!ok && !CONNECTION_FAILURES.has(code!)) {
+    if (code === 'rate_limited') state = 'ok';
+    else return;
+  }
+  const rec: CheckRecord = { sig: setupSignature(p, s), state, code: state === 'failed' ? code : undefined, at: Date.now() };
+  if (lastCheck?.sig === rec.sig && lastCheck.state === rec.state && lastCheck.code === rec.code) return;
+  lastCheck = rec;
+  try {
+    storage()?.setItem(AI_CHECK_KEY, JSON.stringify(rec));
+  } catch {
+    /* kept for this visit */
+  }
+  setStatus({ ...status, ...connectionOf(status.provider, settings) });
 }
 
 let status: AiStatus = initialStatus();
@@ -324,8 +525,8 @@ export async function refreshAiStatus(): Promise<AiStatus> {
   const seq = ++refreshSeq;
   const s = settings;
   const p = effectiveProvider(s);
-  const base = { provider: p, label: providerLabel(p, s), privacy: providerPrivacy(p, s) };
-  if (status.provider !== p || status.label !== base.label) setStatus({ ...base, ready: p ? 'unknown' : 'no' });
+  const base = { provider: p, label: providerLabel(p, s), privacy: providerPrivacy(p, s), ...connectionOf(p, s) };
+  if (status.provider !== p || status.label !== base.label || status.connection !== base.connection) setStatus({ ...base, ready: p ? 'unknown' : 'no' });
   const ok = await providerReady(p, s);
   const extra: Partial<AiStatus> = {};
   if (p === 'webllm') {
@@ -366,6 +567,12 @@ export interface AiAskOptions {
   /** Claude only: model size. */
   modelTier?: 'quick' | 'default' | 'complex';
   maxTokens?: number;
+  /** Timing for the progress line and the error log; one is started (and finished) here when not given. */
+  timing?: AiTiming;
+  /** What this request is for, in the timing log ("explain", "summarise"...). */
+  op?: string;
+  /** Gemini thinking effort (default 'auto': minimal on Flash-Lite, low on Flash). */
+  effort?: ThinkingEffort;
 }
 
 /** Remove "thinking" blocks some models emit (<think>...</think>), including an unfinished one while streaming. */
@@ -386,40 +593,72 @@ function wrapError(e: any, signal?: AbortSignal): AiUnavailableError {
 export async function askAI(prompt: string, opts: AiAskOptions = {}): Promise<string> {
   const s = settings;
   const p = effectiveProvider(s);
-  const onText = opts.onText ? (t: string) => opts.onText!(stripThinking(t)) : undefined;
+  const own = !opts.timing;
+  const timing = opts.timing ?? startAiTiming(opts.op ?? (opts.json ? 'ask-json' : 'ask'), p ?? undefined);
+  if (!timing.provider) timing.provider = p ?? undefined;
+  const onText = opts.onText
+    ? (t: string) => {
+        const shown = stripThinking(t);
+        if (shown) timing.firstText();
+        opts.onText!(shown);
+      }
+    : undefined;
   try {
-    switch (p) {
-      case 'claude':
-        return await askClaude(prompt, { onText: opts.onText, signal: opts.signal, modelTier: opts.modelTier });
-      case 'gemini':
-        return await askGemini({ apiKey: s.gemini.apiKey, model: s.gemini.model }, prompt, {
-          onText,
-          signal: opts.signal,
-          json: opts.json,
-          maxTokens: opts.maxTokens,
-          // JSON requests are batches (coding suggestions): keep to Flash-Lite's larger free allowance.
-          prefer: opts.json ? 'lite' : geminiPreference(s.gemini.model),
-          // The saved model was retired or mistyped and another answered: switch the setting to automatic.
-          // (Not for a busy or rate-limited model: that one may work again later.)
-          onModelFallback: (_model, reason) => {
-            if (reason === 'bad_model') saveAiSettings({ gemini: { ...settings.gemini, model: DEFAULT_GEMINI_MODEL } });
-          },
-        });
-      case 'openai':
-        try {
-          return stripThinking(await askOpenAiCompatible({ baseUrl: s.openai.baseUrl, apiKey: s.openai.apiKey, model: s.openai.model }, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens }));
-        } catch (e) {
-          // A program on this computer: point to the guided check instead of "check your internet".
-          if (e instanceof AiUnavailableError && e.code === 'network' && isLocalUrl(s.openai.baseUrl) && !opts.signal?.aborted) throw new AiUnavailableError('local_unreachable', e.message, e.detail);
-          throw e;
-        }
-      case 'webllm':
-        return stripThinking(await askWebLlm(s.webllm.model, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens ?? WEBLLM_MAX_TOKENS }));
-      default:
-        throw new AiUnavailableError('not_configured', 'AI help is not set up.');
-    }
+    const text = await askProvider(p, s, prompt, opts, onText, timing);
+    if (own) timing.finish(true);
+    recordAiConnection(true, null, s);
+    return text;
   } catch (e) {
-    throw logError('ai', wrapError(e, opts.signal), { op: 'ask' });
+    const err = wrapError(e, opts.signal);
+    if (own) timing.finish(false, err);
+    recordAiConnection(false, err, s);
+    logAiError(err, { op: opts.op ?? 'ask' });
+    throw err;
+  }
+}
+
+async function askProvider(p: AiProviderId | null, s: AiSettings, prompt: string, opts: AiAskOptions, onText: ((t: string) => void) | undefined, timing: AiTiming): Promise<string> {
+  if (p !== 'gemini') timing.setStage(p === 'webllm' ? 'loading' : 'waiting');
+  switch (p) {
+    case 'claude':
+      return await askClaude(prompt, {
+        onText: opts.onText
+          ? (t: string) => {
+              if (t) timing.firstText();
+              opts.onText!(t);
+            }
+          : undefined,
+        signal: opts.signal,
+        modelTier: opts.modelTier,
+      });
+    case 'gemini':
+      return await askGemini({ apiKey: s.gemini.apiKey, model: s.gemini.model }, prompt, {
+        onText,
+        signal: opts.signal,
+        json: opts.json,
+        maxTokens: opts.maxTokens,
+        timing,
+        effort: opts.effort ?? 'auto',
+        // JSON requests are batches (coding suggestions): keep to Flash-Lite's larger free allowance.
+        prefer: opts.json ? 'lite' : geminiPreference(s.gemini.model),
+        // The saved model was retired or mistyped and another answered: switch the setting to automatic.
+        // (Not for a busy or rate-limited model: that one may work again later.)
+        onModelFallback: (_model, reason) => {
+          if (reason === 'bad_model') saveAiSettings({ gemini: { ...settings.gemini, model: DEFAULT_GEMINI_MODEL } });
+        },
+      });
+    case 'openai':
+      try {
+        return stripThinking(await askOpenAiCompatible({ baseUrl: s.openai.baseUrl, apiKey: s.openai.apiKey, model: s.openai.model }, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens, timing }));
+      } catch (e) {
+        // A program on this computer: point to the guided check instead of "check your internet".
+        if (e instanceof AiUnavailableError && e.code === 'network' && isLocalUrl(s.openai.baseUrl) && !opts.signal?.aborted) throw new AiUnavailableError('local_unreachable', e.message, e.detail);
+        throw e;
+      }
+    case 'webllm':
+      return stripThinking(await askWebLlm(s.webllm.model, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens ?? WEBLLM_MAX_TOKENS }));
+    default:
+      throw new AiUnavailableError('not_configured', 'AI help is not set up.');
   }
 }
 
@@ -464,7 +703,7 @@ export async function askAIJson<T = unknown>(prompt: string, opts: AiAskOptions 
     try {
       return await askClaudeJson<T>(prompt, { signal: opts.signal, modelTier: opts.modelTier });
     } catch (e) {
-      throw logError('ai', wrapError(e, opts.signal), { op: 'ask-json' });
+      throw logAiError(wrapError(e, opts.signal), { op: 'ask-json' });
     }
   }
   const text = await askAI(prompt, { ...opts, json: true });
@@ -473,8 +712,8 @@ export async function askAIJson<T = unknown>(prompt: string, opts: AiAskOptions 
 }
 
 /** Send a tiny prompt to check the setup. Resolves to the reply; rejects AiError. */
-export async function testAiConnection(signal?: AbortSignal): Promise<string> {
-  const reply = await askAI('Reply with the single word OK.', { signal, modelTier: 'quick', maxTokens: effectiveProvider() === 'webllm' ? 16 : undefined });
+export async function testAiConnection(signal?: AbortSignal, timing?: AiTiming): Promise<string> {
+  const reply = await askAI('Reply with the single word OK.', { signal, modelTier: 'quick', maxTokens: effectiveProvider() === 'webllm' ? 16 : undefined, effort: 'minimal', op: 'test-connection', timing });
   return reply.trim();
 }
 

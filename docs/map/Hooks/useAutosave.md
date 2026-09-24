@@ -2,18 +2,19 @@
 id: "src/app/App.tsx#useAutosave"
 type: hook
 file: src/app/App.tsx
-line: 59
+line: 61
 area: app
 ---
 
 # useAutosave()
 
-*React hook* · defined in [[App.tsx]] (line 59) · area [[Areas/app|app]]
+*React hook* · defined in [[App.tsx]] (line 61) · area [[Areas/app|app]]
 
 ## Calls
 - [[fileActions.ts#currentProjectState|currentProjectState()]]
 - [[fileActions.ts#isModified|isModified()]]
 - [[persistence.ts#saveSession|saveSession()]]
+- [[update.ts#setBeforeReload|setBeforeReload()]]
 
 ## Uses
 - [[useStore]]

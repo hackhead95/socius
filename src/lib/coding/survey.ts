@@ -3,7 +3,7 @@
 import type { TextDoc } from '../../core/coding-types';
 import type { Dataset } from '../../core/types';
 import { newId } from '../../core/types';
-import { formatCell, isMissingValue, varDisplayName } from '../../core/data';
+import { formatCell, isMissingValue } from '../../core/data';
 
 export interface ResponseImport {
   docs: TextDoc[];
@@ -62,7 +62,3 @@ export function attrName(v: { name: string }): string {
   return v.name;
 }
 
-export function questionLabel(ds: Dataset, varId: string): string {
-  const v = ds.variables.find((x) => x.id === varId);
-  return v ? varDisplayName(v, 'both') : '';
-}

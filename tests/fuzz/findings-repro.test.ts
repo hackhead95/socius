@@ -173,11 +173,24 @@ describe('open fuzz findings (minimal reproductions)', () => {
     expect(back.variables[0].valueLabels).toHaveLength(2);
   });
 
-  finding('FZ-18', 'CSV round trip keeps the text "NA" in a string column', async () => {
-    const s = makeVariable({ name: 'code', type: 'string', width: 4 });
+  // Resolved as "intended, with warning": CSV has no dictionary, so numeric-looking text becomes
+  // numbers and "NA" system-missing (the R convention), the warning names the column and says what
+  // changed, and "Keep as text" (textColumns) brings the text back exactly. Socius-written Excel files
+  // keep text columns as text (their Variables sheet is authoritative).
+  finding('FZ-18', 'CSV import converts "NA" with a warning naming the column; Keep as text and XLSX keep the text', async () => {
+    const s = makeVariable({ name: 'code', type: 'string', width: 4, valueLabels: [{ value: 'NA', label: 'Not asked' }], missing: { discrete: ['NA'] } });
     const d = ds([[s, ['1', '2', 'NA', '3']]]);
-    const back = (await importFile('rt.csv', new TextEncoder().encode(exportCsv(d)))).dataset;
-    expect(Array.from(back.columns[back.variables[0].id] as ArrayLike<unknown>).map(String)).toEqual(['1', '2', 'NA', '3']);
+    const csv = new TextEncoder().encode(exportCsv(d));
+    const conv = await importFile('rt.csv', csv);
+    expect(Array.from(conv.dataset.columns[conv.dataset.variables[0].id] as ArrayLike<number>)).toEqual([1, 2, NaN, 3]);
+    expect(conv.warnings.join('\n')).toMatch(/Read as numbers: code \("NA" became system-missing in 1 case\)/);
+    const kept = (await importFile('rt.csv', csv, { textColumns: [0] })).dataset;
+    expect(kept.columns[kept.variables[0].id]).toEqual(['1', '2', 'NA', '3']);
+    const x = (await importFile('rt.xlsx', new Uint8Array(await (await exportXlsx(d)).arrayBuffer()))).dataset;
+    expect(x.variables[0].type).toBe('string');
+    expect(x.columns[x.variables[0].id]).toEqual(['1', '2', 'NA', '3']);
+    expect(x.variables[0].valueLabels).toEqual([{ value: 'NA', label: 'Not asked' }]);
+    expect(x.variables[0].missing.discrete).toEqual(['NA']);
   });
 
   finding('FZ-19', 'Aggregate does not suggest Minimum/Maximum for a string variable and then refuse them', () => {

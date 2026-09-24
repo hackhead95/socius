@@ -12,4 +12,4 @@ area: shortcuts
 - **Scope:** local
 
 ## Bound in
-- [[MenuButton (features-coding-ui)|<MenuButton>]]
+- [[MenuButton|<MenuButton>]]

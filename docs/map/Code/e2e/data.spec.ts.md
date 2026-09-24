@@ -7,13 +7,14 @@ area: e2e
 
 # e2e/data.spec.ts
 
-*End-to-end spec* · area [[e2e]] · 243 lines
+*End-to-end spec* · area [[e2e]] · 260 lines
 
 > Data management end to end: opening messy real-world files, Data View editing, transforms, round trips, session restore, the Artifact sandbox and small screens.
 
 ## Test cases
   - unsupported files get a friendly message instead of opening as garbage
   - messy CSV: NA words become missing and comma numbers are explained
+  - CSV import preview: Keep as text keeps a column exactly as written (FZ-18)
   - opens a .sav inside a zip (how the Artifact viewer saves SPSS files)
   - an SPSS file without an encoding record can be re-read with another encoding
   - typing long text widens a string variable instead of cutting it

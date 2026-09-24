@@ -2,13 +2,13 @@
 id: "store-action:useUi.setPaletteOpen"
 type: store-action
 file: src/app/ui-store.ts
-line: 61
+line: 67
 area: app
 ---
 
 # useUi.setPaletteOpen()
 
-*Store action* · defined in [[ui-store.ts]] (line 61) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 67) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

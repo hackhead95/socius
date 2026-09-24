@@ -37,7 +37,13 @@ area: procedures
 - [[core/data.ts#varDisplayName|varDisplayName()]]
 
 ## Uses
+- [[procedures/text.ts#allFinite|allFinite()]] · procedure helper
 - [[stats.ts#boxStats|boxStats()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
+- [[procedures/text.ts#labelOf|labelOf()]] · procedure helper
+- [[procedures/text.ts#nonEmpty|nonEmpty()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[stats.ts#tukeyHinges|tukeyHinges()]] · procedure helper
 - [[core/common.ts#vprose|vprose()]] · procedure helper
 - [[stats.ts#wMoments|wMoments()]] · procedure helper
@@ -45,6 +51,7 @@ area: procedures
 
 ## Tested by
 - [[graphs.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 
 ## Generates SPSS syntax

@@ -232,11 +232,31 @@ describe('CSV and XLSX round trips', () => {
       let text = '';
       try {
         text = exportCsv(ds, { delimiter, bom: rng.bool() });
-        const back = (await importFile(delimiter === '\t' ? 'rt.tsv' : 'rt.csv', new TextEncoder().encode(text), { delimiter })).dataset;
+        const fileName = delimiter === '\t' ? 'rt.tsv' : 'rt.csv';
         // Values only (CSV has no dictionary); dates come back as dates, so skip date formats.
         const plain = { ...ds, variables: ds.variables.filter((v) => !/DATE|TIME|DOLLAR|COMMA|PCT/i.test(v.format)) };
-        for (const d of diffDatasets(plain, back, { dictionary: false, strict: false }).slice(0, 3))
-          fail('csv-roundtrip', 'roundtrip', `delimiter ${JSON.stringify(delimiter)}: ${d}`, seed, reproFor(ds, `await importFile('rt.csv', new TextEncoder().encode(exportCsv(ds, { delimiter: ${JSON.stringify(delimiter)} })))`));
+        // FZ-18 (intended, with warning): by default numeric-looking text columns become numbers and
+        // "NA" becomes system-missing, and the import warning must name every column whose text changed.
+        const res = await importFile(fileName, new TextEncoder().encode(text), { delimiter });
+        const warned = res.warnings.join('\n');
+        for (const d of diffDatasets(plain, res.dataset, { dictionary: false, strict: false }).slice(0, 3)) {
+          const name = /^(\S+) row \d+: /.exec(d)?.[1];
+          const src = ds.variables.find((v) => v.name === name);
+          const converted = src?.type === 'string' && res.dataset.variables.find((v) => v.name === name)?.type === 'numeric';
+          // Named in the warning (or, past the first columns, counted in its "and N more" and reported in res.columns).
+          const reported = warned.includes(`${name} (`) || (/Read as numbers: .* more\./.test(warned) && !!res.columns?.find((c) => c.name === name)?.missingWords.length);
+          if (converted && /Read as numbers: /.test(warned) && reported) continue;
+          fail('csv-roundtrip', converted ? 'silent-conversion' : 'roundtrip', `delimiter ${JSON.stringify(delimiter)}: ${d}`, seed, reproFor(ds, `await importFile('rt.csv', new TextEncoder().encode(exportCsv(ds, { delimiter: ${JSON.stringify(delimiter)} })))`));
+        }
+        // With "Keep as text" for the string columns, the text comes back exactly.
+        const textColumns = ds.variables.flatMap((v, j) => (v.type === 'string' ? [j] : []));
+        const kept = (await importFile(fileName, new TextEncoder().encode(text), { delimiter, textColumns })).dataset;
+        for (const d of diffDatasets(plain, kept, { dictionary: false, strict: false }).slice(0, 3))
+          fail('csv-roundtrip', 'roundtrip', `keep as text, delimiter ${JSON.stringify(delimiter)}: ${d}`, seed, reproFor(ds, `await importFile('rt.csv', new TextEncoder().encode(exportCsv(ds, { delimiter: ${JSON.stringify(delimiter)} })), { textColumns: ${JSON.stringify(textColumns)} })`));
+        for (const j of textColumns) {
+          const v = kept.variables[j];
+          if (v && v.type !== 'string') fail('csv-roundtrip', 'keep-as-text', `${v.name} was read as ${v.type} although "Keep as text" was asked`, seed);
+        }
       } catch (e) {
         fail('csv-roundtrip', 'throw', `${(e as Error)?.name}: ${(e as Error)?.message?.slice(0, 160)}`, seed, reproFor(ds, `exportCsv(ds) -> importFile`));
       }

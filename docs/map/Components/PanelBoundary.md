@@ -2,13 +2,13 @@
 id: "src/app/ErrorBoundary.tsx#PanelBoundary"
 type: component
 file: src/app/ErrorBoundary.tsx
-line: 104
+line: 103
 area: app
 ---
 
 # <PanelBoundary>
 
-*React component* · defined in [[ErrorBoundary.tsx]] (line 104) · area [[Areas/app|app]]
+*React component* · defined in [[ErrorBoundary.tsx]] (line 103) · area [[Areas/app|app]]
 
 - **Exported:** yes
 

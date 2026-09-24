@@ -2,13 +2,13 @@
 id: "store-key:useUi.home"
 type: store-key
 file: src/app/ui-store.ts
-line: 66
+line: 72
 area: app
 ---
 
 # useUi.home
 
-*Store state key* · defined in [[ui-store.ts]] (line 66) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 72) · area [[Areas/app|app]]
 
 > The start screen (welcome, recent projects) is showing over open work: the Socius logo shows it.
 

@@ -7,7 +7,7 @@ area: tests
 
 # tests/fuzz/lib/invariants.ts
 
-*Test helper* · area [[tests]] · 279 lines
+*Test helper* · area [[tests]] · 278 lines
 
 > Invariant checks shared by the fuzz suites. Each returns a list of problems (empty = fine).
 
@@ -23,6 +23,8 @@ area: tests
 - [[ai-matrix.fuzz.test.ts]] · value
 - [[io.fuzz.test.ts]] · value
 - [[proc-harness.ts]] · value
+- [[procedures-perf.fuzz.test.ts]] · value
+- [[procedures-text.fuzz.test.ts]] · value
 - [[procedures.fuzz.test.ts]] · value
 - [[transforms-expr.fuzz.test.ts]] · value
 - [[transforms-ops.fuzz.test.ts]] · value
@@ -34,7 +36,7 @@ area: tests
 - [[output/format.ts]] · import
 
 ## Types
-OutputCheckOptions (line 141)
+OutputCheckOptions (line 140)
 
 ## Private helpers
 BAD_TEXT (line 27)
@@ -56,46 +58,48 @@ BAD_TEXT (line 27)
 *function* · line 48 · exported
 > A thrown value must be an Error with a plain-English message.
 - Calls: [[invariants.ts#badWords|badWords()]]
-- Used in: [[io.fuzz.test.ts]], [[proc-harness.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
+- Used in: [[io.fuzz.test.ts]], [[proc-harness.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
 
 ### jsonProblems
 *function* · line 60 · exported
 > Walk a value: only plain JSON (objects, arrays, strings, booleans, null, numbers). NaN only allowed at Cell.v.
 
 ### tableShapeProblems
-*function* · line 101 · exported
+*function* · line 100 · exported
 > Row widths (with col/row spans) of header and body must all match.
 - Calls: [[output/format.ts#layoutRows|layoutRows()]]
+- Used in: [[procedures-text.fuzz.test.ts]]
 
 ### allStrings
-*function* · line 126 · exported
+*function* · line 125 · exported
 > Every string in the item: titles, cells, text, footnotes, chart labels, syntax, caseNote.
 
 ### tables
-*function* · line 133 · exported
+*function* · line 132 · exported
+- Used in: [[procedures-text.fuzz.test.ts]]
 
 ### hasSignificance
-*function* · line 137 · exported
+*function* · line 136 · exported
 - Calls: [[invariants.ts#tables|tables()]]
 
 ### outputProblems
-*function* · line 147 · exported
+*function* · line 146 · exported
 > All invariants on a produced OutputItem.
 - Calls: [[exportText.ts#itemToText|itemToText()]], [[invariants.ts#allStrings|allStrings()]], [[invariants.ts#badWords|badWords()]], [[invariants.ts#chartProblems|chartProblems()]], [[invariants.ts#hasSignificance|hasSignificance()]], [[invariants.ts#jsonProblems|jsonProblems()]], [[invariants.ts#percentProblems|percentProblems()]], [[invariants.ts#tableShapeProblems|tableShapeProblems()]], [[invariants.ts#tables|tables()]]
 - Used in: [[proc-harness.ts]]
 
 ### tableNumbers
-*function* · line 199 · exported
+*function* · line 198 · exported
 > Numeric content of all tables, as a flat list (for metamorphic comparisons).
 - Calls: [[invariants.ts#tables|tables()]]
 
 ### compareTables
-*function* · line 209 · exported
+*function* · line 208 · exported
 > Compare two outputs' table cells; returns the first mismatch description or null.
 - Calls: [[invariants.ts#tables|tables()]]
 - Used in: [[proc-harness.ts]]
 
 ### percentProblems
-*function* · line 237 · exported
+*function* · line 236 · exported
 > Percentages that must add up: frequency tables (Percent / Valid Percent / Cumulative) and row % in crosstabs.
 - Calls: [[invariants.ts#tables|tables()]], [[output/format.ts#layoutRows|layoutRows()]]

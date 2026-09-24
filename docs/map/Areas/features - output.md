@@ -6,14 +6,14 @@ area: features/output
 
 # Area: features/output
 
-11 files, 1842 lines.
+11 files, 1837 lines.
 
 ## Depends on (module imports)
-- [[core]]: 11
+- [[core]]: 15
 - [[features - ai|features/ai]]: 4
 - [[features - charts|features/charts]]: 4
+- [[Areas/app|app]]: 3
 - [[platform]]: 3
-- [[Areas/app|app]]: 2
 - [[procedures]]: 1
 - [[ui]]: 1
 
@@ -41,7 +41,7 @@ area: features/output
 [[BlockView|<BlockView>]] · [[ChartBlock|<ChartBlock>]] · [[EmptyState|<EmptyState>]] · [[ExplainButton|<ExplainButton>]] · [[ExportMenu|<ExportMenu>]] · [[IconArrowLeft|<IconArrowLeft>]] · [[IconArrowRight|<IconArrowRight>]] · [[IconChart|<IconChart>]] · [[IconChevron|<IconChevron>]] · [[IconCopy|<IconCopy>]] · [[IconDown|<IconDown>]] · [[IconDownload|<IconDownload>]] · [[IconOutline|<IconOutline>]] · [[IconSearch|<IconSearch>]] · [[IconTable|<IconTable>]] · [[IconText|<IconText>]] · [[IconTrash|<IconTrash>]] · [[IconUp|<IconUp>]] · [[IconWarn|<IconWarn>]] · [[IconX|<IconX>]] · [[OutputItemView|<OutputItemView>]] · [[OutputTableView|<OutputTableView>]] · [[OutputViewer|<OutputViewer>]] · [[Svg|<Svg>]] · [[SyntaxView|<SyntaxView>]]
 
 ## Hooks
-[[useNumbering|useNumbering()]] · [[useScrollEdges|useScrollEdges()]]
+[[useNumbering|useNumbering()]] · [[useScrollEdges (features-output-OutputTableView)|useScrollEdges()]]
 
 ## Stores
 [[useOutputPrefs]]

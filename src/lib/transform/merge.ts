@@ -272,8 +272,15 @@ export function addVariables(active: Dataset, other: Dataset, opts: AddVariables
     for (let i = 0; i < n; i++) if (activeRow[i] < 0) (c as Array<number | string>)[i] = keyFill.values[k++] as never;
   }
   const newVars: Variable[] = [];
+  // Names already used (the active file, then each variable added): the second file may itself hold
+  // names that differ only in capitals (AGE and age), which would otherwise become duplicates here.
+  const taken = { ...active, variables: active.variables.slice() } as Dataset;
+  const renamed: string[] = [];
   for (const v of incoming) {
-    const nv: Variable = { ...v, id: newId('v') };
+    const clash = taken.variables.some((x) => x.name.toLowerCase() === v.name.toLowerCase());
+    const nv: Variable = { ...v, id: newId('v'), name: clash ? uniqueVarName(taken, v.name) : v.name };
+    if (clash) renamed.push(`${v.name} as ${nv.name}`);
+    taken.variables.push(nv);
     const src = other.columns[v.id];
     if (src instanceof Float64Array) {
       const c = new Float64Array(n);
@@ -286,6 +293,7 @@ export function addVariables(active: Dataset, other: Dataset, opts: AddVariables
     }
     newVars.push(nv);
   }
+  if (renamed.length) warnings.push(`Some names in the second file differ only in capitals, so they were renamed: ${renamed.slice(0, 8).join(', ')}.`);
   const next = bump(active, { variables: [...active.variables, ...newVars], columns, nCases: n });
   const fileRef = q(otherName);
   const syntax =

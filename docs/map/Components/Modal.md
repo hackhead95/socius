@@ -2,15 +2,15 @@
 id: "src/ui/Modal.tsx#Modal"
 type: component
 file: src/ui/Modal.tsx
-line: 15
+line: 113
 area: ui
 ---
 
 # <Modal>
 
-*React component* · defined in [[Modal.tsx]] (line 15) · area [[ui]]
+*React component* · defined in [[Modal.tsx]] (line 113) · area [[ui]]
 
-> Accessible modal dialog. Escape and backdrop click close it; Tab stays inside.
+> Accessible modal dialog. Escape closes it; Tab stays inside; focus goes back where it came from.
 
 - **Exported:** yes
 
@@ -42,9 +42,11 @@ area: ui
 - [[ProcedureDialog|<ProcedureDialog>]]
 - [[RecentProjectsDialog|<RecentProjectsDialog>]]
 - [[ShortcutsDialog|<ShortcutsDialog>]]
+- [[StorageDialogHost|<StorageDialogHost>]]
 - [[TransformModal|<TransformModal>]]
 - [[TypeDialog|<TypeDialog>]]
 - [[ValueLabelsDialog|<ValueLabelsDialog>]]
+- [[ui-overlays.test.tsx]]
 
 ## Binds shortcut
 - [[Escape]]

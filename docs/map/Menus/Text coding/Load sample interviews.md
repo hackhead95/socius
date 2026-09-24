@@ -26,4 +26,5 @@ area: app
 - [[qual.spec.ts]] · menu label
 - [[search.spec.ts]] · menu label
 - [[shell-fixes.spec.ts]] · menu label
+- [[menu-knowledge.test.ts]] · menu label
 - [[shell-fixes.test.ts]] · menu label

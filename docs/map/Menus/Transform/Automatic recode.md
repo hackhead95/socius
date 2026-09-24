@@ -21,3 +21,7 @@ area: app
 
 ## Part of
 - [[Menus/Transform|Transform]]
+
+## Tested by
+- [[transform-dialogs.spec.ts]] · menu label
+- [[dialog-transforms.test.ts]] · menu label

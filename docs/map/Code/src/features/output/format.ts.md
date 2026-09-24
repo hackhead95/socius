@@ -15,9 +15,11 @@ area: features/output
 - [[output.ts]] · type-only
 
 ## Tested by
+- [[findings-repro.test.ts]] · import
 - [[invariants.ts]] · import
 - [[procedures-oracle.fuzz.test.ts]] · import
 - [[format.test.ts]] · import
+- [[fuzz-fixes.test.ts]] · import
 
 ## Imported by
 - [[explainPrompt.ts]] · value
@@ -31,9 +33,11 @@ area: features/output
 - [[tableRender.ts]] · value
 - [[viewPrefs.ts]] · type-only
 - [[graphs/index.ts]] · value
+- [[findings-repro.test.ts]] · value
 - [[invariants.ts]] · value
 - [[procedures-oracle.fuzz.test.ts]] · value
 - [[format.test.ts]] · value
+- [[fuzz-fixes.test.ts]] · value
 
 ## Types
 TableStyle (line 20) · FormatContext (line 22) · FormattedCell (line 85) · GridCell (line 113)
@@ -75,7 +79,7 @@ group() (line 28) · dropLeadingZero() (line 34) · PERCENT_HEADER (line 151)
 ### layoutRows
 *function* · line 125 · exported
 > Lay out rows of cells with colSpan/rowSpan onto absolute column positions (like an HTML table does), so exporters and the percent-column rule know which column every cell sits in.
-- Used in: [[explainPrompt.ts]], [[OutputTableView.tsx]], [[exportDocx.ts]], [[exportXlsx.ts]], [[tableRender.ts]], [[invariants.ts]], [[procedures-oracle.fuzz.test.ts]], [[format.test.ts]]
+- Used in: [[explainPrompt.ts]], [[OutputTableView.tsx]], [[exportDocx.ts]], [[exportXlsx.ts]], [[tableRender.ts]], [[findings-repro.test.ts]], [[invariants.ts]], [[procedures-oracle.fuzz.test.ts]], [[format.test.ts]], [[fuzz-fixes.test.ts]]
 
 ### percentColumns
 *function* · line 158 · exported

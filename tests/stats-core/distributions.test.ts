@@ -139,4 +139,24 @@ describe('studentized range', () => {
     // Table value: q(0.95; 3, 20) = 3.577935
     expect(D.studentizedRangePpf(0.95, 3, 20)).toBeCloseTo(3.577935, 5);
   });
+  // Fractional df (Games-Howell uses Welch df) and tail probabilities; scipy.stats.studentized_range.
+  it('matches scipy for fractional df, both tails and extreme quantiles', () => {
+    const cdf: number[][] = [[3.1, 7, 812.37, 0.6991115917307594], [4.2, 7, 23.61, 0.9163570591381844], [2.2, 4, 3.3, 0.49843041457747445], [5.5, 12, 57.9, 0.9872842084149045], [1.1, 30, 140.2, 1.3960319541424078e-10], [6.0, 3, 1.7, 0.8839616270650728]];
+    for (const [q, k, df, want] of cdf) {
+      expect(Math.abs(D.studentizedRangeCdf(q, k, df) - want)).toBeLessThan(1e-10);
+      if (want < 1e-6) expectRel(D.studentizedRangeCdf(q, k, df), want, 1e-7, `ptukey lower tail q=${q}`);
+    }
+    const ppf: number[][] = [[0.95, 7, 812.37, 4.180051901757618], [0.95, 7, 23.61, 4.547749266797237], [0.99, 4, 3.3, 10.961106921255494], [0.5, 12, 57.9, 3.2281344994675973], [0.01, 5, 10.0, 0.6399457964636658], [0.9999, 3, 40.0, 6.596122605085589]];
+    for (const [p, k, df, want] of ppf) expectRel(D.studentizedRangePpf(p, k, df), want, 1e-8, `qtukey(${p}, ${k}, ${df})`);
+  });
+  it('k = 2 upper tail keeps relative accuracy far out (t distribution identity)', () => {
+    for (const [q, df] of [[20, 200], [30, 1000.5], [15, 4.2]]) expectRel(D.studentizedRangeSf(q, 2, df), D.twoSidedP('t', q / Math.SQRT2, df), 1e-9, `ptukey sf k=2 q=${q} df=${df}`);
+  });
+  it('is fast enough for Games-Howell: 50 quantiles and 200 p-values with fractional df in well under a second', () => {
+    D.studentizedRangeSf(3, 7, 50); // build the k = 7 table
+    const t0 = performance.now();
+    for (let i = 0; i < 50; i++) D.studentizedRangePpf(0.95, 7, 5 + i * 13.7);
+    for (let i = 0; i < 200; i++) D.studentizedRangeSf(1 + i * 0.03, 7, 3.5 + i * 4.1);
+    expect(performance.now() - t0).toBeLessThan(1000);
+  });
 });

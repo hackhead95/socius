@@ -26,7 +26,7 @@ area: features/coding
 
 ## Renders
 - [[ConfirmDialog|<ConfirmDialog>]]
-- [[MenuButton (features-coding-ui)|<MenuButton>]]
+- [[MenuButton|<MenuButton>]]
 
 ## Reads
 - [[activeDocId|useCodingUi.activeDocId]] · hook (destructured)

@@ -58,9 +58,18 @@ test('floating button, Ctrl+J, starters, set-up prompt and privacy line without 
   await expect(fab).toBeVisible();
   await fab.click();
   await expect(panel.getByRole('listitem').first()).toHaveText('Describe my dataset');
-  // Without AI, a question explains how to set it up.
+  // Without AI, a question is not posted (no failed answer with a Retry that can only fail): it stays
+  // in the box, and the panel explains how to set AI up.
   await panel.getByRole('listitem').first().click();
-  await expect(panel.getByTestId('assistant-message')).toContainText('AI help is not set up yet');
+  await expect(panel.getByTestId('assistant-needs-setup')).toContainText('AI help is not set up yet');
+  await expect(panel.getByTestId('assistant-message')).toHaveCount(0);
+  await expect(panel.getByLabel('Message to the assistant')).toHaveValue('Describe my dataset');
+  await panel.getByLabel('Message to the assistant').fill('Which test for trust by gender?');
+  await page.keyboard.press('Enter');
+  await expect(panel.getByTestId('assistant-message')).toHaveCount(0);
+  await expect(panel.getByLabel('Message to the assistant')).toHaveValue('Which test for trust by gender?');
+  await panel.getByTestId('assistant-needs-setup').getByRole('button', { name: 'Set up AI' }).click();
+  await expect(page.getByRole('dialog', { name: 'AI assistant' })).toBeVisible();
 });
 
 test('Gemini function calling: tools run on the live data, results go back, Add to Output', async ({ page }) => {
@@ -87,7 +96,8 @@ test('Gemini function calling: tools run on the live data, results go back, Add 
   await expect(msg.locator('table.as-table')).toContainText('29.3%');
   await expect(msg).toContainText('χ²(8, N = 630) = 35.02, p < .001');
   await msg.locator('.as-trace summary').click();
-  await expect(msg.locator('.as-trace li')).toHaveText(['Let me check.', /Looked at trust5, gender/, /Ran Crosstabs: gender by trust5/]);
+  // The dataset overview is looked up before the first request (it saves the model a round).
+  await expect(msg.locator('.as-trace li')).toHaveText([/Looked at the dataset overview/, 'Let me check.', /Looked at trust5, gender/, /Ran Crosstabs: gender by trust5/]);
   // What was sent: tools, system instruction, then both results with the model's parts replayed.
   expect(seen).toHaveLength(2);
   const first = seen[0].body;
@@ -97,6 +107,7 @@ test('Gemini function calling: tools run on the live data, results go back, Add 
   expect(first.store).toBe(false);
   expect(first.systemInstruction.parts[0].text).toContain('Never invent numbers');
   expect(first.systemInstruction.parts[0].text).toContain('individual cases OFF');
+  expect(first.systemInstruction.parts[0].text).toContain('Already looked up for this question');
   const second = seen[1].body;
   expect(second.contents[1].parts[1].thoughtSignature).toBe('sig-1');
   const responses = lastParts(second).map((p: any) => p.functionResponse.name);

@@ -2,13 +2,13 @@
 id: "store-key:useStore.tab"
 type: store-key
 file: src/core/store.ts
-line: 88
+line: 90
 area: core
 ---
 
 # useStore.tab
 
-*Store state key* · defined in [[store.ts]] (line 88) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 90) · area [[core]]
 
 - **Store:** useStore
 
@@ -16,9 +16,10 @@ area: core
 - [[Components/App|<App>]] · selector, subscribe
 - [[Components/Empty|<Empty>]] · selector
 - [[MenuBar|<MenuBar>]] · selector
-- [[Sidebar|<Sidebar>]] · selector
+- [[VariableList|<VariableList>]] · selector
 - [[fileActions.ts#activateDataset|activateDataset()]] · alias
 - [[controller.ts#appSnapshot|appSnapshot()]] · alias
+- [[menus.ts#buildMenus|buildMenus()]] · getState alias
 - [[fileActions.ts#currentProjectState|currentProjectState()]] · alias
 - [[shortcuts.ts#handleGlobalKey|handleGlobalKey()]] · alias
 - [[install.ts#installErrorLog|installErrorLog()]] · alias
@@ -28,7 +29,8 @@ area: core
 - [[palette.test.tsx]] · getState
 - [[undo.ts#undoStep|undoStep()]] · getState
 - [[useAutosave|useAutosave()]] · subscribe
-- [[useMenus|useMenus()]] · getState alias, selector
+- [[useMenus|useMenus()]] · selector
+- [[useToastPlacement|useToastPlacement()]] · selector
 - [[useUndoRedo|useUndoRedo()]] · selector
 
 ## Written by
@@ -39,6 +41,9 @@ area: core
 - [[navigation-audit.test.tsx]] · setState
 - [[palette.test.tsx]] · setState
 - [[shell-fixes.test.ts]] · setState
+- [[shortcut-precedence.test.tsx]] · setState
+- [[ui-fixes.test.tsx]] · setState
+- [[data-fixes.test.ts]] · setState
 - [[addOutput()|useStore.addOutput()]]
 - [[setTab()|useStore.setTab()]]
 

@@ -19,6 +19,8 @@ area: tests
 - [[proc-cases.ts]] · value
 - [[proc-harness.ts]] · type-only
 - [[procedures-oracle.fuzz.test.ts]] · value
+- [[procedures-perf.fuzz.test.ts]] · value
+- [[procedures-text.fuzz.test.ts]] · value
 - [[procedures.fuzz.test.ts]] · value
 - [[replay.test.ts]] · value
 - [[transforms-expr.fuzz.test.ts]] · value
@@ -36,12 +38,12 @@ hashString() (line 16)
 *function* · line 26 · exported
 > mulberry32
 - Calls: [[rng.ts]]
-- Used in: [[io.fuzz.test.ts]], [[proc-cases.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
+- Used in: [[io.fuzz.test.ts]], [[proc-cases.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
 
 ### suiteSeed
 *function* · line 59 · exported
 > Base seed for a suite: FUZZ_SEED env overrides the fixed default (so CI is reproducible).
-- Used in: [[io.fuzz.test.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[replay.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
+- Used in: [[io.fuzz.test.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures-text.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[replay.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
 
 ### fuzzScale
 *function* · line 65 · exported

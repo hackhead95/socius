@@ -6,19 +6,19 @@ area: ui
 
 # Area: ui
 
-5 files, 704 lines.
+5 files, 799 lines.
 
 ## Depends on (module imports)
 - [[core]]: 2
 
 ## Used by areas
-- [[Areas/app|app]]: 13
+- [[Areas/app|app]]: 15
 - [[features - data|features/data]]: 13
 - [[features - transform|features/transform]]: 11
 - [[features - coding|features/coding]]: 9
+- [[features - ai|features/ai]]: 3
+- [[features - errorlog|features/errorlog]]: 3
 - [[features - project|features/project]]: 3
-- [[features - ai|features/ai]]: 2
-- [[features - errorlog|features/errorlog]]: 2
 - [[features - analysis|features/analysis]]: 1
 - [[features - output|features/output]]: 1
 
@@ -30,4 +30,4 @@ area: ui
 - [[VarPicker.tsx]]: Searchable variable list used by transform dialogs and Variable View tools. Single mode: click picks one. Multiple mode: checkboxes; the val…
 
 ## Components
-[[ConfirmDialog|<ConfirmDialog>]] · [[ContextMenu|<ContextMenu>]] · [[Icon|<Icon>]] · [[MeasureIcon|<MeasureIcon>]] · [[MenuButton (ui-Menu)|<MenuButton>]] · [[MenuList|<MenuList>]] · [[Modal|<Modal>]] · [[VarMeasureIcon|<VarMeasureIcon>]] · [[VarPicker|<VarPicker>]]
+[[ConfirmDialog|<ConfirmDialog>]] · [[ContextMenu|<ContextMenu>]] · [[Icon|<Icon>]] · [[MeasureIcon|<MeasureIcon>]] · [[MenuList|<MenuList>]] · [[Modal|<Modal>]] · [[VarMeasureIcon|<VarMeasureIcon>]] · [[VarPicker|<VarPicker>]]

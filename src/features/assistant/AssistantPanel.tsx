@@ -1,9 +1,10 @@
 // The assistant panel: header (provider, what it can see, clear, close), the conversation with
 // activity traces and action cards, the composer, and the privacy line.
+import { create } from 'zustand';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from '../../core/store';
 import { openAiSettings, useAiStatus } from '../ai/hooks';
-import { AI_SETTINGS_LABEL, AiErrorDetails, SET_UP_AI } from '../ai/AiBits';
+import { AI_SETTINGS_LABEL, AiActivityLine, AiErrorDetails, SET_UP_AI } from '../ai/AiBits';
 import type { Proposal, TraceStep } from '../../lib/assistant/types';
 import { useAssistantChat, type ArtifactEntry, type ChatEntry } from './chat-store';
 import { copyAnswer, dismissArtifact, retryLast, runArtifact, sendMessage, stopAssistant, appSnapshot } from './controller';
@@ -98,7 +99,7 @@ export function AssistantPanel({ onClose }: { onClose: () => void }) {
       <div className="as-body" ref={bodyRef} onScroll={onScroll} aria-live="polite" aria-busy={running}>
         {!entries.length ? <Empty configured={configured} /> : entries.map((e, i) => <Entry key={e.id} entry={e} last={i === entries.length - 1} />)}
       </div>
-      <Composer inputRef={inputRef}>
+      <Composer inputRef={inputRef} configured={configured}>
         <p className="as-privacy" data-testid="assistant-privacy">
           {configured ? (
             <>
@@ -211,7 +212,21 @@ function Empty({ configured }: { configured: boolean }) {
       ) : null}
       <div className="as-starters" role="list" aria-label="Suggested questions">
         {prompts.map((p) => (
-          <button key={p} type="button" role="listitem" className="as-starter" onClick={() => void sendMessage(p)}>
+          <button
+            key={p}
+            type="button"
+            role="listitem"
+            className="as-starter"
+            onClick={() => {
+              // Without AI, keep the question in the box and explain the set-up instead of sending (UI-020).
+              if (!configured) {
+                useAssistantChat.getState().setDraft(p);
+                useAssistantUiNeedsSetup.setState({ show: true });
+                return;
+              }
+              void sendMessage(p);
+            }}
+          >
             {p}
           </button>
         ))}
@@ -265,6 +280,11 @@ function AssistantMessage({ entry, last }: { entry: ChatEntry; last: boolean }) 
         <div className="as-live">
           <span className="spinner" aria-hidden="true" />
           <span>{running[running.length - 1].label}...</span>
+        </div>
+      ) : null}
+      {live && last && !entry.text ? (
+        <div className="as-stage">
+          <AiActivityLine op="assistant" />
         </div>
       ) : null}
       {entry.text ? <Markdown text={entry.text} /> : live ? <Typing /> : null}
@@ -430,7 +450,11 @@ function ProposalCard({ entryId, a, p }: { entryId: string; a: ArtifactEntry; p:
   );
 }
 
-function Composer({ inputRef, children }: { inputRef: React.RefObject<HTMLTextAreaElement | null>; children?: ReactNode }) {
+/** "Set up AI first" under the composer, shown when a question is sent before AI is set up. */
+const useAssistantUiNeedsSetup = create<{ show: boolean }>(() => ({ show: false }));
+
+function Composer({ inputRef, children, configured = true }: { inputRef: React.RefObject<HTMLTextAreaElement | null>; children?: ReactNode; configured?: boolean }) {
+  const needsSetup = useAssistantUiNeedsSetup((s) => s.show) && !configured;
   const draft = useAssistantChat((s) => s.draft);
   const setDraft = useAssistantChat((s) => s.setDraft);
   const running = useAssistantChat((s) => s.running);
@@ -447,6 +471,12 @@ function Composer({ inputRef, children }: { inputRef: React.RefObject<HTMLTextAr
 
   const send = () => {
     if (!draft.trim() || running) return;
+    // Without AI the question cannot be answered: keep it and show how to set AI up (no failed message, no Retry).
+    if (!configured) {
+      useAssistantUiNeedsSetup.setState({ show: true });
+      return;
+    }
+    useAssistantUiNeedsSetup.setState({ show: false });
     void sendMessage(draft);
   };
   const placeholder = ds ? `Ask about ${ds.name}, a test, a result or how to do something...` : 'Ask how to do something in Socius...';
@@ -459,6 +489,12 @@ function Composer({ inputRef, children }: { inputRef: React.RefObject<HTMLTextAr
             <AsIcon name="close" size={12} />
           </button>
         </span>
+      ) : null}
+      {needsSetup ? (
+        <div className="callout callout-info as-needs-setup" role="alert" data-testid="assistant-needs-setup">
+          <span>AI help is not set up yet, so the assistant cannot answer. Your question stays here: set up AI, then click Send.</span>
+          <button type="button" className="btn btn-sm btn-primary" onClick={openAiSettings}>{SET_UP_AI}</button>
+        </div>
       ) : null}
       <div className="as-compose">
         <textarea

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { band, barPath, formatTick, formatValue, linear, niceTicks } from './scale';
-import { ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, fit, headerLayout, maxLabelWidth, seriesColor, type LegendItem, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, fit, useHeaderLayout, maxLabelWidth, seriesColor, type LegendItem, type SetTip } from './common';
 
 type PyramidSpec = Extract<ChartSpec, { type: 'pyramid' }>;
 
@@ -20,7 +20,7 @@ export function PyramidChart({ spec, width, setTip }: { spec: PyramidSpec; width
     { label: spec.left.name, color: seriesColor(0) },
     { label: spec.right.name, color: seriesColor(1) },
   ];
-  const head = headerLayout(spec.title, legend, width);
+  const head = useHeaderLayout(spec.title, legend, width);
   const G = spec.groups.length;
   const pct = !!spec.percent;
   let hi = 0;

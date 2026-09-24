@@ -2,23 +2,23 @@
 id: "src/features/coding/AnalyseView.tsx#Words"
 type: component
 file: src/features/coding/AnalyseView.tsx
-line: 328
+line: 352
 area: features/coding
 ---
 
 # <Words>
 
-*React component* · defined in [[AnalyseView.tsx]] (line 328) · area [[features - coding|features/coding]]
+*React component* · defined in [[AnalyseView.tsx]] (line 352) · area [[features - coding|features/coding]]
 
 ## Calls
-- [[text.ts#bigramFrequencies|bigramFrequencies()]]
+- [[coding/text.ts#bigramFrequencies|bigramFrequencies()]]
 - [[tree.ts#descendantIds|descendantIds()]]
 - [[coding/hooks.ts#plural|plural()]]
 - [[useCodingUi]]
 - [[useOrderedCodes|useOrderedCodes()]]
 - [[useStore]]
 - [[useVisibleSegments|useVisibleSegments()]]
-- [[text.ts#wordFrequencies|wordFrequencies()]]
+- [[coding/text.ts#wordFrequencies|wordFrequencies()]]
 - [[outputs.ts#wordFrequencyOutput|wordFrequencyOutput()]]
 
 ## Renders

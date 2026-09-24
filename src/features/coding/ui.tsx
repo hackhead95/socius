@@ -8,16 +8,90 @@ export interface MenuItem {
   label: string;
   onSelect: () => void;
   disabled?: boolean;
+  /** Tooltip on a disabled item saying why it is unavailable (and what to do first). */
+  disabledReason?: string;
   danger?: boolean;
   hint?: string;
   separator?: boolean;
+}
+
+export interface MenuPlacement {
+  /** Left edge of the menu relative to the trigger's left edge, in px. */
+  left: number;
+  /** Open upwards (above the trigger) because there is no room below. */
+  up: boolean;
+  /** Height limit so the menu stays on screen (it scrolls inside). */
+  maxHeight: number;
+  /** Viewport position of the menu (it is position: fixed, so no panel's overflow clips it). */
+  x: number;
+  y: number;
+}
+
+const EDGE = 8;
+const GAP = 4;
+
+/**
+ * Where to put a dropdown so it stays on screen. It prefers `prefer` alignment ('right': the menu's
+ * right edge on the trigger's right edge, as in a toolbar at the right; 'left': left edges aligned),
+ * uses the other alignment when the preferred one would cross a screen edge, and as a last resort
+ * shifts it to keep an 8 px margin. It opens above the trigger when there is not enough room below
+ * and more room above. Pure, so tests can check every case.
+ */
+export function placeMenu(
+  anchor: { left: number; right: number; top: number; bottom: number },
+  menu: { width: number; height: number },
+  viewport: { width: number; height: number },
+  prefer: 'left' | 'right' = 'right',
+): MenuPlacement {
+  const w = Math.min(menu.width, viewport.width - 2 * EDGE);
+  const rightAligned = anchor.right - w;
+  const leftAligned = anchor.left;
+  const fits = (x: number) => x >= EDGE && x + w <= viewport.width - EDGE;
+  let x = prefer === 'right' ? rightAligned : leftAligned;
+  if (!fits(x)) {
+    const other = prefer === 'right' ? leftAligned : rightAligned;
+    x = fits(other) ? other : Math.max(EDGE, Math.min(x, viewport.width - EDGE - w));
+  }
+  const below = viewport.height - anchor.bottom - GAP - EDGE;
+  const above = anchor.top - GAP - EDGE;
+  const up = menu.height > below && above > below;
+  const maxHeight = Math.floor(Math.max(120, up ? above : below));
+  const h = Math.min(menu.height, maxHeight);
+  const y = up ? anchor.top - GAP - h : anchor.bottom + GAP;
+  return { left: Math.round(x - anchor.left), up, maxHeight, x: Math.round(x), y: Math.round(Math.max(EDGE, y)) };
 }
 
 /** A button that opens a small dropdown menu (keyboard: arrows, Enter, Escape). */
 export function MenuButton(props: { label: ReactNode; items: MenuItem[]; className?: string; title?: string; align?: 'left' | 'right'; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [place, setPlace] = useState<MenuPlacement | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const prefer = props.align ?? 'right';
+  const nItems = props.items.length;
+  // Measure after render and before paint, so the menu never shows off-screen (UI-008); again when
+  // the window is resized or scrolled while it is open.
+  useLayoutEffect(() => {
+    if (!open) {
+      setPlace(null);
+      return;
+    }
+    const measure = () => {
+      const wrap = ref.current;
+      const list = listRef.current;
+      if (!wrap || !list) return;
+      const r = wrap.getBoundingClientRect();
+      setPlace(placeMenu(r, { width: list.offsetWidth, height: list.scrollHeight }, { width: window.innerWidth, height: window.innerHeight }, prefer));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [open, prefer, nItems]);
   useEffect(() => {
     if (!open) return;
     // Capture-phase pointerdown: closes on any press elsewhere (a tab, the menu bar), even where the
@@ -50,6 +124,12 @@ export function MenuButton(props: { label: ReactNode; items: MenuItem[]; classNa
       setActive(next ?? 0);
     }
   };
+  // Fixed position from the measured trigger, so a panel with overflow: hidden (the codebook, the
+  // source list) cannot clip the menu either.
+  const listStyle: React.CSSProperties = place
+    ? { position: 'fixed', left: place.x, top: place.y, right: 'auto', bottom: 'auto', maxHeight: place.maxHeight, overflowY: 'auto' }
+    : // First render: measure it where it cannot be seen or cause a scrollbar.
+      { position: 'fixed', visibility: 'hidden', left: 0, top: 0, right: 'auto', bottom: 'auto' };
   return (
     <div className="cw-menu" ref={ref} onKeyDown={onKey}>
       <button
@@ -67,7 +147,7 @@ export function MenuButton(props: { label: ReactNode; items: MenuItem[]; classNa
         <span aria-hidden className="cw-caret">▾</span>
       </button>
       {open ? (
-        <div className={`cw-menu-list ${props.align === 'left' ? 'cw-menu-left' : ''}`} role="menu">
+        <div ref={listRef} className={`cw-menu-list ${prefer === 'left' ? 'cw-menu-left' : ''}`} role="menu" style={listStyle} data-placement={place ? (place.up ? 'up' : 'down') : undefined}>
           {props.items.map((it, i) => (
             <div key={i}>
               {it.separator ? <div className="cw-menu-sep" /> : null}
@@ -75,6 +155,7 @@ export function MenuButton(props: { label: ReactNode; items: MenuItem[]; classNa
                 role="menuitem"
                 className={`cw-menu-item ${it.danger ? 'cw-danger' : ''}`}
                 disabled={it.disabled}
+                title={it.disabled ? it.disabledReason : undefined}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => {
                   setOpen(false);
@@ -90,6 +171,32 @@ export function MenuButton(props: { label: ReactNode; items: MenuItem[]; classNa
       ) : null}
     </div>
   );
+}
+
+/** Which sides of a horizontal scroller have content out of view (updates on scroll and resize). */
+export function useScrollEdges<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setEdges((p) => (p.left === left && p.right === right ? p : { left, right }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      ro?.disconnect();
+    };
+  }, []);
+  return { ref, ...edges };
 }
 
 export function Swatch({ color, size = 10 }: { color: string; size?: number }) {

@@ -2,13 +2,13 @@
 id: "store-action:useStore.redeleteOutput"
 type: store-action
 file: src/core/store.ts
-line: 125
+line: 128
 area: core
 ---
 
 # useStore.redeleteOutput()
 
-*Store action* · defined in [[store.ts]] (line 125) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 128) · area [[core]]
 
 > Delete again the result that `restoreOutput` brought back. Returns false when there is none.
 

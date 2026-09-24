@@ -16,22 +16,29 @@ area: core
 - [[core/types.ts]] · type-only
 
 ## Tested by
+- [[commands-smoke-analyze.spec.ts]] · import
 - [[scenarios.test.ts]] · import
+- [[findings-repro.test.ts]] · import
 - [[proc-cases.ts]] · import
 - [[proc-harness.ts]] · import
 - [[procedures-oracle.fuzz.test.ts]] · import
+- [[procedures-perf.fuzz.test.ts]] · import
+- [[procedures-text.fuzz.test.ts]] · import
 - [[procedures.fuzz.test.ts]] · import
 - [[dialog-ui.test.tsx]] · import
 - [[dialog.test.ts]] · import
 - [[graphs.test.ts]] · import
+- [[fuzz-fixes.test.ts]] · import
 - [[stats-core/procedures.test.ts]] · import
 - [[sample-survey.test.ts]] · import
 - [[stats-models/procedures.test.ts]] · import
 - [[separation.test.ts]] · import
 
 ## Imported by
+- [[commands-smoke-analyze.spec.ts]] · type-only
 - [[menus.ts]] · type-only
 - [[ProcedureDialog.tsx]] · type-only
+- [[runProcedure.ts]] · type-only
 - [[varUtils.ts]] · type-only, value
 - [[tools/analysis.ts]] · value
 - [[assistant/types.ts]] · type-only
@@ -54,14 +61,19 @@ area: core
 - [[nomreg.ts]] · type-only
 - [[plum.ts]] · type-only
 - [[models/reliability.ts]] · type-only
+- [[procedures/text.ts]] · type-only
 - [[scenarios.test.ts]] · value
+- [[findings-repro.test.ts]] · value
 - [[proc-cases.ts]] · type-only
 - [[proc-harness.ts]] · type-only, value
 - [[procedures-oracle.fuzz.test.ts]] · value
+- [[procedures-perf.fuzz.test.ts]] · value
+- [[procedures-text.fuzz.test.ts]] · type-only
 - [[procedures.fuzz.test.ts]] · type-only, value
 - [[dialog-ui.test.tsx]] · type-only
 - [[dialog.test.ts]] · dynamic, type-only
 - [[graphs.test.ts]] · value
+- [[fuzz-fixes.test.ts]] · value
 - [[stats-core/procedures.test.ts]] · value
 - [[sample-survey.test.ts]] · value
 - [[stats-models/procedures.test.ts]] · value
@@ -75,4 +87,4 @@ ProcedureMenu (line 7) · VarSlot (line 18) · OptionDef (line 31) · OptionValu
 ### defaultOptions
 *function* · line 67 · exported
 > Fill option defaults.
-- Used in: [[varUtils.ts]], [[tools/analysis.ts]], [[scenarios.test.ts]], [[proc-harness.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[graphs.test.ts]], [[stats-core/procedures.test.ts]], [[sample-survey.test.ts]], [[stats-models/procedures.test.ts]], [[separation.test.ts]]
+- Used in: [[varUtils.ts]], [[tools/analysis.ts]], [[scenarios.test.ts]], [[findings-repro.test.ts]], [[proc-harness.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[graphs.test.ts]], [[fuzz-fixes.test.ts]], [[stats-core/procedures.test.ts]], [[sample-survey.test.ts]], [[stats-models/procedures.test.ts]], [[separation.test.ts]]

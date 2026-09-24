@@ -9,9 +9,18 @@ area: transforms
 
 *Transform dialog* · defined in [[VarDialogs.tsx]] · area `transforms`
 
+## Calls
+- [[properties.ts#COPY_PROPS|COPY_PROPS]]
+- [[properties.ts#copyPropertiesTransform|copyPropertiesTransform()]]
+
 ## Uses
-- [[mutations.ts#COPY_PROPS|COPY_PROPS]] · dialog helper
-- [[mutations.ts#copyProperties|copyProperties()]] · dialog helper
+- [[transform/common.tsx#applyTransform|applyTransform()]] · dialog helper
+
+## Logged to Output by
+- [[transform/common.tsx#applyTransform|applyTransform()]]
+
+## Generates SPSS syntax
+- [[VARIABLE ROLE]]
 
 ## Configured in dialog
 - [[transform/copy-properties|transform: copy-properties]]

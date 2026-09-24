@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.history"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 39
+line: 44
 area: features/coding
 ---
 
 # useCodingUi.history
 
-*Store state key* · defined in [[uiStore.ts]] (line 39) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 44) · area [[features - coding|features/coding]]
 
 - **Store:** useCodingUi
 
@@ -30,6 +30,7 @@ area: features/coding
 - [[navigation-audit.test.tsx]] · setState
 - [[shell-fixes.test.ts]] · setState
 - [[actions.test.ts]] · getState.set, set()
+- [[ui-fixes.test.tsx]] · setState
 - [[coding/actions.ts#undoCoding|undoCoding()]] · alias.set, set()
 
 ## Store

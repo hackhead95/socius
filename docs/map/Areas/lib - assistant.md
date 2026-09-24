@@ -6,11 +6,11 @@ area: lib/assistant
 
 # Area: lib/assistant
 
-16 files, 2570 lines.
+16 files, 2692 lines.
 
 ## Depends on (module imports)
 - [[core]]: 19
-- [[platform]]: 8
+- [[platform]]: 10
 - [[lib - coding|lib/coding]]: 3
 - [[lib - stats|lib/stats]]: 3
 - [[features - analysis|features/analysis]]: 2
@@ -22,6 +22,8 @@ area: lib/assistant
 
 ## Used by areas
 - [[features - assistant|features/assistant]]: 9
+- [[Areas/app|app]]: 1
+- [[platform]]: 1
 
 ## Files
 - [[assistant/actions.ts]]: Applying what the assistant proposed, only ever from a user's click. Transforms go through the store's mutateDataset (so Edit > Undo reverse…
@@ -30,8 +32,8 @@ area: lib/assistant
 - [[assistant/format.ts]]: Text for the model: compact renderings of output items, numbers and variables, and size trimming.
 - [[assistant/help.ts]]: Search over the beginner's guide (docs/guide/guide.md), so "how do I ... in Socius" answers follow the real steps and menu names. The guide …
 - [[json-protocol.ts]]: A strict JSON action protocol for models without reliable native tool calling (the small on-device model, and Claude or services where page …
-- [[prompt.ts]]: The specialist: system prompt and live context. The procedure catalogue and Text coding menu are generated from the running app, so the assi…
-- [[rate-limit.ts]]: Client-side request pacing for free tiers (Google's free Gemini tier allows only a few requests a minute). Counts requests in a sliding one-…
+- [[prompt.ts]]: The specialist: system prompt and live context. The menus (every command) are generated from the running app's menu model, so the assistant'…
+- [[rate-limit.ts]]: Client-side request pacing for free tiers. Counts requests in a sliding one-minute window, per provider and key. The limit can change while …
 - [[tools/analysis.ts]]: Analysis tools: the procedure catalogue (generated from the live registry), running a real procedure on the live dataset without touching th…
 - [[coding.ts]]: Qualitative tools over the Text coding project: codebook with counts, coded segments (quotes), codes by a document attribute, and keyword-in…
 - [[tools/data.ts]]: Read-only dataset tools: overview (dictionary + data-quality flags), variable summaries, and individual cases (only when the user allows it)…

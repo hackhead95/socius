@@ -1,42 +1,38 @@
-/* Socius assistant: floating button and right-side panel (full-screen sheet on phones). Tokens only. */
+/* Socius assistant: the Assistant button in the tab bar and the right-side panel (full-screen sheet on phones). Tokens only. */
 
+/* The Assistant button is docked at the right end of the view tabs (the tab bar keeps that space
+   free), so it never sits on top of content: codebook actions, Output item buttons, grid cells. */
 .as-fab {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  top: calc(var(--tabbar-top, 0px) + (var(--tabbar-h, 36px) - 30px) / 2);
+  right: 8px;
   z-index: 95;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: var(--accent-text);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-2);
-  transition: transform 0.12s ease, background 0.12s ease;
-}
-.as-fab:hover { background: var(--accent-hover); transform: translateY(-1px); }
-.as-fab:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.as-fab-label {
-  position: absolute;
-  right: calc(100% + 10px);
-  white-space: nowrap;
-  background: var(--text);
-  color: var(--surface);
+  height: 30px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--fs-xs);
-  padding: 4px 8px;
-  border-radius: var(--r-sm);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.12s ease;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.as-fab:hover .as-fab-label, .as-fab:focus-visible .as-fab-label { opacity: 1; }
+.as-fab:hover { background: var(--accent); color: var(--accent-text); }
+.as-fab:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.as-fab svg { width: 16px; height: 16px; }
+.as-fab-label { white-space: nowrap; }
+body.as-fab-visible .tabbar { padding-right: 124px; }
 
 .as-panel {
   position: fixed;
-  top: 0;
+  /* Below the top bar and the view tabs (measured in src/app/App.tsx), so Undo, Redo, the theme,
+     the AI chip, the menus and Search stay usable while the assistant is open. */
+  top: var(--shell-top, 0px);
+  border-top: 1px solid var(--border);
   right: 0;
   bottom: 0;
   z-index: 96;
@@ -224,18 +220,27 @@
 .as-privacy b { color: var(--text-2); font-weight: 600; }
 .as-setup { display: flex; flex-direction: column; gap: 8px; }
 
-/* Keep toasts clear of the floating button and of the open panel. */
-body.as-fab-visible .toasts { bottom: 84px; }
-body.as-panel-open .toasts { right: calc(var(--as-panel-w, 440px) + 16px); }
+/* Keep toasts clear of the open panel. */
+body.as-panel-open .toasts { right: calc(var(--as-panel-w, 440px) + 16px); max-width: min(440px, calc(100vw - var(--as-panel-w, 440px) - 32px)); }
+
+/* Wide windows: the page makes room for the panel instead of hiding its right part under it. */
+@media (min-width: 1000px) {
+  body.as-panel-open .workspace { margin-right: var(--as-panel-w, 440px); }
+}
 
 @media (max-width: 640px) {
-  body.as-fab-visible .toasts { bottom: 64px; }
-  body.as-panel-open .toasts { right: 12px; left: 12px; bottom: 150px; }
-  .as-fab { width: 44px; height: 44px; right: 12px; bottom: 12px; }
+  body.as-panel-open .toasts { right: 12px; left: 12px; bottom: 150px; max-width: none; }
+  .as-fab { width: 34px; padding: 0; justify-content: center; right: 6px; }
   .as-fab-label { display: none; }
-  .as-panel { left: 0; width: 100vw !important; min-width: 0; border-left: 0; }
+  body.as-fab-visible .tabbar { padding-right: 44px; }
+  /* Phones: the assistant is a full-screen sheet. */
+  .as-panel { top: 0; border-top: 0; left: 0; width: 100vw !important; min-width: 0; border-left: 0; }
   .as-resize { display: none; }
   .as-provider { max-width: 110px; }
   .as-body { padding: var(--space-3); }
   .as-msg-user { max-width: 94%; }
 }
+
+/* Stage and time while waiting for the first words ("Thinking · 2 s", a free-limit countdown). */
+.as-stage { font-size: var(--fs-sm); color: var(--text-2); }
+.as-needs-setup { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--fs-sm); margin-bottom: 6px; }

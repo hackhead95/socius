@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/models/binary.ts
 
-*Module* · area [[procedures]] · 545 lines
+*Module* · area [[procedures]] · 556 lines
 
 > Binary Logistic Regression (SPSS LOGISTIC REGRESSION, METHOD=ENTER).
 
@@ -20,15 +20,17 @@ area: procedures
 - [[logistic.ts]] · value
 - [[models-util.ts]] · value
 - [[models/common.ts]] · value
+- [[procedures/text.ts]] · value
 
 ## Calls
 - [[models/common.ts#buildTerms|buildTerms()]]
 - [[models/common.ts#capitalize|capitalize()]]
 - [[models/common.ts#caseNote|caseNote()]]
-- [[core/data.ts#categoryLabel|categoryLabel()]]
 - [[output.ts#cell|cell()]]
 - [[distributions.ts#chi2Sf|chi2Sf()]]
 - [[models/common.ts#coefCell|coefCell()]]
+- [[models/common.ts#colProse|colProse()]]
+- [[procedures/text.ts#confLevel|confLevel()]]
 - [[models/common.ts#describeCols|describeCols()]]
 - [[logistic.ts#detectSeparation|detectSeparation()]]
 - [[models/common.ts#dfText|dfText()]]
@@ -39,7 +41,9 @@ area: procedures
 - [[output.ts#hcell|hcell()]]
 - [[models/common.ts#heading|heading()]]
 - [[logistic.ts#hosmerLemeshow|hosmerLemeshow()]]
+- [[procedures/text.ts#labelOf|labelOf()]]
 - [[models/common.ts#levelsOf|levelsOf()]]
+- [[procedures/text.ts#levelText|levelText()]]
 - [[models/common.ts#listText|listText()]]
 - [[models/common.ts#makeItem|makeItem()]]
 - [[logistic.ts#multinomialNullLogLik|multinomialNullLogLik()]]
@@ -49,6 +53,7 @@ area: procedures
 - [[models/common.ts#optNum|optNum()]]
 - [[models/common.ts#optStr|optStr()]]
 - [[models/common.ts#pCell|pCell()]]
+- [[models/common.ts#proseNamer|proseNamer()]]
 - [[logistic.ts#pseudoR2|pseudoR2()]]
 - [[models/common.ts#rawValues|rawValues()]]
 - [[core/data.ts#requireVariable|requireVariable()]]
@@ -59,7 +64,6 @@ area: procedures
 - [[models-util.ts#sum|sum()]]
 - [[models/common.ts#syntaxPreamble|syntaxPreamble()]]
 - [[models/common.ts#textBlock|textBlock()]]
-- [[models/common.ts#textName|textName()]]
 - [[logistic.ts#waldTest|waldTest()]]
 
 ## Imported by
@@ -67,27 +71,27 @@ area: procedures
 - [[nomreg.ts]] · value
 
 ## Private helpers
-runBinary() (line 124) · num0() (line 413) · classificationRate() (line 452) · classificationTable() (line 461) · separationText() (line 485) · buildSyntax() (line 512)
+runBinary() (line 126) · num0() (line 424) · classificationRate() (line 463) · classificationTable() (line 472) · separationText() (line 496) · buildSyntax() (line 523)
 
 ## Symbols
 
 ### binaryLogistic
-*const* · line 60 · exported
-- Calls: [[binary.ts]], [[models/common.ts#slot|slot()]]
+*const* · line 62 · exported
+- Calls: [[binary.ts]], [[models/common.ts#slot|slot()]], [[procedures/text.ts#ciOption|ciOption()]]
 - Used in: [[models/index.ts]]
 
 ### oddsPhrase
-*function* · line 115 · exported
+*function* · line 117 · exported
 - Calls: [[models/common.ts#num|num()]]
 - Used in: [[nomreg.ts]]
 
 ### tbl
-*function* · line 417
+*function* · line 428
 - Output: [[table]]
 
 ### uniqueTerms
-*function* · line 421 · exported
+*function* · line 432 · exported
 
 ### codingsTable
-*function* · line 427 · exported
-- Calls: [[binary.ts#tbl|tbl()]], [[core/data.ts#categoryLabel|categoryLabel()]], [[output.ts#cell|cell()]], [[output.ts#hcell|hcell()]]
+*function* · line 438 · exported
+- Calls: [[binary.ts#tbl|tbl()]], [[output.ts#cell|cell()]], [[output.ts#hcell|hcell()]], [[procedures/text.ts#labelOf|labelOf()]]

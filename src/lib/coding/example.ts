@@ -332,6 +332,46 @@ export const STARTER_CODEBOOK: StarterTheme[] = [
   },
 ];
 
+/**
+ * Names of the places in the app the example's memo and note point to. The UI passes the real
+ * labels from its menu model (src/features/coding/exampleGuide.ts), so the text always matches what
+ * is on screen; these defaults are the same labels, for tests and non-UI callers.
+ */
+export interface ExampleGuide {
+  /** The code filter option in Responses that lists answers without a code. */
+  notCodedFilter: string;
+  /** Menu path of the codes-by-attribute table. */
+  codesByAttribute: string;
+  /** Menu path of the command that turns codes into dataset variables. */
+  exportCodes: string;
+  /** Menu path of Crosstabs. */
+  crosstabs: string;
+  /** The coding toolbar's undo button. */
+  undo: string;
+}
+
+export const DEFAULT_EXAMPLE_GUIDE: ExampleGuide = {
+  notCodedFilter: 'Not coded yet',
+  codesByAttribute: 'Text coding > Codes by attribute',
+  exportCodes: 'Text coding > Export codes to dataset...',
+  crosstabs: 'Analyze > Descriptive Statistics > Crosstabs...',
+  undo: 'Undo coding',
+};
+
+/** Size of a codebook as shown in the codebook panel: all codes, and how many are themes (codes with sub-codes). */
+export function codebookSize(codes: Pick<CodeDef, 'id' | 'parentId'>[]): { total: number; themes: number; subCodes: number } {
+  const parents = new Set(codes.map((c) => c.parentId).filter((x): x is string => !!x));
+  return { total: codes.length, themes: codes.filter((c) => parents.has(c.id)).length, subCodes: codes.filter((c) => !!c.parentId).length };
+}
+
+/** "15 codes (4 themes and 11 sub-codes)": the same total as the codebook panel's count. */
+export function describeCodebookSize(codes: Pick<CodeDef, 'id' | 'parentId'>[]): string {
+  const n = codebookSize(codes);
+  const codesWord = `${n.total} code${n.total === 1 ? '' : 's'}`;
+  if (!n.themes) return codesWord;
+  return `${codesWord} (${n.themes} theme${n.themes === 1 ? '' : 's'} and ${n.subCodes} sub-code${n.subCodes === 1 ? '' : 's'})`;
+}
+
 export interface WorkedExample {
   docs: TextDoc[];
   codes: CodeDef[];
@@ -389,7 +429,7 @@ export function starterCodes(now = Date.now()): CodeDef[] {
  * area, the starter codebook, and whole-response auto-coding from its keyword rules (origin
  * 'auto-rule', coded as `coder`).
  */
-export function buildWorkedExample(ds: Dataset, coder: string, existing: CodingProject | null = null): WorkedExample {
+export function buildWorkedExample(ds: Dataset, coder: string, existing: CodingProject | null = null, guide: ExampleGuide = DEFAULT_EXAMPLE_GUIDE): WorkedExample {
   const q = ds.variables.find((v) => v.name === EXAMPLE_QUESTION);
   if (!q) throw new Error(`The worked example needs the ${EXAMPLE_QUESTION} question from the sample survey.`);
   const attrIds = EXAMPLE_ATTRIBUTES.map((n) => ds.variables.find((v) => v.name === n)?.id).filter((x): x is string => !!x);
@@ -408,13 +448,15 @@ export function buildWorkedExample(ds: Dataset, coder: string, existing: CodingP
     text: [
       `This is an example project made from the sample survey. It holds the ${docs.length} answers to "${EXAMPLE_QUESTION}" (the biggest challenge facing the neighbourhood), with gender, city and area as attributes.`,
       '',
-      `The starter codebook has ${codes.filter((c) => c.parentId).length} codes under ${codes.filter((c) => !c.parentId).length} themes. The codes were applied by simple keyword rules, not by a person: ${nCoded} of ${docs.length} answers matched at least one rule. Keyword rules miss answers that use other words and sometimes code answers that only mention a word in passing, so review them before you report anything.`,
+      `The starter codebook has ${describeCodebookSize(codes)}. The themes group the sub-codes; the sub-codes were applied by simple keyword rules, not by a person: ${nCoded} of ${docs.length} answers matched at least one rule. Keyword rules miss answers that use other words and sometimes code answers that only mention a word in passing, so review them before you report anything.`,
       '',
       'Suggested next steps:',
-      '1. In Responses, read the coded answers and remove codes that do not fit. Filter "Not coded yet" to find answers the rules missed.',
+      `1. In Responses, read the coded answers and remove codes that do not fit. Choose "${guide.notCodedFilter}" in the code filter to find answers the rules missed.`,
       '2. Some themes have no code yet (for example jobs for young people, corruption, parks and play space). Add codes for them.',
-      '3. Compare themes across groups in Analyse > Codes by attribute.',
-      '4. Use Export > Codes to dataset variables, then run Analyze > Descriptive Statistics > Crosstabs of a code by gender.',
+      `3. Compare themes across groups with ${guide.codesByAttribute}.`,
+      `4. Use ${guide.exportCodes}, then run ${guide.crosstabs} of a code by gender.`,
+      '',
+      `Straight after loading, one click on ${guide.undo} in the Text coding toolbar removes the whole example.`,
     ].join('\n'),
     createdAt: now,
     updatedAt: now,

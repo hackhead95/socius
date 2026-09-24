@@ -2,13 +2,13 @@
 id: "store-key:useStore.outputRedo"
 type: store-key
 file: src/core/store.ts
-line: 85
+line: 87
 area: core
 ---
 
 # useStore.outputRedo
 
-*Store state key* · defined in [[store.ts]] (line 85) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 87) · area [[core]]
 
 - **Store:** useStore
 

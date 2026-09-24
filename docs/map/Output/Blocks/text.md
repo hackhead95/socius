@@ -30,6 +30,7 @@ area: core
 - [[assistant/format.ts#blockText|blockText()]] · consumer
 - [[reportHtml.ts#blockVisible|blockVisible()]] · exporter
 - [[exportDocx.ts#buildDocx|buildDocx()]] · exporter
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · consumer
 - [[explainPrompt.ts#isExplainable|isExplainable()]] · consumer
 - [[reportHtml.ts#itemToHtml|itemToHtml()]] · exporter
 - [[exportText.ts#itemToText|itemToText()]] · exporter

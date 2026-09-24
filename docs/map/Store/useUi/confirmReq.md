@@ -2,13 +2,13 @@
 id: "store-key:useUi.confirmReq"
 type: store-key
 file: src/app/ui-store.ts
-line: 45
+line: 51
 area: app
 ---
 
 # useUi.confirmReq
 
-*Store state key* · defined in [[ui-store.ts]] (line 45) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 51) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

@@ -29,6 +29,7 @@ area: lib/io
 - [[sav-formats.ts#unpackFormat|unpackFormat()]]
 
 ## Tested by
+- [[commands-smoke-analyze.spec.ts]] · import
 - [[io.fuzz.test.ts]] · import
 - [[sav-edge.test.ts]] · import
 - [[sav-malformed.test.ts]] · import
@@ -37,6 +38,7 @@ area: lib/io
 - [[sav-write.test.ts]] · import
 
 ## Imported by
+- [[commands-smoke-analyze.spec.ts]] · value
 - [[io/index.ts]] · value
 - [[io.fuzz.test.ts]] · value
 - [[sav-edge.test.ts]] · value
@@ -66,4 +68,4 @@ DEFAULT_SYSMIS (line 36) · DEFAULT_HIGHEST (line 37) · DEFAULT_LOWEST (line 39
 *function* · line 1171 · exported
 > ---------------------------------------------------------------------------------------------
 - Calls: [[core/types.ts#makeDataset|makeDataset()]], [[sav-reader.ts]]
-- Used in: [[io/index.ts]], [[sav-edge.test.ts]], [[sav-malformed.test.ts]], [[sav-perf.test.ts]], [[sav-read.test.ts]], [[sav-write.test.ts]]
+- Used in: [[commands-smoke-analyze.spec.ts]], [[io/index.ts]], [[sav-edge.test.ts]], [[sav-malformed.test.ts]], [[sav-perf.test.ts]], [[sav-read.test.ts]], [[sav-write.test.ts]]

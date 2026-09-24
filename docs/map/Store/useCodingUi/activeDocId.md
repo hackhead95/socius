@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.activeDocId"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 30
+line: 35
 area: features/coding
 ---
 
 # useCodingUi.activeDocId
 
-*Store state key* · defined in [[uiStore.ts]] (line 30) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 35) · area [[features - coding|features/coding]]
 
 - **Store:** useCodingUi
 
@@ -23,6 +23,7 @@ area: features/coding
 - [[coding/actions.ts#deleteDocs|deleteDocs()]] · alias.set, set()
 - [[uiStore.ts#jumpTo|jumpTo()]] · alias.set, set()
 - [[ImportDialog.tsx]] · alias.set, set()
+- [[ui-fixes.test.tsx]] · setState
 
 ## Store
 - [[useCodingUi]]

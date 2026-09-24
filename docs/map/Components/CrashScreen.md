@@ -2,13 +2,13 @@
 id: "src/app/ErrorBoundary.tsx#CrashScreen"
 type: component
 file: src/app/ErrorBoundary.tsx
-line: 70
+line: 69
 area: app
 ---
 
 # <CrashScreen>
 
-*React component* · defined in [[ErrorBoundary.tsx]] (line 70) · area [[Areas/app|app]]
+*React component* · defined in [[ErrorBoundary.tsx]] (line 69) · area [[Areas/app|app]]
 
 > ---------- the whole app ----------
 

@@ -20,6 +20,7 @@ area: tests
 - [[proc-cases.ts]] · value
 - [[proc-harness.ts]] · value
 - [[procedures-oracle.fuzz.test.ts]] · value
+- [[procedures-perf.fuzz.test.ts]] · value
 - [[procedures.fuzz.test.ts]] · value
 - [[replay.test.ts]] · value
 - [[transforms-expr.fuzz.test.ts]] · value
@@ -49,7 +50,7 @@ BENGALI (line 48) · HINDI (line 49) · LATIN (line 50) · LONG_LABEL (line 52) 
 *function* · line 202 · exported
 - Calls: [[core/types.ts#makeDataset|makeDataset()]], [[gen-data.ts#genVariable|genVariable()]]
 - Uses: [[gen-data.ts#N_CHOICES|N_CHOICES]], [[gen-data.ts]]
-- Used in: [[io.fuzz.test.ts]], [[proc-cases.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
+- Used in: [[io.fuzz.test.ts]], [[proc-cases.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
 
 ### cloneDataset
 *function* · line 239 · exported

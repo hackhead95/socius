@@ -2,10 +2,10 @@
 // assistant proposed. Reads the live app store at the moment each tool runs.
 import { useStore } from '../../core/store';
 import { newId } from '../../core/types';
-import { aiErrorText, getAiStatus, effectiveProvider, providerLabel, refreshAiStatus } from '../../platform/ai';
+import { aiErrorIsAppFault, aiErrorText, getAiStatus, effectiveProvider, providerLabel, recordAiConnection, refreshAiStatus } from '../../platform/ai';
 import { copyToClipboard } from '../../platform/host';
 import { aiErrorReport } from '../../platform/ai-diagnose';
-import { logError } from '../../platform/errorlog';
+import { logError, logWarn } from '../../platform/errorlog';
 import { runAgent, type Driver } from '../../lib/assistant/agent';
 import { addToOutput, applyProposal } from '../../lib/assistant/actions';
 import { createDriver } from '../../lib/assistant/drivers';
@@ -87,12 +87,16 @@ export async function sendMessage(text: string, opts: SendOptions = {}): Promise
     });
     patch((e) => ({ ...e, text: res.text, status: 'done', truncated: res.truncated }));
     useAssistantChat.setState({ history: res.history });
+    if (!opts.driver) recordAiConnection(true);
     // The provider label may now name the model picked automatically (no request is made).
     if (!opts.driver) void refreshAiStatus().catch(() => undefined);
   } catch (e: any) {
     if (e?.code === 'cancelled' || controller.signal.aborted) patch((x) => ({ ...x, status: 'stopped' }));
     else {
-      logError('assistant', e, { op: 'assistant-turn' });
+      // A wrong key, no connection or a limit is the user's to fix (a warning); only app faults are errors.
+      if (aiErrorIsAppFault(e)) logError('assistant', e, { op: 'assistant-turn' });
+      else logWarn('assistant', e, { op: 'assistant-turn' });
+      if (!opts.driver) recordAiConnection(false, e);
       const partial = typeof e?.partial === 'string' ? e.partial : '';
       patch((x) => ({ ...x, status: 'error', error: aiErrorText(e), errorReport: aiErrorReport(e, 'Socius assistant'), text: x.text || partial }));
     }

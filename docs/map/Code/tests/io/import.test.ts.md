@@ -7,7 +7,7 @@ area: tests
 
 # tests/io/import.test.ts
 
-*Test file* · area [[tests]] · 81 lines
+*Test file* · area [[tests]] · 82 lines
 
 > importFile type detection (magic bytes first, then extension), friendly rejections, and codebookRows.
 

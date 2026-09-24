@@ -18,7 +18,7 @@ area: app
 - [[User guide|Help > User guide]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

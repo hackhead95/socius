@@ -2,13 +2,13 @@
 id: "src/features/project/FileDialogs.tsx#ImportDialog"
 type: component
 file: src/features/project/FileDialogs.tsx
-line: 48
+line: 49
 area: features/project
 ---
 
 # <ImportDialog>
 
-*React component* · defined in [[FileDialogs.tsx]] (line 48) · area [[features - project|features/project]]
+*React component* · defined in [[FileDialogs.tsx]] (line 49) · area [[features - project|features/project]]
 
 - **Exported:** yes
 

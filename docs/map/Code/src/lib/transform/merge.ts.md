@@ -7,7 +7,7 @@ area: lib/transform
 
 # src/lib/transform/merge.ts
 
-*Module* · area [[lib - transform|lib/transform]] · 307 lines
+*Module* · area [[lib - transform|lib/transform]] · 315 lines
 
 > Merge Files: Add Cases (ADD FILES) and Add Variables (MATCH FILES).
 
@@ -43,5 +43,5 @@ emptyValue() (line 11) · mergeLabels() (line 15)
 
 ### addVariables
 *function* · line 164 · exported
-- Calls: [[core/types.ts#newId|newId()]], [[dsops.ts#bump|bump()]], [[dsops.ts#fmtN|fmtN()]], [[dsops.ts#plural|plural()]], [[merge.ts#MergeError|MergeError]], [[merge.ts]], [[syntax.ts#lines|lines()]], [[syntax.ts#q|q()]]
-- Used in: [[MergeDialogs.tsx]], [[transforms-ops.fuzz.test.ts]], [[transforms.test.ts]]
+- Calls: [[core/data.ts#uniqueVarName|uniqueVarName()]], [[core/types.ts#newId|newId()]], [[dsops.ts#bump|bump()]], [[dsops.ts#fmtN|fmtN()]], [[dsops.ts#plural|plural()]], [[merge.ts#MergeError|MergeError]], [[merge.ts]], [[syntax.ts#lines|lines()]], [[syntax.ts#q|q()]]
+- Used in: [[MergeDialogs.tsx]], [[transforms-ops.fuzz.test.ts]], [[data-fixes.test.ts]], [[transforms.test.ts]]

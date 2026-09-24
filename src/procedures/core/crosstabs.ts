@@ -52,6 +52,8 @@ import {
   vlabel,
   vprose,
   type Cell,
+  selMissing,
+  allFinite,
 } from './common';
 
 const MAX_CATEGORIES = 60;
@@ -106,6 +108,8 @@ function buildPair(ds: Dataset, row: Variable, col: Variable, layer: Variable | 
   });
   const adj = (t: Table) => t.map((rr) => rr.map((v) => adjustCount(v, weightMode)));
   const N = selN(sel);
+  // Weighted like N, so Valid + Missing = Total and the percentages share one base (SPSS with WEIGHT).
+  const nMissing = selMissing(ds, sel);
   return {
     row,
     col,
@@ -115,8 +119,8 @@ function buildPair(ds: Dataset, row: Variable, col: Variable, layer: Variable | 
     layers: layerCats.map((c, k) => ({ label: valueText(layer!, c), table: adj(lt[k]) })),
     total: { label: null, table: adj(tot) },
     N,
-    nMissing: sel.nMissing,
-    nTotal: N + sel.nMissing,
+    nMissing,
+    nTotal: N + nMissing,
   };
 }
 
@@ -490,8 +494,15 @@ function cmhBlocks(p: Pair): OutputBlock[] {
       footnotes: ['The Mantel-Haenszel common odds ratio estimate is asymptotically normally distributed under the common odds ratio of 1.000 assumption. So is the natural log of the estimate.'],
     }),
   );
-  let s = `Pooling the ${tables.length} layers of ${vprose(p.layer!)}, the Mantel-Haenszel common odds ratio is ${apaNum(o.value)} (95% CI ${apaNum(o.lo)} to ${apaNum(o.hi)}), and the test of conditional independence is ${sigWord(r.mantelHaenszel.p)} (${apaP(r.mantelHaenszel.p)}).`;
-  if (r.breslowDay) s += r.breslowDay.p < 0.05 ? ` The Breslow-Day test indicates the odds ratio differs between layers (${apaP(r.breslowDay.p)}), so the pooled estimate hides an interaction: report the layers separately.` : ` The Breslow-Day test gives no evidence that the odds ratio differs between layers (${apaP(r.breslowDay.p)}).`;
+  const layersText = `${tables.length} layer${tables.length === 1 ? '' : 's'}`;
+  const orText = allFinite(o.value, o.lo, o.hi)
+    ? `the Mantel-Haenszel common odds ratio is ${apaNum(o.value)} (95% CI ${apaNum(o.lo)} to ${apaNum(o.hi)})`
+    : allFinite(o.value)
+      ? `the Mantel-Haenszel common odds ratio is ${apaNum(o.value)} (its confidence interval cannot be computed because some cells are empty)`
+      : 'the Mantel-Haenszel common odds ratio cannot be computed (the layers have empty rows, columns or cells)';
+  const testText = allFinite(r.mantelHaenszel.p) ? `the test of conditional independence is ${sigWord(r.mantelHaenszel.p)} (${apaP(r.mantelHaenszel.p)})` : 'the test of conditional independence cannot be computed';
+  let s = `Pooling the ${layersText} of ${vprose(p.layer!)}, ${orText}, and ${testText}.`;
+  if (r.breslowDay && allFinite(r.breslowDay.p)) s += r.breslowDay.p < 0.05 ? ` The Breslow-Day test indicates the odds ratio differs between layers (${apaP(r.breslowDay.p)}), so the pooled estimate hides an interaction: report the layers separately.` : ` The Breslow-Day test gives no evidence that the odds ratio differs between layers (${apaP(r.breslowDay.p)}).`;
   out.push(text('interpretation', s));
   return out;
 }

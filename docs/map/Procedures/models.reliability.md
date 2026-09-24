@@ -40,6 +40,7 @@ area: procedures
 
 ## Uses
 - [[models/common.ts#caseNote|caseNote()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
 - [[models/common.ts#dfCell|dfCell()]] · procedure helper
 - [[models/common.ts#footName|footName()]] · procedure helper
 - [[models/common.ts#heading|heading()]] · procedure helper
@@ -48,6 +49,7 @@ area: procedures
 - [[models/common.ts#noLead|noLead()]] · procedure helper
 - [[models/common.ts#num|num()]] · procedure helper
 - [[models/common.ts#numericValues|numericValues()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[models/common.ts#optBool|optBool()]] · procedure helper
 - [[models/common.ts#selectAll|selectAll()]] · procedure helper
 - [[models/common.ts#slot|slot()]] · procedure helper

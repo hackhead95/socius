@@ -21,6 +21,6 @@ area: platform
 
 ## Checked by
 - [[platform/ai.ts#aiErrorText|aiErrorText()]]
-- [[platform/ai.ts#askAI|askAI()]]
+- [[platform/ai.ts#askProvider|askProvider()]]
 - [[ai-diagnose.ts#checkGemini|checkGemini()]]
 - [[ai-diagnose.ts#checkOpenAi|checkOpenAi()]]

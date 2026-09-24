@@ -1,5 +1,6 @@
 // Analyze > Descriptive Statistics > Descriptives (SPSS DESCRIPTIVES) and Explore (SPSS EXAMINE).
 
+import { allFinite, ciOption, confLevel, levelText } from '../text';
 import { selectCases } from '../../core/data';
 import type { Dataset, Variable } from '../../core/types';
 import type { ChartSpec, OutputBlock, OutputTable } from '../../core/output';
@@ -21,7 +22,6 @@ import {
   item,
   numericValues,
   optBool,
-  optNum,
   optStr,
   pcell,
   requireNumeric,
@@ -34,6 +34,7 @@ import {
   vlabel,
   vprose,
   type Cell,
+  selMissing,
 } from './common';
 
 // ---------------------------------------------------------------------------------------------
@@ -75,9 +76,18 @@ function runDescriptives(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   // header: row 1 grouped labels, row 2 Statistic / Std. Error
   const h1: Cell[] = [hcell('', { rowSpan: 2 })];
   const h2: Cell[] = [];
+  // One header cell per body column: a statistic followed by its own standard error shares a
+  // two-column heading; a standard error on its own (S.E. mean without Mean) gets its own heading.
   for (let i = 0; i < cols.length; i++) {
     const c = cols[i];
-    if (c.se) continue;
+    if (c.se) {
+      const paired = i > 0 && !cols[i - 1].se && cols[i - 1].label === c.label;
+      if (!paired) {
+        h1.push(hcell(c.label));
+        h2.push(hcell('Std. Error'));
+      }
+      continue;
+    }
     const hasSe = i + 1 < cols.length && cols[i + 1].se && cols[i + 1].label === c.label;
     h1.push(hcell(c.label, hasSe ? { colSpan: 2 } : {}));
     h2.push(hcell('Statistic'));
@@ -90,13 +100,16 @@ function runDescriptives(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const valid = stats.filter((x) => x.s && x.s.N > 0);
   if (valid.length) {
     const val = (x: number) => apaNum(x, Number.isInteger(x) ? 0 : 2);
-    const sentences = valid.map(({ v, s }) => `${vprose(v)} averaged ${apaNum(s!.mean)} (SD = ${apaNum(s!.sd)}, range ${val(s!.min)} to ${val(s!.max)}, N = ${fmtN(Math.round(s!.N))})`);
+    // The SD needs a (weighted) N above 1; with a single case it is left out and the reason given.
+    const sdPart = (x: number) => (allFinite(x) ? `SD = ${apaNum(x)}` : 'no SD with fewer than two cases');
+    const rangePart = (lo: number, hi: number) => (lo === hi ? `every value ${val(lo)}` : `range ${val(lo)} to ${val(hi)}`);
+    const sentences = valid.map(({ v, s }) => `${vprose(v)} averaged ${apaNum(s!.mean)} (${sdPart(s!.sd)}, ${rangePart(s!.min, s!.max)}, N = ${fmtN(s!.N)})`);
     let interp = sentences.join('; ') + '.';
     const skewed = valid.filter(({ s }) => Number.isFinite(s!.skewness) && Math.abs(s!.skewness) > 1);
     if (want('skewness') && skewed.length) interp += ` ${skewed.map(({ v }) => vprose(v)).join(', ')} ${skewed.length === 1 ? 'is' : 'are'} strongly skewed (|skewness| > 1); the mean may not describe a typical case well.`;
-    if (vs.length > 1 && selN(listwise) < Math.max(...valid.map(({ s }) => s!.N))) interp += ` Only ${fmtN(Math.round(selN(listwise)))} cases have valid values on all ${vs.length} variables.`;
+    if (vs.length > 1 && selN(listwise) < Math.max(...valid.map(({ s }) => s!.N))) interp += selN(listwise) > 0 ? ` Only ${fmtN(selN(listwise))} ${selN(listwise) === 1 ? 'case has' : 'cases have'} valid values on all ${vs.length} variables.` : ` No case has valid values on all ${vs.length} variables.`;
     blocks.push(text('interpretation', interp));
-    blocks.push(text('apa', valid.map(({ v, s }) => `${vprose(v)}: M = ${apaNum(s!.mean)}, SD = ${apaNum(s!.sd)}`).join('; ') + '.'));
+    blocks.push(text('apa', valid.map(({ v, s }) => `${vprose(v)}: M = ${apaNum(s!.mean)}${allFinite(s!.sd) ? `, SD = ${apaNum(s!.sd)}` : ` (N = ${fmtN(s!.N)}; the SD needs at least two cases)`}`).join('; ') + '.'));
   }
   const empty = stats.filter((x) => !x.s || !(x.s.N > 0));
   if (empty.length) blocks.push(text('warning', `${listProse(empty.map(({ v }) => v.name))} ${empty.length === 1 ? 'has' : 'have'} no valid values among the selected cases (every case is missing or filtered out), so no statistics can be computed.`));
@@ -104,7 +117,7 @@ function runDescriptives(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   if (small.length) blocks.push(text('warning', `${small.map(({ v }) => v.name).join(', ')}: fewer than three valid cases, so the standard deviation and shape statistics are unreliable or not computable.`));
   const statList = [want('mean', true) ? 'MEAN' : '', want('sum') ? 'SUM' : '', want('sd', true) ? 'STDDEV' : '', want('variance') ? 'VARIANCE' : '', want('range') ? 'RANGE' : '', want('min', true) ? 'MIN' : '', want('max', true) ? 'MAX' : '', want('seMean') ? 'SEMEAN' : '', want('kurtosis') ? 'KURTOSIS' : '', want('skewness') ? 'SKEWNESS' : ''].filter(Boolean);
   const syntax = `DESCRIPTIVES VARIABLES=${vs.map((v) => v.name).join(' ')}\n  /STATISTICS=${statList.join(' ')}${order !== 'variables' ? `\n  /SORT=MEAN (${order === 'ascendingMeans' ? 'A' : 'D'})` : ''}.`;
-  const note = vs.length > 1 ? caseNoteRange(ds, stats.map((x) => selN(x.sel)), selN(listwise)) : caseNote(ds, selN(stats[0].sel), stats[0].sel.nMissing);
+  const note = vs.length > 1 ? caseNoteRange(ds, stats.map((x) => selN(x.sel)), selN(listwise)) : caseNote(ds, selN(stats[0].sel), selMissing(ds, stats[0].sel));
   return item('descriptives', 'Descriptives', ds, blocks, syntax, note);
 }
 
@@ -160,8 +173,7 @@ function runExplore(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   deps.forEach((v) => requireNumeric(v, 'Explore dependent variables'));
   const factors = vars(ds, slots, 'factor');
   const factor = factors[0] ?? null;
-  const conf = optNum(opts, 'ciLevel', 95) / 100;
-  if (!(conf > 0 && conf < 1)) throw new Error('The confidence level must be between 1 and 99 percent.');
+  const conf = confLevel(opts, 'ciLevel', 'Confidence interval for mean (%)');
   const listwise = optStr(opts, 'missing', 'listwise') === 'listwise';
   const blocks: OutputBlock[] = [];
   const allIds = [...deps.map((d) => d.id), ...(factor ? [factor.id] : [])];
@@ -235,8 +247,8 @@ function runExplore(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const ruleBefore: number[] = [];
     const labels: Array<[string, (e: ExploreStats) => number, ((e: ExploreStats) => number) | null, boolean]> = [
       ['Mean', (e) => e.mean, (e) => e.seMean, false],
-      [`${Math.round(conf * 100)}% Confidence Interval for Mean: Lower Bound`, (e) => e.ciLower, null, false],
-      [`${Math.round(conf * 100)}% Confidence Interval for Mean: Upper Bound`, (e) => e.ciUpper, null, false],
+      [`${levelText(conf)}% Confidence Interval for Mean: Lower Bound`, (e) => e.ciLower, null, false],
+      [`${levelText(conf)}% Confidence Interval for Mean: Upper Bound`, (e) => e.ciUpper, null, false],
       ['5% Trimmed Mean', (e) => e.trimmedMean, null, false],
       ['Median', (e) => e.median, null, false],
       ['Variance', (e) => e.variance, null, false],
@@ -404,7 +416,8 @@ function runExplore(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     list.forEach(({ c, e }) => {
       if (!e) return;
       const who = `${vprose(c.dep)}${c.level ? ` for ${c.level}` : ''}`;
-      let s = `${who}: mean ${apaNum(e.mean)} (${Math.round(conf * 100)}% CI ${apaNum(e.ciLower)} to ${apaNum(e.ciUpper)}), median ${apaNum(e.median)}, SD ${apaNum(e.sd)}, N = ${fmtN(Math.round(e.N))}.`;
+      const spread = allFinite(e.sd, e.ciLower, e.ciUpper) ? ` (${levelText(conf)}% CI ${apaNum(e.ciLower)} to ${apaNum(e.ciUpper)}), median ${apaNum(e.median)}, SD ${apaNum(e.sd)}` : `, median ${apaNum(e.median)} (the SD and confidence interval need at least two cases)`;
+      let s = `${who}: mean ${apaNum(e.mean)}${spread}, N = ${fmtN(e.N)}.`;
       if (Number.isFinite(e.skewness) && Math.abs(e.skewness) > 2 * e.seSkewness) s += ` The distribution is ${e.skewness > 0 ? 'right' : 'left'}-skewed (skewness ${apaNum(e.skewness)} is more than twice its standard error).`;
       const b = boxStats(c.x, c.w);
       if (b.outliers.length) s += ` The boxplot flags ${b.outliers.length} outlying value${b.outliers.length === 1 ? '' : 's'}${b.outliers.some((o) => o.extreme) ? ', including extreme ones (more than 3 box-lengths from the box)' : ''}.`;
@@ -414,14 +427,14 @@ function runExplore(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   if (nonNormal.length) parts.push(`Normality is doubtful for ${nonNormal.join('; ')}. With large samples these tests flag even small departures, so also look at the histogram or boxplot; t tests and ANOVA tolerate moderate departures from normality when groups are large and similar in size.`);
   else if (normalOk.length && optBool(opts, 'normality', true)) parts.push('The normality tests do not indicate a significant departure from a normal distribution.');
   if (parts.length) blocks.push(text('interpretation', parts.join(' ')));
-  const apaParts = statsBy.flatMap((list) => list.filter(({ e }) => e).map(({ c, e }) => `${vprose(c.dep)}${c.level ? ` (${c.level})` : ''}: M = ${apaNum(e!.mean)}, SD = ${apaNum(e!.sd)}, Mdn = ${apaNum(e!.median)}`));
+  const apaParts = statsBy.flatMap((list) => list.filter(({ e }) => e).map(({ c, e }) => `${vprose(c.dep)}${c.level ? ` (${c.level})` : ''}: M = ${apaNum(e!.mean)}${allFinite(e!.sd) ? `, SD = ${apaNum(e!.sd)}` : ''}, Mdn = ${apaNum(e!.median)}${allFinite(e!.sd) ? '' : ` (N = ${fmtN(e!.N)}; no SD with fewer than two cases)`}`));
   if (apaParts.length) blocks.push(text('apa', apaParts.join('; ') + '.'));
   for (const n of normalityNotes) blocks.push(text('note', n));
   const small = statsBy.flatMap((l) => l.filter(({ c }) => c.w.reduce((a, b) => a + b, 0) < 10).map(({ c }) => `${c.dep.name}${c.level ? ` (${c.level})` : ''}`));
   if (small.length) blocks.push(text('warning', `Very small groups (fewer than 10 cases): ${small.join(', ')}. Normality tests have little power and descriptive statistics are unstable.`));
   const plots = [optBool(opts, 'boxplot', true) ? 'BOXPLOT' : '', optBool(opts, 'histogram', false) ? 'HISTOGRAM' : '', optBool(opts, 'normality', true) ? 'NPPLOT' : ''].filter(Boolean);
-  const syntax = `EXAMINE VARIABLES=${deps.map((d) => d.name).join(' ')}${factor ? ` BY ${factor.name}` : ''}\n  /PLOT ${plots.length ? plots.join(' ') : 'NONE'}\n  /COMPARE GROUPS\n  /STATISTICS DESCRIPTIVES\n  /CINTERVAL ${Math.round(conf * 100)}${optBool(opts, 'percentiles', false) ? '\n  /PERCENTILES(5,10,25,50,75,90,95) HAVERAGE' : ''}\n  /MISSING ${listwise ? 'LISTWISE' : 'PAIRWISE'}\n  /NOTOTAL.`;
-  return item('explore', 'Explore', ds, blocks, syntax, caseNote(ds, selN(selAll), selAll.nMissing, listwise ? 'listwise deletion across all listed variables' : undefined));
+  const syntax = `EXAMINE VARIABLES=${deps.map((d) => d.name).join(' ')}${factor ? ` BY ${factor.name}` : ''}\n  /PLOT ${plots.length ? plots.join(' ') : 'NONE'}\n  /COMPARE GROUPS\n  /STATISTICS DESCRIPTIVES\n  /CINTERVAL ${levelText(conf)}${optBool(opts, 'percentiles', false) ? '\n  /PERCENTILES(5,10,25,50,75,90,95) HAVERAGE' : ''}\n  /MISSING ${listwise ? 'LISTWISE' : 'PAIRWISE'}\n  /NOTOTAL.`;
+  return item('explore', 'Explore', ds, blocks, syntax, caseNote(ds, selN(selAll), selMissing(ds, selAll), listwise ? 'listwise deletion across all listed variables' : undefined));
 }
 
 export const explore: ProcedureDef = {
@@ -437,7 +450,7 @@ export const explore: ProcedureDef = {
   ],
   options: [
     { key: 'descriptives', label: 'Descriptives', type: 'checkbox', default: true, group: 'Statistics' },
-    { key: 'ciLevel', label: 'Confidence interval for mean (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Statistics' },
+    ciOption('ciLevel', 'Confidence interval for mean (%)', 'Statistics'),
     { key: 'percentiles', label: 'Percentiles', type: 'checkbox', default: false, group: 'Statistics' },
     { key: 'normality', label: 'Normality tests', type: 'checkbox', default: true, group: 'Plots' },
     { key: 'boxplot', label: 'Boxplot', type: 'checkbox', default: true, group: 'Plots' },

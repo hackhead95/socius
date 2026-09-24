@@ -15,6 +15,10 @@ export interface CodeFrequency {
   /** Documents coded with this code or any of its sub-codes (equals `docs` for codes without children). */
   docsInclSub: number;
   pctDocsInclSub: number;
+  /** Segments of this code and all its sub-codes (equals `segments` for codes without children). */
+  segmentsInclSub: number;
+  /** The code has sub-codes: it is a theme, and its meaningful counts are the ones incl. sub-codes. */
+  hasChildren: boolean;
   /** Total coded characters (a rough measure of coverage). */
   chars: number;
 }
@@ -37,7 +41,12 @@ export function codeFrequencies(codes: CodeDef[], docs: TextDoc[], segments: Cod
   const rows = codes.map((c) => {
     const own = docsByCode.get(c.id) ?? new Set<string>();
     const all = new Set(own);
-    for (const d of descendantIds(codes, c.id)) for (const x of docsByCode.get(d) ?? []) all.add(x);
+    const desc = descendantIds(codes, c.id);
+    let segsAll = segCount.get(c.id) ?? 0;
+    for (const d of desc) {
+      for (const x of docsByCode.get(d) ?? []) all.add(x);
+      segsAll += segCount.get(d) ?? 0;
+    }
     return {
       codeId: c.id,
       segments: segCount.get(c.id) ?? 0,
@@ -45,6 +54,8 @@ export function codeFrequencies(codes: CodeDef[], docs: TextDoc[], segments: Cod
       pctDocs: pct(own.size),
       docsInclSub: all.size,
       pctDocsInclSub: pct(all.size),
+      segmentsInclSub: segsAll,
+      hasChildren: desc.length > 0,
       chars: chars.get(c.id) ?? 0,
     };
   });

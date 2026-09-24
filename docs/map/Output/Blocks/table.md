@@ -41,4 +41,4 @@ area: core
 - [[reportHtml.ts#itemToHtml|itemToHtml()]] · exporter
 - [[exportText.ts#itemToText|itemToText()]] · exporter
 - [[explainPrompt.ts#outputItemContext|outputItemContext()]] · consumer
-- [[useNumbering|useNumbering()]] · renderer
+- [[OutputViewer.tsx#outputNumbering|outputNumbering()]] · renderer

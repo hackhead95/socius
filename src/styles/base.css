@@ -97,6 +97,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: var(--surface); color: var(--text); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
   width: min(760px, 100%); max-height: calc(100% - 32px); display: flex; flex-direction: column; border: 1px solid var(--border);
 }
+/* A click on the dimmed area of a dialog with user input keeps it open: a short pulse says "use Cancel or OK". */
+.modal-nudge-0 { animation: modal-nudge-a 0.22s ease-out; }
+.modal-nudge-1 { animation: modal-nudge-b 0.22s ease-out; }
+@keyframes modal-nudge-a { 50% { transform: scale(1.012); box-shadow: 0 0 0 3px var(--focus), var(--shadow-2); } }
+@keyframes modal-nudge-b { 50% { transform: scale(1.012); box-shadow: 0 0 0 3px var(--focus), var(--shadow-2); } }
 .modal-wide { width: min(1040px, 100%); }
 .modal-narrow { width: min(440px, 100%); }
 .modal-header { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border); }

@@ -11,6 +11,9 @@ area: storage
 - **Backend:** localStorage
 
 ## Tested by
+- [[ai-check.spec.ts]] · storage key
+- [[ai-speed.spec.ts]] · storage key
+- [[commands-smoke-helpers.ts]] · storage key
 - [[errorlog.spec.ts]] · storage key
 
 ## Read by

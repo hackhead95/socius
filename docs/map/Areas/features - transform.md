@@ -6,20 +6,21 @@ area: features/transform
 
 # Area: features/transform
 
-7 files, 1656 lines.
+7 files, 1696 lines.
 
 ## Depends on (module imports)
 - [[core]]: 14
 - [[ui]]: 11
 - [[lib - transform|lib/transform]]: 6
 - [[platform]]: 4
-- [[Areas/app|app]]: 2
+- [[Areas/app|app]]: 3
 - [[features - project|features/project]]: 1
 - [[lib - io|lib/io]]: 1
 - [[lib - stats|lib/stats]]: 1
 
 ## Used by areas
 - [[Areas/app|app]]: 3
+- [[features - data|features/data]]: 1
 
 ## Files
 - [[CasesDialogs.tsx]]: Visual Binning, Select Cases, Weight Cases, Sort Cases.

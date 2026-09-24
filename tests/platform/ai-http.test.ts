@@ -3,7 +3,7 @@
 // automatic model choice with fallbacks, retries, time limits and network failures.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  __resetGeminiState, __setHttpRetryDelay, askGemini, askOpenAiCompatible, buildGeminiRequest, buildInteractionRequest, buildOpenAiRequest, classifyServiceError, describeKey, geminiKeyKind,
+  __resetGeminiState, __setHttpRetryDelay, __setRateLimitSleep, askGemini, askOpenAiCompatible, buildGeminiRequest, buildInteractionRequest, buildOpenAiRequest, classifyServiceError, describeKey, geminiKeyKind,
   geminiKeyWarning, geminiModelName, geminiText, httpErrorCode, lastResolvedGeminiModel, listOpenAiModels, normaliseBaseUrl, parseServiceError, pickGeminiModel, rankGeminiModels, readSse,
   sanitizeApiKey, suggestOpenAiModels, type AiAttempt,
 } from '../../src/platform/ai-http';
@@ -18,6 +18,7 @@ const oa = { baseUrl: 'https://api.groq.com/openai/v1/', apiKey: 'gsk_test', mod
 beforeEach(() => {
   __resetGeminiState();
   __setHttpRetryDelay(0);
+  __setRateLimitSleep(async () => undefined);
 });
 
 afterEach(() => {
@@ -185,13 +186,15 @@ describe('Gemini errors, one per real error shape', () => {
       const err: any = await askGemini(gem, 'p').catch((e) => e);
       expect(err.code).toBe(code);
       expect(err.httpStatus).toBeGreaterThanOrEqual(400);
-      expect(calls).toHaveLength(1); // no pointless retries with other models
+      // No pointless retries with other models (a per-minute limit is waited out on the same model, twice at most).
+      if (code === 'rate_limited') expect(new Set(calls.map((c) => c.body?.model))).toEqual(new Set(['gemini-3.8-flash']));
+      else expect(calls).toHaveLength(1);
     });
   }
 
   it('per-minute limit keeps the retry delay and says it is per minute', async () => {
     mockFetch(() => G.quotaPerMinute('gemini-3.8-flash'));
-    await expect(askGemini(gem, 'p')).rejects.toMatchObject({ code: 'rate_limited', retryAfterMs: 21_000, perMinute: true, daily: false });
+    await expect(askGemini(gem, 'p')).rejects.toMatchObject({ code: 'rate_limited', retryAfterMs: 21_000, perMinute: true, daily: false, waited: true });
   });
 
   it('maps statuses and messages to stable codes', () => {

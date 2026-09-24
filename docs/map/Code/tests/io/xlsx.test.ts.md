@@ -7,7 +7,7 @@ area: tests
 
 # tests/io/xlsx.test.ts
 
-*Test file* · area [[tests]] · 172 lines
+*Test file* · area [[tests]] · 174 lines
 
 > Excel import (fixture written by openpyxl in scripts/fixtures/make_fixtures.py) and export (checked by reading it back, and by openpyxl when Python is available).
 

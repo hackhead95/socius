@@ -13,7 +13,7 @@ area: samples
 - [[lib - io|lib/io]]: 1
 
 ## Used by areas
-- [[Areas/app|app]]: 2
+- [[Areas/app|app]]: 3
 - [[features - coding|features/coding]]: 1
 - [[features - project|features/project]]: 1
 

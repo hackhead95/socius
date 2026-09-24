@@ -2,13 +2,13 @@
 id: "store-action:useStore.redo"
 type: store-action
 file: src/core/store.ts
-line: 114
+line: 117
 area: core
 ---
 
 # useStore.redo()
 
-*Store action* · defined in [[store.ts]] (line 114) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 117) · area [[core]]
 
 - **Store:** useStore
 

@@ -7,7 +7,7 @@ area: tests
 
 # tests/fuzz/procedures.fuzz.test.ts
 
-*Test file* · area [[tests]] · 131 lines
+*Test file* · area [[tests]] · 134 lines
 
 > Combinatorial fuzzing of every ProcedureDef: datasets x UI-valid slot assignments x a pairwise (all-pairs) covering set of option values and dataset states, plus random samples. Invariants per run: the dialog's validation and run() never throw an internal error; messages are plain English; output is plain JSON, tables are rectangular (with spans), no NaN/undefined/ [object Object] in text or re...
 
@@ -53,6 +53,7 @@ area: tests
 - [[procedures/index.ts#procedures|procedures]]
 
 ## Tests
+- [[Procedures/frequencies|Frequencies]] · procedure id
 - [[procedure.ts]] · import
 - [[procedures/index.ts]] · import
 

@@ -6,7 +6,7 @@ area: features/assistant
 
 # Area: features/assistant
 
-9 files, 1374 lines.
+9 files, 1414 lines.
 
 ## Depends on (module imports)
 - [[lib - assistant|lib/assistant]]: 9
@@ -34,4 +34,4 @@ area: features/assistant
 [[ArtifactCard|<ArtifactCard>]] · [[AsIcon|<AsIcon>]] · [[AssistantMessage|<AssistantMessage>]] · [[AssistantPanel|<AssistantPanel>]] · [[AssistantRoot|<AssistantRoot>]] · [[Composer|<Composer>]] · [[Components/Empty|<Empty>]] · [[Entry|<Entry>]] · [[Markdown|<Markdown>]] · [[ProposalCard|<ProposalCard>]] · [[ResizeHandle|<ResizeHandle>]] · [[SeeMenu|<SeeMenu>]] · [[Typing|<Typing>]]
 
 ## Stores
-[[useAssistantChat]] · [[useAssistantUi]]
+[[useAssistantChat]] · [[useAssistantUi]] · [[useAssistantUiNeedsSetup]]

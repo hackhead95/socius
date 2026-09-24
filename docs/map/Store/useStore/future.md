@@ -2,13 +2,13 @@
 id: "store-key:useStore.future"
 type: store-key
 file: src/core/store.ts
-line: 80
+line: 82
 area: core
 ---
 
 # useStore.future
 
-*Store state key* · defined in [[store.ts]] (line 80) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 82) · area [[core]]
 
 - **Store:** useStore
 
@@ -24,6 +24,7 @@ area: core
 - [[fileActions.ts#startFresh|startFresh()]] · setState
 - [[navigation-audit.test.tsx]] · setState
 - [[shell-fixes.test.ts]] · setState
+- [[data-fixes.test.ts]] · setState
 - [[mutateDataset()|useStore.mutateDataset()]]
 - [[redo()|useStore.redo()]]
 - [[setDataset()|useStore.setDataset()]]

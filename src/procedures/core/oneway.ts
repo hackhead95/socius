@@ -1,5 +1,6 @@
 // Analyze > Compare Means: Means (SPSS MEANS) and One-Way ANOVA (SPSS ONEWAY).
 
+import { ciOption, confLevel, levelText } from '../text';
 import { selectCases } from '../../core/data';
 import type { Dataset, Variable } from '../../core/types';
 import type { OutputBlock } from '../../core/output';
@@ -25,7 +26,6 @@ import {
   numericValues,
   one,
   optBool,
-  optNum,
   pcell,
   requireNumeric,
   sameValue,
@@ -37,6 +37,8 @@ import {
   vlabel,
   vprose,
   type Cell,
+  selMissing,
+  allFinite,
 } from './common';
 
 interface Grouped {
@@ -103,7 +105,7 @@ function runMeans(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       for (const f2 of layer2List) {
         const ids = [dep.id, f1.id, ...(f2 ? [f2.id] : [])];
         const sel = selectCases(ds, ids);
-        if (!firstNote) firstNote = caseNote(ds, selN(sel), sel.nMissing);
+        if (!firstNote) firstNote = caseNote(ds, selN(sel), selMissing(ds, sel));
         const g1 = groupBy(ds, dep, f1, sel.rows, sel.weights);
         const rows: Cell[][] = [];
         const ruleBefore: number[] = [];
@@ -143,14 +145,20 @@ function runMeans(ds: Dataset, slots: SlotValues, opts: OptionValues) {
           let s = `${vprose(dep)} was highest for ${means[0].label} (M = ${apaNum(means[0].m.mean)}) and lowest for ${means[means.length - 1].label} (M = ${apaNum(means[means.length - 1].m.mean)})${f2 ? ` (averaged over ${vprose(f2)})` : ''}.`;
           if (optBool(opts, 'anova', false) && !f2) {
             const a = oneWayAnova(nonEmpty.map(({ g }) => ({ x: g.x, w: g.w })));
+            // The F test needs degrees of freedom and variation within groups (weighted N above the number of groups).
+            const testable = a.dfW > 0 && a.msW > 0 && allFinite(a.F, a.p);
+            if (!testable) {
+              a.F = NaN;
+              a.p = NaN;
+            }
             blocks.push(
               tableBlock({
                 title: 'ANOVA Table',
                 header: [[hcell('', { colSpan: 2 }), hcell('Sum of Squares'), hcell('df'), hcell('Mean Square'), hcell('F'), hcell('Sig.')]],
                 rows: [
                   [hcell(`${dep.name} * ${f1.name}`, { rowSpan: 3 }), hcell('Between Groups (Combined)'), cell(a.ssB, 'dec3'), cell(a.dfB, 'int'), cell(a.msB, 'dec3'), cell(a.F, 'dec3'), pcell(a.p)],
-                  [hcell('Within Groups'), cell(a.ssW, 'dec3'), cell(a.dfW, Number.isInteger(a.dfW) ? 'int' : 'dec2'), cell(a.msW, 'dec3'), blank(), blank()],
-                  [hcell('Total'), cell(a.ssT, 'dec3'), cell(a.dfT, Number.isInteger(a.dfT) ? 'int' : 'dec2'), blank(), blank(), blank()],
+                  [hcell('Within Groups'), cell(a.ssW, 'dec3'), cell(a.dfW > 0 ? a.dfW : NaN, Number.isInteger(a.dfW) ? 'int' : 'dec2'), cell(a.dfW > 0 ? a.msW : NaN, 'dec3'), blank(), blank()],
+                  [hcell('Total'), cell(a.ssT, 'dec3'), cell(a.dfT > 0 ? a.dfT : NaN, Number.isInteger(a.dfT) ? 'int' : 'dec2'), blank(), blank(), blank()],
                 ],
                 stubColumns: 2,
               }),
@@ -162,8 +170,9 @@ function runMeans(ds: Dataset, slots: SlotValues, opts: OptionValues) {
                 rows: [[hcell(`${dep.name} * ${f1.name}`), cell(Math.sqrt(a.effects.etaSq), 'r'), cell(a.effects.etaSq, 'r')]],
               }),
             );
-            s += ` The differences are ${a.p < 0.05 ? 'statistically significant' : 'not statistically significant'} (F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}, ${apaP(a.p)}); ${vprose(f1)} accounts for ${(100 * a.effects.etaSq).toFixed(1)}% of the variance in ${vprose(dep)} (η² = ${apaNum(a.effects.etaSq, 2, true)}, a ${labelEta2(a.effects.etaSq)} effect).`;
-            apa.push(`A one-way analysis of variance showed that ${vprose(dep)} ${a.p < 0.05 ? 'differed significantly' : 'did not differ significantly'} by ${vprose(f1)}, F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}, ${apaP(a.p)}, η² = ${apaNum(a.effects.etaSq, 2, true)}.`);
+            if (!testable) s += ` The ANOVA F test cannot be computed because ${a.dfW > 0 ? `${vprose(dep)} does not vary within the groups` : 'there are no degrees of freedom within the groups (it needs more cases than groups)'}.`;
+            else s += ` The differences are ${a.p < 0.05 ? 'statistically significant' : 'not statistically significant'} (F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}, ${apaP(a.p)}); ${vprose(f1)} accounts for ${(100 * a.effects.etaSq).toFixed(1)}% of the variance in ${vprose(dep)} (η² = ${apaNum(a.effects.etaSq, 2, true)}, a ${labelEta2(a.effects.etaSq)} effect).`;
+            if (testable) apa.push(`A one-way analysis of variance showed that ${vprose(dep)} ${a.p < 0.05 ? 'differed significantly' : 'did not differ significantly'} by ${vprose(f1)}, F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}, ${apaP(a.p)}, η² = ${apaNum(a.effects.etaSq, 2, true)}.`);
           }
           interp.push(s);
         } else {
@@ -216,8 +225,7 @@ function runOneway(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const factor = one(ds, slots, 'factor', 'factor variable');
   if (!deps.length) throw new Error('Choose at least one dependent variable.');
   deps.forEach((d) => requireNumeric(d, 'Dependent variables'));
-  const conf = optNum(opts, 'ciLevel', 95) / 100;
-  if (!(conf > 0.5 && conf < 1)) throw new Error('The confidence level must be between 50 and 99.9 percent.');
+  const conf = confLevel(opts, 'ciLevel', 'Confidence level (%)');
   const methods = POST_HOC.filter((m) => optBool(opts, m.key));
   const blocks: OutputBlock[] = [];
   const interp: string[] = [];
@@ -225,7 +233,7 @@ function runOneway(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   let note = '';
   for (const dep of deps) {
     const sel = selectCases(ds, [dep.id, factor.id]);
-    if (!note) note = caseNote(ds, selN(sel), sel.nMissing);
+    if (!note) note = caseNote(ds, selN(sel), selMissing(ds, sel));
     const g = groupBy(ds, dep, factor, sel.rows, sel.weights);
     const keep = g.groups.map((gr, i) => ({ gr, i })).filter(({ gr }) => gr.x.length > 0);
     if (keep.length < 2) throw new Error(keep.length === 0 ? `${dep.name} has no valid values in any group of ${factor.name} among the selected cases.` : `${dep.name}: the factor ${factor.name} has only one group with valid cases; at least two are needed.`);
@@ -235,7 +243,7 @@ function runOneway(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     if (!(a.dfW > 0)) throw new Error(`${dep.name}: there are no degrees of freedom within groups (each group has a single case).`);
     if (!(a.msW > 0)) throw new Error(`${dep.name} does not vary within the groups of ${factor.name}, so the F test cannot be computed.`);
     if (deps.length > 1) blocks.push(heading(vlabel(dep)));
-    const pc = Math.round(conf * 1000) / 10;
+    const pc = levelText(conf);
     if (optBool(opts, 'descriptives', true)) {
       const row = (label: string, d: AnovaResult['total'], bold = false): Cell[] => [
         hcell(label, bold ? { bold: true } : {}),
@@ -392,13 +400,18 @@ function runOneway(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       blocks.push({ kind: 'chart', chart: { type: 'line', title: `Means of ${vlabel(dep)} by ${vlabel(factor)}`, xLabel: vlabel(factor), yLabel: `Mean of ${vlabel(dep)}`, categories: labels, series: [{ name: vlabel(dep), values: a.groups.map((gr) => gr.mean) }] } });
     }
     // Interpretation
-    const unequalVar = a.leveneMean.p < 0.05;
+    const leveneSig = a.leveneMean.p < 0.05;
+    // Welch needs at least two cases and some variation in every group; without it, report the
+    // standard F test and say why, rather than printing an undefined statistic.
+    const welchOk = Number.isFinite(a.welch.F) && Number.isFinite(a.welch.df2) && Number.isFinite(a.welch.p);
+    const unequalVar = leveneSig && welchOk;
     const order = a.groups.map((gr, i) => ({ gr, i })).sort((x, y) => y.gr.mean - x.gr.mean);
     const hi = order[0];
     const lo = order[order.length - 1];
     const mainP = unequalVar ? a.welch.p : a.p;
     let s = `Mean ${vprose(dep)} was highest for ${labels[hi.i]} (M = ${apaNum(hi.gr.mean)}) and lowest for ${labels[lo.i]} (M = ${apaNum(lo.gr.mean)}). `;
     if (unequalVar) s += `Levene's test indicates unequal variances (${apaP(a.leveneMean.p)}), so the Welch test is the more trustworthy test of equal means${methods.some((m) => m.key === 'gamesHowell') ? ' and Games-Howell the more trustworthy post hoc test' : '; consider Games-Howell for post hoc comparisons'}. `;
+    else if (leveneSig) s += `Levene's test indicates unequal variances (${apaP(a.leveneMean.p)}), but the Welch test cannot be computed because at least one group has fewer than two cases or no variation, so the standard F test is reported; interpret it with caution. `;
     s += mainP < 0.05
       ? `The group means differ significantly (${unequalVar ? `Welch F(${fmtDf(a.welch.df1)}, ${fmtDf(a.welch.df2)}) = ${apaNum(a.welch.F)}` : `F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}`}, ${apaP(mainP)}). ${vprose(factor)} accounts for ${(100 * a.effects.etaSq).toFixed(1)}% of the variance (η² = ${apaNum(a.effects.etaSq, 2, true)}, ω² = ${apaNum(a.effects.omegaSqFixed, 2, true)}), a ${labelEta2(a.effects.omegaSqFixed)} effect judged by ω² (which corrects the upward bias of η²).`
       : `The differences between groups are not statistically significant (${apaP(mainP)}; η² = ${apaNum(a.effects.etaSq, 2, true)}).`;
@@ -446,7 +459,7 @@ export const onewayAnova: ProcedureDef = {
     { key: 'scheffe', label: 'Scheffe', type: 'checkbox', default: false, group: 'Post hoc' },
     { key: 'gamesHowell', label: 'Games-Howell (unequal variances)', type: 'checkbox', default: false, group: 'Post hoc' },
     { key: 'subsets', label: 'Homogeneous subsets (Tukey)', type: 'checkbox', default: false, group: 'Post hoc' },
-    { key: 'ciLevel', label: 'Confidence level (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Options' },
+    ciOption('ciLevel', 'Confidence level (%)', 'Options'),
     { key: 'plot', label: 'Means plot', type: 'checkbox', default: false, group: 'Options' },
   ],
   run: runOneway,

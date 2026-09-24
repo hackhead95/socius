@@ -2,13 +2,13 @@
 id: "store-action:useStore.toast"
 type: store-action
 file: src/core/store.ts
-line: 137
+line: 139
 area: core
 ---
 
 # useStore.toast()
 
-*Store action* · defined in [[store.ts]] (line 137) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 139) · area [[core]]
 
 - **Store:** useStore
 
@@ -22,10 +22,10 @@ area: core
 - [[dismissToast()|useStore.dismissToast()]]
 
 ## Called by
-- [[CopyPropertiesDialog|<CopyPropertiesDialog>]] · selector
 - [[DataViewInner|<DataViewInner>]] · selector
 - [[DefinePropertiesDialog|<DefinePropertiesDialog>]] · alias
 - [[ExplainPanel|<ExplainPanel>]] · getState
+- [[OutputViewer|<OutputViewer>]] · getState
 - [[TypeDialog|<TypeDialog>]] · getState
 - [[VariableViewInner|<VariableViewInner>]] · selector
 - [[fileActions.ts#activateDataset|activateDataset()]] · alias
@@ -52,6 +52,7 @@ area: core
 - [[output/actions.ts]] · getState
 - [[fileActions.ts]] · alias, getState
 - [[summarise|Summarise a code]]
+- [[ui-overlays.test.tsx]] · alias
 - [[coding/hooks.ts#toast|toast()]] · getState
 
 ## Store

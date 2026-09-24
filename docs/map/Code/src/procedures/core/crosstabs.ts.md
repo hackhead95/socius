@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/core/crosstabs.ts
 
-*Module* · area [[procedures]] · 777 lines
+*Module* · area [[procedures]] · 788 lines
 
 > Analyze > Descriptive Statistics > Crosstabs (SPSS CROSSTABS), including layered tables for the elaboration model (a control variable), chi-square tests, exact tests, measures of association, risk estimates, McNemar and Cochran-Mantel-Haenszel statistics.
 
@@ -20,6 +20,7 @@ area: procedures
 - [[core/common.ts]] · value
 
 ## Calls
+- [[procedures/text.ts#allFinite|allFinite()]]
 - [[core/common.ts#apaNum|apaNum()]]
 - [[core/common.ts#apaP|apaP()]]
 - [[core/common.ts#blank|blank()]]
@@ -46,6 +47,7 @@ area: procedures
 - [[stats/crosstabs.ts#riskEstimate|riskEstimate()]]
 - [[core/common.ts#sameValue|sameValue()]]
 - [[core/data.ts#selectCases|selectCases()]]
+- [[core/common.ts#selMissing|selMissing()]]
 - [[core/common.ts#selN|selN()]]
 - [[core/common.ts#sigWord|sigWord()]]
 - [[stats/crosstabs.ts#spearmanFromTable|spearmanFromTable()]]
@@ -59,22 +61,22 @@ area: procedures
 - [[core/index.ts]] · value
 
 ## Private helpers
-MAX_CATEGORIES (line 57) · adjustCount() (line 78) · buildPair() (line 84) · crosstabTable() (line 133) · safeCellStats() (line 188) · computeLayer() (line 214) · chiSquareTable() (line 240) · measureRow() (line 300) · symmetricTable() (line 311) · directionalTable() (line 364) · riskTable() (line 415) · cmhBlocks() (line 446) · describeAssociation() (line 499) · clustered (line 714)
+MAX_CATEGORIES (line 59) · adjustCount() (line 80) · buildPair() (line 86) · crosstabTable() (line 137) · safeCellStats() (line 192) · computeLayer() (line 218) · chiSquareTable() (line 244) · measureRow() (line 304) · symmetricTable() (line 315) · directionalTable() (line 368) · riskTable() (line 419) · cmhBlocks() (line 450) · describeAssociation() (line 510) · clustered (line 725)
 
 ## Symbols
 
 ### clusteredBar
-*function* · line 561
+*function* · line 572
 - Calls: [[core/common.ts#valueText|valueText()]], [[core/common.ts#vlabel|vlabel()]], [[stats/crosstabs.ts#margins|margins()]]
 - Output: [[Charts/bar|bar]]
 
 ### run
-*function* · line 586
+*function* · line 597
 - Calls: [[core/common.ts#apaNum|apaNum()]], [[core/common.ts#apaP|apaP()]], [[core/common.ts#caseNote|caseNote()]], [[core/common.ts#fmtN|fmtN()]], [[core/common.ts#heading|heading()]], [[core/common.ts#item|item()]], [[core/common.ts#optBool|optBool()]], [[core/common.ts#optStr|optStr()]], [[core/common.ts#tableBlock|tableBlock()]], [[core/common.ts#text|text()]], [[core/common.ts#vars|vars()]], [[core/common.ts#vlabel|vlabel()]], [[core/common.ts#vprose|vprose()]], [[core/crosstabs.ts]], [[output.ts#cell|cell()]], [[output.ts#hcell|hcell()]]
 - Uses: [[core/common.ts#COHEN_NOTE|COHEN_NOTE]]
 - Output: [[Blocks/chart|chart]]
 
 ### crosstabs
-*const* · line 716 · exported
+*const* · line 727 · exported
 - Uses: [[core/crosstabs.ts#run|run()]]
 - Used in: [[core/index.ts]]

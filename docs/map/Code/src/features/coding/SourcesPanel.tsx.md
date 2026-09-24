@@ -31,7 +31,7 @@ docSummary() (line 149)
 
 ### SourcesPanel
 *component* · line 12 · exported · note: [[SourcesPanel|<SourcesPanel>]]
-- Renders: [[ConfirmDialog|<ConfirmDialog>]], [[MenuButton (features-coding-ui)|<MenuButton>]]
+- Renders: [[ConfirmDialog|<ConfirmDialog>]], [[MenuButton|<MenuButton>]]
 - Calls: [[SourcesPanel.tsx]], [[coding/actions.ts#deleteDocs|deleteDocs()]], [[coding/analysis.ts#attributeKeys|attributeKeys()]], [[coding/analysis.ts#attributeValues|attributeValues()]], [[coding/analysis.ts#constantAttributeKeys|constantAttributeKeys()]], [[coding/analysis.ts#orderedAttributes|orderedAttributes()]], [[coding/hooks.ts#plural|plural()]], [[uiStore.ts#openLocalDialog|openLocalDialog()]], [[useCodingUi]], [[useSegmentIndex|useSegmentIndex()]], [[useStore]]
 - Reads: [[activeDocId|useCodingUi.activeDocId]], [[docAttr|useCodingUi.docAttr]], [[docFilter|useCodingUi.docFilter]], [[docSearch|useCodingUi.docSearch]], [[useStore/coding|useStore.coding]]
 - Writes: [[activeDocId|useCodingUi.activeDocId]], [[docAttr|useCodingUi.docAttr]], [[docFilter|useCodingUi.docFilter]], [[docSearch|useCodingUi.docSearch]], [[useCodingUi/view|useCodingUi.view]]

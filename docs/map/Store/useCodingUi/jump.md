@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.jump"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 36
+line: 41
 area: features/coding
 ---
 
 # useCodingUi.jump
 
-*Store state key* · defined in [[uiStore.ts]] (line 36) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 41) · area [[features - coding|features/coding]]
 
 > Scroll the reader to this range and flash it.
 

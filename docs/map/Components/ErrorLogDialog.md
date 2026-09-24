@@ -2,13 +2,13 @@
 id: "src/features/errorlog/ErrorLogDialog.tsx#ErrorLogDialog"
 type: component
 file: src/features/errorlog/ErrorLogDialog.tsx
-line: 44
+line: 45
 area: features/errorlog
 ---
 
 # <ErrorLogDialog>
 
-*React component* · defined in [[ErrorLogDialog.tsx]] (line 44) · area [[features - errorlog|features/errorlog]]
+*React component* · defined in [[ErrorLogDialog.tsx]] (line 45) · area [[features - errorlog|features/errorlog]]
 
 - **Exported:** yes
 

@@ -21,7 +21,7 @@ area: app
 - [[Weight cases|Data > Weight cases...]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

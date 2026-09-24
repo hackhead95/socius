@@ -30,6 +30,8 @@ import {
   vlabel,
   vprose,
   type Cell,
+  selMissing,
+  allFinite,
 } from './common';
 
 type Method = 'pearson' | 'spearman' | 'kendall';
@@ -85,6 +87,8 @@ function runCorrelations(ds: Dataset, slots: SlotValues, opts: OptionValues) {
         else {
           const constant = d.x.length < 2 || d.x.every((v) => v === d.x[0]) || d.y.every((v) => v === d.y[0]);
           pr = constant ? { res: { r: NaN, N: W, p2: NaN, p1: NaN }, constant } : { res: compute(m, d.x, d.y, d.w), constant };
+          // A significance test needs at least 3 cases (df = N - 2 > 0); below that SPSS leaves Sig. blank.
+          if (!(W >= MIN_TEST_N)) pr = { res: { ...pr.res, p1: NaN, p2: NaN }, constant: pr.constant };
         }
         mat[i][j] = pr;
         mat[j][i] = pr;
@@ -200,11 +204,13 @@ function runCorrelations(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     interp += ` ${pos ? 'A positive' : 'A negative'} correlation means that cases with higher ${vprose(vs[sig[0].i])} tend to have ${pos ? 'higher' : 'lower'} ${vprose(vs[sig[0].j])}; correlation alone does not show which causes which.`;
   }
   if (pairs.some((p) => mat0[p.i][p.j].constant)) interp += ' Some coefficients could not be computed because a variable is constant among the cases used.';
+  const tooFew = pairs.filter((p) => !(p.r.N >= MIN_TEST_N));
+  if (tooFew.length) interp += ` ${tooFew.length === pairs.length ? (pairs.length === 1 ? 'This correlation' : 'These correlations') : `${tooFew.length} of the correlations`} could not be tested: a significance test needs at least ${MIN_TEST_N} cases with valid values on both variables.`;
   blocks.push(text('interpretation', `${interp} ${COHEN_NOTE}`));
   if (sig.length) {
     const df = (p: (typeof pairs)[number]) => (m0 === 'kendall' ? '' : `(${fmtN(Math.round(p.r.N - 2))})`);
     blocks.push(text('apa', sig.slice(0, 5).map((p) => `${vprose(vs[p.i])} was ${p.r.r > 0 ? 'positively' : 'negatively'} correlated with ${vprose(vs[p.j])}, ${sym}${df(p)} = ${apaNum(p.r.r, 2, true)}, ${apaP(pOf(p.r))}.`).join(' ')));
-  } else if (pairs.length === 1) {
+  } else if (pairs.length === 1 && Number.isFinite(pairs[0].r.r) && Number.isFinite(pOf(pairs[0].r)) && pairs[0].r.N >= MIN_TEST_N) {
     const p = pairs[0];
     blocks.push(text('apa', `${vprose(vs[p.i])} was not significantly correlated with ${vprose(vs[p.j])}, ${sym}${m0 === 'kendall' ? '' : `(${fmtN(Math.round(p.r.N - 2))})`} = ${apaNum(p.r.r, 2, true)}, ${apaP(pOf(p.r))}.`));
   }
@@ -214,9 +220,12 @@ function runCorrelations(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const lines: string[] = [];
   if (methods.includes('pearson')) lines.push(`CORRELATIONS\n  /VARIABLES=${vs.map((v) => v.name).join(' ')}\n  /PRINT=${oneTailed ? 'ONETAIL' : 'TWOTAIL'} ${flag ? 'NOSIG' : 'SIG'}${optBool(opts, 'descriptives') ? '\n  /STATISTICS DESCRIPTIVES' : ''}\n  /MISSING=${listwise ? 'LISTWISE' : 'PAIRWISE'}.`);
   if (np.length) lines.push(`NONPAR CORR\n  /VARIABLES=${vs.map((v) => v.name).join(' ')}\n  /PRINT=${np.length === 2 ? 'BOTH' : np[0] === 'kendall' ? 'KENDALL' : 'SPEARMAN'} ${oneTailed ? 'ONETAIL' : 'TWOTAIL'} ${flag ? 'NOSIG' : 'SIG'}\n  /MISSING=${listwise ? 'LISTWISE' : 'PAIRWISE'}.`);
-  const nNote = listwise ? caseNote(ds, selN(selAll), selAll.nMissing, 'listwise deletion') : caseNote(ds, Math.max(...pairs.map((p) => p.r.N)), 0, 'pairwise deletion: each coefficient uses the cases valid on both variables (see N in the table)');
+  const nNote = listwise ? caseNote(ds, selN(selAll), selMissing(ds, selAll), 'listwise deletion') : caseNote(ds, Math.max(...pairs.map((p) => p.r.N)), 0, 'pairwise deletion: each coefficient uses the cases valid on both variables (see N in the table)');
   return item('correlations', 'Correlations', ds, blocks, lines.join('\n'), nNote);
 }
+
+/** Fewest (weighted) cases for a significance test of a correlation: df = N - 2 must be positive. */
+const MIN_TEST_N = 3;
 
 export const bivariateCorrelations: ProcedureDef = {
   id: 'correlations',
@@ -316,7 +325,17 @@ function runPartial(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       const rp = part.r[i][j];
       const pp = oneTailed ? part.p1[i][j] : part.p2[i][j];
       const p0 = oneTailed ? zeroFull.p1[i][j] : zeroFull.p2[i][j];
-      let s = `The correlation between ${vprose(vs[i])} and ${vprose(vs[j])} is r = ${apaNum(r0, 2, true)} (${apaP(p0)}) before and r = ${apaNum(rp, 2, true)} (${apaP(pp)}) after controlling for ${ctrlText}.`;
+      const pairName = `${vprose(vs[i])} and ${vprose(vs[j])}`;
+      if (!allFinite(r0, rp, pp, p0)) {
+        // A variable fully explained by the controls has no variation left: say so, print no statistic.
+        parts.push(
+          allFinite(r0, p0)
+            ? `The correlation between ${pairName} is r = ${apaNum(r0, 2, true)} (${apaP(p0)}) before controlling for ${ctrlText}; the partial correlation cannot be computed because ${ctrlText} ${cs.length === 1 ? 'accounts' : 'account'} for all the variation in one of them.`
+            : `The correlation between ${pairName} cannot be computed because one of them has no variation left among the complete cases.`,
+        );
+        continue;
+      }
+      let s = `The correlation between ${pairName} is r = ${apaNum(r0, 2, true)} (${apaP(p0)}) before and r = ${apaNum(rp, 2, true)} (${apaP(pp)}) after controlling for ${ctrlText}.`;
       const drop = Math.abs(r0) - Math.abs(rp);
       if (p0 < 0.05 && pp >= 0.05) s += ` The association largely disappears once ${ctrlText} ${cs.length === 1 ? 'is' : 'are'} held constant, consistent with a spurious or mediated relationship.`;
       else if (drop > 0.1 && Math.sign(r0) === Math.sign(rp)) s += ` Part of the association is accounted for by ${ctrlText}, but a ${labelR(rp)} relationship remains.`;
@@ -327,10 +346,10 @@ function runPartial(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       apa.push(`Controlling for ${ctrlText}, the partial correlation between ${vprose(vs[i])} and ${vprose(vs[j])} was ${pp < 0.05 ? 'significant' : 'not significant'}, r(${fmtN(Math.round(part.df))}) = ${apaNum(rp, 2, true)}, ${apaP(pp)}.`);
     }
   blocks.push(text('interpretation', parts.slice(0, 10).join(' ') + ` ${COHEN_NOTE}`));
-  blocks.push(text('apa', apa.slice(0, 10).join(' ')));
+  if (apa.length) blocks.push(text('apa', apa.slice(0, 10).join(' ')));
   if (N < 30) blocks.push(text('warning', `Only ${fmtN(N)} complete cases: partial correlations with few cases are imprecise.`));
   const syntax = `PARTIAL CORR\n  /VARIABLES=${vs.map((v) => v.name).join(' ')} BY ${cs.map((v) => v.name).join(' ')}\n  /SIGNIFICANCE=${oneTailed ? 'ONETAIL' : 'TWOTAIL'}${zeroOrder ? '\n  /STATISTICS=CORR' : ''}\n  /MISSING=LISTWISE.`;
-  return item('partial-correlations', 'Partial Correlations', ds, blocks, syntax, caseNote(ds, N, sel.nMissing, 'listwise deletion'));
+  return item('partial-correlations', 'Partial Correlations', ds, blocks, syntax, caseNote(ds, N, selMissing(ds, sel), 'listwise deletion'));
 }
 
 export const partialCorrelationsProc: ProcedureDef = {

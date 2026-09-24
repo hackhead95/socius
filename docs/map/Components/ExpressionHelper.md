@@ -2,13 +2,13 @@
 id: "src/features/transform/common.tsx#ExpressionHelper"
 type: component
 file: src/features/transform/common.tsx
-line: 154
+line: 178
 area: features/transform
 ---
 
 # <ExpressionHelper>
 
-*React component* · defined in [[transform/common.tsx]] (line 154) · area [[features - transform|features/transform]]
+*React component* · defined in [[transform/common.tsx]] (line 178) · area [[features - transform|features/transform]]
 
 > Variables + functions reference panel that inserts into the active expression field.
 

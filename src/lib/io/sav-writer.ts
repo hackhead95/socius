@@ -560,7 +560,7 @@ function makeRowFiller(ds: Dataset, plans: VarPlan[], caseBytes: number, le: boo
       numCols.push(ds.columns[p.v.id] as Float64Array);
     }
   }
-  const maxWidth = Math.max(8, ...strPlans.map((p) => p.width));
+  const maxWidth = strPlans.reduce((m, p) => Math.max(m, p.width), 8);
   const scratch = new Uint8Array(maxWidth);
   const fill = (i: number) => {
     for (let j = 0; j < numOffsets.length; j++) {

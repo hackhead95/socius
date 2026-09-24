@@ -2,13 +2,13 @@
 id: "store-key:useStore.focusOutputId"
 type: store-key
 file: src/core/store.ts
-line: 93
+line: 95
 area: core
 ---
 
 # useStore.focusOutputId
 
-*Store state key* · defined in [[store.ts]] (line 93) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 95) · area [[core]]
 
 > Output item to scroll to / highlight.
 

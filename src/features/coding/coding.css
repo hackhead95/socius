@@ -21,10 +21,28 @@
 
 /* Toolbar */
 .cw-toolbar { display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-.cw-viewtabs { border-bottom: 0; flex: 1 1 auto; min-width: 0; }
+/* View tabs scroll sideways when they do not fit (phones). The side with more tabs fades out and
+   shows a chevron, so it is clear the row scrolls (UI-023). The chevrons ignore the pointer, so the
+   tab under them stays clickable. */
+.cw-viewtabs-wrap { position: relative; display: flex; flex: 1 1 auto; min-width: 0; }
+.cw-viewtabs { border-bottom: 0; flex: 1 1 auto; min-width: 0; scrollbar-width: none; scroll-behavior: smooth; }
+.cw-viewtabs::-webkit-scrollbar { display: none; }
+.cw-viewtabs-wrap.more-right .cw-viewtabs { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); }
+.cw-viewtabs-wrap.more-left .cw-viewtabs { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent); }
+.cw-viewtabs-wrap.more-left.more-right .cw-viewtabs {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+}
+.cw-viewtabs-wrap::before, .cw-viewtabs-wrap::after {
+  position: absolute; top: 50%; transform: translateY(-50%); pointer-events: none; display: none;
+  font-size: 18px; font-weight: 700; line-height: 1; color: var(--accent);
+}
+.cw-viewtabs-wrap.more-left::before { content: '\2039'; display: block; left: 2px; }
+.cw-viewtabs-wrap.more-right::after { content: '\203A'; display: block; right: 2px; }
+.cw-tabneeds { font-variant-numeric: normal; }
+@media (max-width: 900px) { .cw-tabneeds { display: none; } }
 .cw-tabcount { margin-left: 6px; font-size: var(--fs-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
 .cw-actions { padding-bottom: 6px; gap: 6px; }
-.cw-ainote { font-size: var(--fs-xs); color: var(--muted); padding: 0 var(--space-3); }
 
 /* Layout */
 .cw-main { flex: 1 1 auto; min-height: 0; display: grid; gap: var(--space-3); grid-template-columns: minmax(0, 1fr); }
@@ -37,7 +55,10 @@
   .cw { --cw-sources-w: 210px; --cw-codebook-w: 250px; }
 }
 @media (max-width: 900px) {
-  .cw { height: auto; min-height: 0; }
+  /* Stacked panels: the workspace takes its content height and the page scrolls. Without flex: none
+     the pane squeezed it to the screen height and the Sources and Codebook panels collapsed to
+     their headers, their contents hidden under the centre panel. */
+  .cw { height: auto; min-height: 0; flex: none; }
   .cw .cw-main, .cw.has-sources .cw-main, .cw.has-codebook .cw-main, .cw.has-sources.has-codebook .cw-main { grid-template-columns: minmax(0, 1fr); }
   .cw-sources { max-height: 260px; order: 1; }
   .cw-center { order: 2; min-height: 70dvh; max-height: 88dvh; }
@@ -192,6 +213,7 @@
   border-left: 3px solid var(--accent); background: var(--accent-soft); font-size: var(--fs-sm); color: var(--text);
 }
 .cw-example-text { max-width: 90ch; line-height: 1.45; }
+.cw-example-next { margin-top: 4px; }
 .cw-example-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cw-resp-search { flex: 1 1 180px; min-width: 140px; }
 .cw-resp-keys { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
@@ -244,6 +266,9 @@
 .cw-ftable td, .cw-ftable th { white-space: nowrap; }
 .cw-ftable td:first-child { white-space: normal; min-width: 160px; }
 .cw-barcol { width: 22%; min-width: 80px; }
+.cw-ftheme td { font-weight: 600; background: var(--surface-2); }
+.cw-ftag { font-size: var(--fs-xs); font-weight: 500; color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+.cw-fown { display: block; font-weight: 400; margin-left: 16px; }
 .cw-bar { display: block; height: 8px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
 .cw-bar > span { display: block; height: 100%; border-radius: 4px; }
 .cw-linkbtn { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-align: left; }
@@ -254,7 +279,11 @@
 /* Heatmap */
 .cw-heat { border-collapse: separate; border-spacing: 2px; font-size: var(--fs-xs); }
 .cw-heat td { min-width: 34px; height: 30px; text-align: center; border-radius: 3px; background: var(--surface-2); font-variant-numeric: tabular-nums; }
-.cw-heat-diag { background: var(--surface-3) !important; color: var(--muted); }
+.cw-heat td.cw-heat-diag { background: var(--surface-3) !important; color: var(--muted); }
+/* Strong cells: dark text on the light theme's mid blue, dark ink on the dark theme's light blue. */
+.cw-heat td { color: var(--text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .cw-heat-strong { color: var(--accent-text); } }
+:root[data-theme='dark'] .cw-heat-strong { color: var(--accent-text); }
 .cw-heat-row { text-align: left; font-weight: 500; padding-right: 8px; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .cw-heat-col { height: 120px; vertical-align: bottom; font-weight: 500; }
 .cw-heat-col span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); max-height: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

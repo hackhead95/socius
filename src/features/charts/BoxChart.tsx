@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { band, formatTick, formatValue, linear, niceTicks } from './scale';
-import { ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, YAxis, fit, headerLayout, maxLabelWidth, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, YAxis, fit, useHeaderLayout, maxLabelWidth, type SetTip } from './common';
 
 type BoxSpec = Extract<ChartSpec, { type: 'box' }>;
 
@@ -25,7 +25,7 @@ function star(cx: number, cy: number, r: number): string {
 
 export function BoxChart({ spec, width, setTip }: { spec: BoxSpec; width: number; setTip: SetTip }) {
   const [hover, setHover] = useState(-1);
-  const head = headerLayout(spec.title, [], width);
+  const head = useHeaderLayout(spec.title, [], width);
   const G = spec.groups.length;
   let lo = Infinity;
   let hi = -Infinity;

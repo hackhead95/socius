@@ -31,8 +31,10 @@ area: app
 
 ## Tested by
 - [[qual.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
 - [[navigation-audit.test.tsx]] · menu label
 - [[search.test.ts]] · menu label
+- [[ui-overlays.test.tsx]] · menu label
 
 ## Documents shortcut
 - [[Mod+Z]] · Edit > Undo

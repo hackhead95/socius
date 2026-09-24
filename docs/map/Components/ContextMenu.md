@@ -2,13 +2,13 @@
 id: "src/ui/Menu.tsx#ContextMenu"
 type: component
 file: src/ui/Menu.tsx
-line: 295
+line: 299
 area: ui
 ---
 
 # <ContextMenu>
 
-*React component* · defined in [[Menu.tsx]] (line 295) · area [[ui]]
+*React component* · defined in [[Menu.tsx]] (line 299) · area [[ui]]
 
 > Context menu at a viewport position; closes on outside click, scroll or Escape.
 

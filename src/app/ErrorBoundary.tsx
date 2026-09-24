@@ -7,17 +7,14 @@
 import { Component, useState, type ErrorInfo, type ReactNode } from 'react';
 import { useStore } from '../core/store';
 import { copyToClipboard } from '../platform/host';
-import { formatReport, logError } from '../platform/errorlog';
+import { componentStackText, formatReport, logError } from '../platform/errorlog';
 import { copyErrorReport, openErrorLog, prefilledFeedbackUrl } from '../features/errorlog/actions';
 import { FEEDBACK_URL } from './links';
 import '../features/errorlog/errorlog.css';
 
-/** The first lines of React's component stack (component names only, no data). */
+/** React's component stack, component names only (no file URLs or data). */
 function componentStack(info: ErrorInfo | undefined): string | undefined {
-  const s = info?.componentStack;
-  if (!s) return undefined;
-  const lines = s.split('\n').map((l) => l.trim()).filter(Boolean);
-  return `Component stack:\n${lines.slice(0, 10).map((l) => `  ${l}`).join('\n')}${lines.length > 10 ? `\n  (${lines.length - 10} more)` : ''}`;
+  return componentStackText(info?.componentStack);
 }
 
 interface BoundaryProps {
@@ -37,6 +34,8 @@ interface BoundaryState {
 
 export class ErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   state: BoundaryState = { error: null, failed: false };
+  /** This boundary logs what it catches (with its `op`), so the root's onCaughtError leaves it alone. */
+  readonly logsOwnErrors = true;
 
   static getDerivedStateFromError(error: unknown): BoundaryState {
     return { error, failed: true };

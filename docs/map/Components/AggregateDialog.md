@@ -13,6 +13,7 @@ area: features/transform
 - **Exported:** yes
 
 ## Calls
+- [[aggregate.ts#aggNeedsSource|aggNeedsSource()]]
 - [[aggregate.ts#aggregate|aggregate()]]
 - [[transform/common.tsx#applyTransform|applyTransform()]]
 - [[errorlog.ts#logFailure|logFailure()]]
@@ -26,6 +27,7 @@ area: features/transform
 
 ## Uses
 - [[aggregate.ts#AGG_FUNCTIONS|AGG_FUNCTIONS]]
+- [[aggregate.ts#STRING_AGG_FUNCTIONS|STRING_AGG_FUNCTIONS]]
 - [[useStore]]
 - [[useUi]]
 

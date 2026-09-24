@@ -3,7 +3,7 @@
 // buffer (entry and size caps, repeats counted, storage failures), context and reports.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  ERROR_LOG_KEY, MAX_BYTES, MAX_ENTRIES, SESSION_ID, __resetErrorLogForTests, clearLog, describeBrowser, fileKind, formatReport, formatSummary, getLog,
+  ERROR_LOG_KEY, MAX_BYTES, NUMBER_REMOVED, componentStackText, MAX_ENTRIES, SESSION_ID, __resetErrorLogForTests, clearLog, describeBrowser, fileKind, formatReport, formatSummary, getLog,
   logError, logFailure, logInfo, logIsMemoryOnly, logSlow, logWarn, looksSecret, markLogSeen, redact, setLogContextProvider, setSensitiveTermsProvider,
   subscribe, unseenErrorCount,
 } from '../../src/platform/errorlog';
@@ -87,6 +87,73 @@ describe('redact', () => {
   it('fileKind keeps only the extension', () => {
     expect(fileKind('My Survey 2024.SAV')).toBe('sav');
     expect(fileKind('noext')).toBe('');
+  });
+});
+
+describe('redact: numbers that identify people', () => {
+  it('removes Indian mobile numbers in every usual form', () => {
+    for (const phone of ['+91 98765 43210', '+919876543210', '+91-98765-43210', '0091 9876543210', '09876543210', '9876543210', '98765 43210', '7012345678', '6123456789']) {
+      const out = redact(`Row 12 has ${phone} in column B`, 500);
+      expect(out, phone).toBe(`Row 12 has ${NUMBER_REMOVED} in column B`);
+    }
+  });
+
+  it('removes Aadhaar-like 12-digit numbers, with or without groups of four', () => {
+    for (const id of ['2345 6789 0123', '2345-6789-0123', '234567890123']) {
+      expect(redact(`Cannot parse ${id} as a date`, 500), id).toBe(`Cannot parse ${NUMBER_REMOVED} as a date`);
+    }
+  });
+
+  it('removes any other long run of digits in free text, in any script', () => {
+    expect(redact('Unexpected value 123456789 in row 4', 500)).toBe(`Unexpected value ${NUMBER_REMOVED} in row 4`);
+    expect(redact('value=48213377190023 rejected', 500)).toBe(`value=${NUMBER_REMOVED} rejected`);
+    // Bengali and Devanagari digits.
+    expect(redact('ফোন ৯৮৭৬৫৪৩২১০ দিন', 500)).toBe(`ফোন ${NUMBER_REMOVED} দিন`);
+    expect(redact('मोबाइल ९८७६५४३२१० है', 500)).toBe(`मोबाइल ${NUMBER_REMOVED} है`);
+  });
+
+  it('keeps short numbers: HTTP statuses, counts, sizes, dates and stack positions', () => {
+    const keep = [
+      'Gemini answered 429 (rate limited)',
+      'HTTP status: 503',
+      'Slow: models.linear took 12.3 s',
+      '500 cases x 40 variables',
+      'Row 18: 4721.5 is out of range',
+      'Built 2026-09-24',
+      'at run (https://hackhead95.github.io/socius/assets/index-CkL3x9aZ.js:1:234567)',
+      'Maximum call stack size exceeded after 10000 calls',
+      'gemini-2.5-flash-preview-09-2025',
+    ];
+    for (const t of keep) expect(redact(t, 500), t).toBe(t);
+  });
+
+  it('never stores such numbers in the log (message, detail or service text)', () => {
+    const err = Object.assign(new Error('Import failed at 9876543210'), { detail: 'Aadhaar 2345 6789 0123 and +91 91234 56789 in the file' });
+    logError('import', err);
+    const e = getLog()[0];
+    const all = JSON.stringify(e) + (localStorage.getItem(ERROR_LOG_KEY) ?? '');
+    for (const n of ['9876543210', '2345 6789 0123', '91234 56789']) expect(all, n).not.toContain(n);
+    expect(e.message).toBe(`Import failed at ${NUMBER_REMOVED}`);
+  });
+
+  it('is stable: redacting twice changes nothing more', () => {
+    for (const t of ['call +91 98765 43210 now', 'id 2345 6789 0123', 'x 1234567890123 y', `key ${KEYS.gemini} and 9876543210`]) {
+      const once = redact(t, 500);
+      expect(redact(once, 500), t).toBe(once);
+    }
+  });
+});
+
+describe('componentStackText', () => {
+  it('keeps component names only, without file addresses', () => {
+    const stack = '\n    at Boom (http://localhost:5173/src/Boom.tsx?t=1712:10:5)\n    at ErrorBoundary (http://localhost:5173/src/app/ErrorBoundary.tsx:30:1)\n    at div\n    at http://localhost:5173/src/x.ts:1:2\n    Crosstabs@https://hackhead95.github.io/socius/assets/index-Ab12.js:1:99';
+    const out = componentStackText(stack)!;
+    expect(out).toBe('Component stack:\n  at Boom\n  at ErrorBoundary\n  at div\n  at Crosstabs');
+    expect(out).not.toMatch(/localhost|github|\.tsx|:\d/);
+    expect(componentStackText('')).toBeUndefined();
+    expect(componentStackText(undefined)).toBeUndefined();
+    const long = Array.from({ length: 15 }, (_, i) => `    at C${i} (x.js:1:1)`).join('\n');
+    expect(componentStackText(long)).toContain('(5 more)');
   });
 });
 
@@ -280,5 +347,24 @@ describe('reports', () => {
     expect(describeBrowser('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15')).toBe('Safari 18 on macOS');
     expect(describeBrowser('Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0')).toBe('Firefox 131 on Linux');
     expect(describeBrowser('Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/140.0 Safari/537.36 Edg/140.0.1')).toBe('Edge 140 on Windows');
+  });
+});
+
+describe('the same problem in several sessions', () => {
+  it('is one entry with the total count, the number of sessions and when it was first seen', () => {
+    const old = { id: 'old-1', time: '2026-09-20T10:00:00.000Z', level: 'error', area: 'storage', message: 'The quota has been exceeded.', detail: 'Type: QuotaExceededError\nCode: 22', context: { op: 'readwrite session' }, count: 4, session: 'oldsess' };
+    const other = { id: 'old-2', time: '2026-09-20T10:01:00.000Z', level: 'warn', area: 'import', message: 'Something else', session: 'oldsess' };
+    localStorage.setItem(ERROR_LOG_KEY, JSON.stringify({ v: 1, entries: [old, other] }));
+    __resetErrorLogForTests({ reload: true });
+    const err = Object.assign(new Error('The quota has been exceeded.'), { name: 'QuotaExceededError', code: 22, stack: '' });
+    logError('storage', err, { op: 'readwrite session' });
+    const log = getLog();
+    expect(log).toHaveLength(2);
+    expect(log[0]).toMatchObject({ area: 'storage', count: 5, sessions: 2, first: '2026-09-20T10:00:00.000Z', session: SESSION_ID });
+    expect(formatReport()).toContain('(x5 in 2 sessions, first 2026-09-20T10:00:00.000Z)');
+    // The merged old entry does not come back from storage on the next write.
+    logWarn('ui', 'another');
+    expect(getLog().filter((e) => e.area === 'storage')).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem(ERROR_LOG_KEY)!).entries.filter((e: any) => e.area === 'storage')).toHaveLength(1);
   });
 });

@@ -105,7 +105,12 @@ export function writeTexts(ds: Dataset, writes: CellWrite[]): WriteReport {
   if (!writes.length) return { dataset: ds, rejected: 0, addedCases: 0, addedVars: 0, widened: [] };
   let variables = ds.variables;
   const nVars = ds.variables.length;
-  const maxCol = Math.max(...writes.map((w) => w.col));
+  // Loops, not Math.max(...list): a large paste has more cells than a call can take as arguments.
+  let maxCol = -1, maxRow = -1;
+  for (const w of writes) {
+    if (w.col > maxCol) maxCol = w.col;
+    if (w.row > maxRow) maxRow = w.row;
+  }
   let working: Dataset = ds;
   const columns: Record<string, Column> = {};
   if (maxCol >= nVars) {
@@ -116,7 +121,9 @@ export function writeTexts(ds: Dataset, writes: CellWrite[]): WriteReport {
       const numeric = texts.every((t) => Number.isFinite(Number(t.replace(/,/g, ''))));
       const v = newDefaultVariable(tmp, numeric ? 'numeric' : 'string');
       if (!numeric) {
-        const w = Math.min(255, Math.max(8, ...texts.map((t) => t.length)));
+        let w = 8;
+        for (const t of texts) if (t.length > w) w = t.length;
+        w = Math.min(255, w);
         v.width = w;
         v.format = `A${w}`;
       } else if (texts.every((t) => Number.isInteger(Number(t.replace(/,/g, ''))))) {
@@ -144,7 +151,6 @@ export function writeTexts(ds: Dataset, writes: CellWrite[]): WriteReport {
       widened.push(v.name);
     }
   }
-  const maxRow = Math.max(...writes.map((w) => w.row));
   const nCases = Math.max(ds.nCases, maxRow + 1);
   const cols: Record<string, Column> = {};
   growCases(working, nCases, cols);
@@ -189,7 +195,10 @@ export function looksLikeHeader(grid: string[][]): boolean {
 /** Rename variables from `start` on after pasted headings (invalid names are made valid; the heading becomes the label). */
 export function nameVariablesFromHeader(ds: Dataset, start: number, headings: string[]): Dataset {
   const variables = ds.variables.slice();
-  const taken: Dataset = { ...ds, variables: variables.slice(0, start) };
+  // Names in use: every variable that keeps its name (before and after the pasted block), plus each
+  // renamed one as it is named, so a heading can never repeat a name that exists further right.
+  const end = Math.min(variables.length, start + headings.length);
+  const taken: Dataset = { ...ds, variables: [...variables.slice(0, start), ...variables.slice(end)] };
   headings.forEach((h, k) => {
     const i = start + k;
     if (!variables[i]) return;
@@ -198,7 +207,6 @@ export function nameVariablesFromHeader(ds: Dataset, start: number, headings: st
     variables[i] = { ...variables[i], name, label: name === text ? variables[i].label : text.slice(0, 255) };
     taken.variables.push(variables[i]);
   });
-  for (let i = start + headings.length; i < variables.length; i++) taken.variables.push(variables[i]);
   return { ...ds, variables };
 }
 
@@ -271,6 +279,15 @@ export function changeType(ds: Dataset, varId: string, type: VarType, format: st
   return bump(ds, { variables, columns: { ...ds.columns, [varId]: col } });
 }
 
+/** Change dictionary properties of one variable (not its type; see changeType). */
+export function patchVariable(ds: Dataset, varId: string, patch: Partial<Omit<Variable, 'id' | 'type'>>): Dataset {
+  const idx = ds.variables.findIndex((v) => v.id === varId);
+  if (idx < 0) return ds;
+  const variables = ds.variables.slice();
+  variables[idx] = { ...variables[idx], ...patch, id: varId };
+  return bump(ds, { variables });
+}
+
 /** Duplicate variables (with data) right after each original, named <name>_copy. */
 export function duplicateVariables(ds: Dataset, ids: string[]): Dataset {
   let variables = ds.variables.slice();
@@ -288,41 +305,5 @@ export function duplicateVariables(ds: Dataset, ids: string[]): Dataset {
   return bump(ds, { variables, columns });
 }
 
-export type CopyProp = 'valueLabels' | 'missing' | 'measure' | 'format' | 'label' | 'display' | 'role';
-
-export const COPY_PROPS: Array<{ id: CopyProp; label: string; defaultOn: boolean }> = [
-  { id: 'valueLabels', label: 'Value labels', defaultOn: true },
-  { id: 'missing', label: 'Missing values', defaultOn: true },
-  { id: 'measure', label: 'Measure', defaultOn: true },
-  { id: 'format', label: 'Width and decimals', defaultOn: false },
-  { id: 'display', label: 'Columns and alignment', defaultOn: false },
-  { id: 'role', label: 'Role', defaultOn: false },
-  { id: 'label', label: 'Variable label', defaultOn: false },
-];
-
-/** Copy chosen properties from one variable to others of the same type. */
-export function copyProperties(ds: Dataset, sourceId: string, targetIds: string[], props: CopyProp[]): Dataset {
-  const src = ds.variables.find((v) => v.id === sourceId);
-  if (!src) return ds;
-  const targets = new Set(targetIds);
-  const variables = ds.variables.map((v) => {
-    if (!targets.has(v.id) || v.id === src.id || v.type !== src.type) return v;
-    const nv: Variable = { ...v };
-    if (props.includes('valueLabels')) nv.valueLabels = src.valueLabels.map((l) => ({ ...l }));
-    if (props.includes('missing')) nv.missing = { discrete: src.missing.discrete.slice(), ...(src.missing.range ? { range: { ...src.missing.range } } : {}) };
-    if (props.includes('measure')) nv.measure = src.measure;
-    if (props.includes('format')) {
-      nv.width = src.width;
-      nv.decimals = src.decimals;
-      nv.format = src.format;
-    }
-    if (props.includes('display')) {
-      nv.columns = src.columns;
-      nv.align = src.align;
-    }
-    if (props.includes('role')) nv.role = src.role;
-    if (props.includes('label')) nv.label = src.label;
-    return nv;
-  });
-  return bump(ds, { variables });
-}
+// Copy variable properties lives with the other property transforms (it is logged to Output).
+export { COPY_PROPS, copyProperties, type CopyProp } from '../../lib/transform/properties';

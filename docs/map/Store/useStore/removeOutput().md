@@ -2,13 +2,13 @@
 id: "store-action:useStore.removeOutput"
 type: store-action
 file: src/core/store.ts
-line: 120
+line: 123
 area: core
 ---
 
 # useStore.removeOutput()
 
-*Store action* · defined in [[store.ts]] (line 120) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 123) · area [[core]]
 
 > Remove one result; Undo in the Output tab brings it back (`restoreOutput`).
 

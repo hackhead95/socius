@@ -22,7 +22,7 @@ area: app
 - [[Save project|File > Save project]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

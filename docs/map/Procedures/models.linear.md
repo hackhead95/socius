@@ -31,7 +31,6 @@ area: procedures
 | dummy | checkbox | Dummy-code categorical predictors | Categorical predictors | true |
 | reference | select | Reference category | Categorical predictors | "first" |
 | ci | checkbox | Confidence intervals for B | Statistics | true |
-| confLevel | number | Confidence level (%) | Statistics | 95 |
 | collinearity | checkbox | Collinearity diagnostics (tolerance, VIF) | Statistics | true |
 | zpp | checkbox | Part and partial correlations | Statistics | false |
 | durbinWatson | checkbox | Durbin-Watson | Residuals | false |
@@ -59,7 +58,13 @@ area: procedures
 - [[models/common.ts#capitalize|capitalize()]] · procedure helper
 - [[models/common.ts#caseNote|caseNote()]] · procedure helper
 - [[models/common.ts#chartBlock|chartBlock()]] · procedure helper
+- [[procedures/text.ts#CI_MAX|CI_MAX]] · procedure helper
+- [[procedures/text.ts#CI_MIN|CI_MIN]] · procedure helper
+- [[procedures/text.ts#ciOption|ciOption()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
 - [[models/common.ts#coefCell|coefCell()]] · procedure helper
+- [[models/common.ts#colProse|colProse()]] · procedure helper
+- [[procedures/text.ts#confLevel|confLevel()]] · procedure helper
 - [[models/common.ts#describeCols|describeCols()]] · procedure helper
 - [[models/common.ts#dfCell|dfCell()]] · procedure helper
 - [[models/common.ts#dfText|dfText()]] · procedure helper
@@ -68,17 +73,23 @@ area: procedures
 - [[models/common.ts#footName|footName()]] · procedure helper
 - [[models/common.ts#heading|heading()]] · procedure helper
 - [[models/common.ts#isCategorical|isCategorical()]] · procedure helper
+- [[procedures/text.ts#labelOf|labelOf()]] · procedure helper
 - [[models/common.ts#levelsOf|levelsOf()]] · procedure helper
+- [[procedures/text.ts#levelText|levelText()]] · procedure helper
 - [[models/common.ts#listText|listText()]] · procedure helper
 - [[models/common.ts#makeItem|makeItem()]] · procedure helper
 - [[models/common.ts#noLead|noLead()]] · procedure helper
+- [[procedures/text.ts#nonEmpty|nonEmpty()]] · procedure helper
 - [[models/common.ts#num|num()]] · procedure helper
 - [[models/common.ts#numericValues|numericValues()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[models/common.ts#optBool|optBool()]] · procedure helper
 - [[models/common.ts#optNum|optNum()]] · procedure helper
 - [[models/common.ts#optStr|optStr()]] · procedure helper
 - [[models/common.ts#pCell|pCell()]] · procedure helper
 - [[models/common.ts#pct|pct()]] · procedure helper
+- [[models/common.ts#proseNamer|proseNamer()]] · procedure helper
+- [[procedures/text.ts#rangeMessage|rangeMessage()]] · procedure helper
 - [[models/common.ts#rawValues|rawValues()]] · procedure helper
 - [[models/common.ts#selectAll|selectAll()]] · procedure helper
 - [[models/common.ts#slot|slot()]] · procedure helper
@@ -88,6 +99,7 @@ area: procedures
 - [[models/common.ts#textBlock|textBlock()]] · procedure helper
 - [[models/common.ts#textName|textName()]] · procedure helper
 - [[models/common.ts#thin|thin()]] · procedure helper
+- [[models/common.ts#usableLabel|usableLabel()]] · procedure helper
 - [[models/common.ts#vars|vars()]] · procedure helper
 - [[models/common.ts#weightedN|weightedN()]] · procedure helper
 
@@ -96,6 +108,7 @@ area: procedures
 - [[search.test.ts]] · menu label
 - [[scenarios.test.ts]] · procedure id
 - [[procedures-oracle.fuzz.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 - [[stats-models/procedures.test.ts]] · procedure id
 

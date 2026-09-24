@@ -7,7 +7,7 @@ area: tests
 
 # tests/fuzz/transforms-ops.fuzz.test.ts
 
-*Test file* · area [[tests]] · 530 lines
+*Test file* · area [[tests]] · 553 lines
 
 > Fuzzing the data transformations: recode (same / different / automatic), visual binning, select cases (filter and delete), sort, weight, aggregate, merge (add cases / add variables), reverse-code, scales, z-scores, count, rank. Invariants for every transform: only its own error class with a plain-English message on bad input; the input dataset is never mutated; the result is structurally valid ...
 
@@ -111,4 +111,4 @@ area: tests
 - [[Transforms/standardize|standardize]] · transform id
 
 ## Private helpers
-SEED (line 23) · col (line 24) · out() (line 25) · OWN_ERRORS (line 26) · fail() (line 28) · structureProblems() (line 33) · runT() (line 67) · numVars() (line 109) · strVars() (line 112) · valuesOf() (line 115) · genRules() (line 119) · refRecode() (line 154) · eqv() (line 179) · dsFor() (line 181) · N() (line 186) · compileSafe() (line 515)
+SEED (line 23) · col (line 24) · out() (line 25) · OWN_ERRORS (line 26) · fail() (line 28) · structureProblems() (line 33) · runT() (line 67) · numVars() (line 109) · strVars() (line 112) · valuesOf() (line 115) · genRules() (line 119) · refRecode() (line 154) · eqv() (line 179) · dsFor() (line 181) · N() (line 186) · compileSafe() (line 538)

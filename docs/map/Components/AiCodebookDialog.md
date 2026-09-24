@@ -23,7 +23,7 @@ area: features/coding
 - [[coding/ai.ts#parseCodebookSuggestions|parseCodebookSuggestions()]]
 - [[coding/hooks.ts#plural|plural()]]
 - [[coding/actions.ts#replaceCodebook|replaceCodebook()]]
-- [[text.ts#splitParagraphs|splitParagraphs()]]
+- [[coding/text.ts#splitParagraphs|splitParagraphs()]]
 - [[coding/ai.ts#spreadSample|spreadSample()]]
 - [[coding/hooks.ts#toast|toast()]]
 - [[useAiStatus|useAiStatus()]]

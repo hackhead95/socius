@@ -14,7 +14,7 @@ area: lib/coding
 ## Imports
 - [[coding-types.ts]] · type-only
 - [[segments.ts]] · type-only
-- [[text.ts]] · value
+- [[coding/text.ts]] · value
 
 ## Tested by
 - [[outputs.test.ts]] · import
@@ -56,5 +56,5 @@ overlaps() (line 144)
 ### compareCoders
 *function* · line 149 · exported
 > Compare two coders over the documents both have coded. `codeIds` = codes to compare.
-- Calls: [[coding/reliability.ts#cohenKappa|cohenKappa()]], [[coding/reliability.ts#krippendorffAlphaNominal|krippendorffAlphaNominal()]], [[coding/reliability.ts#percentAgreement|percentAgreement()]], [[coding/reliability.ts]], [[text.ts#splitSentences|splitSentences()]]
+- Calls: [[coding/reliability.ts#cohenKappa|cohenKappa()]], [[coding/reliability.ts#krippendorffAlphaNominal|krippendorffAlphaNominal()]], [[coding/reliability.ts#percentAgreement|percentAgreement()]], [[coding/reliability.ts]], [[coding/text.ts#splitSentences|splitSentences()]]
 - Used in: [[ReliabilityView.tsx]], [[outputs.test.ts]], [[reliability.test.ts]]

@@ -6,13 +6,13 @@ area: lib/coding
 
 # Area: lib/coding
 
-16 files, 2963 lines.
+16 files, 3012 lines.
 
 ## Depends on (module imports)
-- [[core]]: 21
+- [[core]]: 22
 
 ## Used by areas
-- [[features - coding|features/coding]]: 43
+- [[features - coding|features/coding]]: 45
 - [[lib - assistant|lib/assistant]]: 3
 - [[features - assistant|features/assistant]]: 1
 
@@ -30,6 +30,6 @@ area: lib/coding
 - [[rules.ts]]: Auto-coding: keyword / regex rules per code, applied to whole texts, sentences or paragraphs. Rule syntax (one rule per line): /regex/flags …
 - [[segments.ts]]: Segment utilities: overlap tests, merging, subtracting ranges, paragraph runs for rendering.
 - [[survey.ts]]: Open-ended survey answers (a string variable of the active dataset) -> response documents.
-- [[text.ts]]: Text analysis: Unicode tokeniser, stopwords, word and bigram frequencies, sentences, KWIC. Works for any script with letters and combining m…
+- [[coding/text.ts]]: Text analysis: Unicode tokeniser, stopwords, word and bigram frequencies, sentences, KWIC. Works for any script with letters and combining m…
 - [[toDataset.ts]]: Mixed-methods bridge: turn codes applied to open-ended responses into 0/1 dataset variables.
 - [[tree.ts]]: Codebook hierarchy helpers (themes > sub-codes).

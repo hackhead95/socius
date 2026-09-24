@@ -10,12 +10,13 @@
 // that looks like a key is removed from the text before it is shown or copied.
 
 import {
-  CHECK_TIMEOUT_MS, askGemini, askOpenAiCompatible, describeKey, geminiCandidates, geminiModelName, listGeminiModels, listOpenAiModels, normaliseBaseUrl, rankGeminiModels,
+  CHECK_TIMEOUT_MS, askGemini, askOpenAiCompatible, describeKey, geminiCandidates, geminiModelName, geminiPreference, listGeminiModels, listOpenAiModels, normaliseBaseUrl, rankGeminiModels,
   sanitizeApiKey, suggestOpenAiModels, type AiAttempt, type AiHttpError,
 } from './ai-http';
-import { DEFAULT_GEMINI_MODEL, aiErrorMessage, aiErrorText, effectiveProvider, getAiSettings, providerLabel, saveAiSettings, testAiConnection, type AiProviderId, type AiSettings } from './ai';
+import { DEFAULT_GEMINI_MODEL, aiErrorMessage, aiErrorText, effectiveProvider, logAiError, recordAiConnection, getAiSettings, providerLabel, saveAiSettings, testAiConnection, type AiProviderId, type AiSettings } from './ai';
 import { BUILD_INFO } from './buildInfo';
 import { logError } from './errorlog';
+import { recentAiTimings, startAiTiming, type AiTiming } from './ai-timing';
 
 export type CheckStepId = 'internet' | 'reach' | 'key' | 'model' | 'answer';
 export type CheckState = 'pending' | 'running' | 'ok' | 'warn' | 'fail' | 'skip';
@@ -60,6 +61,8 @@ export interface ConnectionCheck {
   models?: string[];
   attempts: AiAttempt[];
   online: boolean | null;
+  /** Where the time went (ai-timing.ts), for Copy details. */
+  timing?: string[];
 }
 
 /** Step names, as shown in the checklist. */
@@ -193,7 +196,7 @@ async function explainNoAnswer(k: Check, e: unknown, signal?: AbortSignal) {
   k.fail(e);
 }
 
-async function checkGemini(k: Check, s: AiSettings, signal?: AbortSignal) {
+async function checkGemini(k: Check, s: AiSettings, signal?: AbortSignal, timing?: AiTiming) {
   const key = sanitizeApiKey(s.gemini.apiKey);
   const explicit = geminiModelName(s.gemini.model);
   k.c.keyInfo = describeKey(s.gemini.apiKey);
@@ -205,7 +208,7 @@ async function checkGemini(k: Check, s: AiSettings, signal?: AbortSignal) {
   k.set('reach', 'running', 'Asking Google which models this key may use…');
   let listed = 0;
   try {
-    const models = await listGeminiModels(key, { signal, trace: k.c.attempts, force: true });
+    const models = await listGeminiModels(key, { signal, trace: k.c.attempts, force: true, timing });
     listed = rankGeminiModels(models).length;
     k.set('reach', 'ok', 'Google answered.');
     k.set('key', 'ok', `Accepted. Google lists ${models.length} models for this key${listed ? `, ${listed} suitable for text` : ''}.`);
@@ -226,7 +229,7 @@ async function checkGemini(k: Check, s: AiSettings, signal?: AbortSignal) {
 
   // 4
   k.set('model', 'running');
-  const candidates = explicit ? [explicit] : await geminiCandidates(key, { signal, trace: k.c.attempts });
+  const candidates = explicit ? [explicit] : await geminiCandidates(key, { signal, trace: k.c.attempts, prefer: geminiPreference(s.gemini.model), timing });
   k.c.candidates = candidates.slice(0, 8);
   k.set('model', 'ok', explicit ? `${explicit} (typed in the Model box)` : `${candidates[0]} (automatic${listed ? `, best of ${listed} suitable models` : ''})`);
 
@@ -237,6 +240,10 @@ async function checkGemini(k: Check, s: AiSettings, signal?: AbortSignal) {
       signal,
       trace: k.c.attempts,
       timeoutMs: CHECK_TIMEOUT_MS,
+      timing,
+      // A one-word check needs no thinking.
+      effort: 'minimal',
+      prefer: geminiPreference(s.gemini.model),
       onModel: (m) => (k.c.model = m),
       // A retired model typed in settings: switch to automatic, as real requests do.
       onModelFallback: (_m, reason) => {
@@ -262,7 +269,7 @@ async function checkGemini(k: Check, s: AiSettings, signal?: AbortSignal) {
   }
 }
 
-async function checkOpenAi(k: Check, s: AiSettings, signal?: AbortSignal) {
+async function checkOpenAi(k: Check, s: AiSettings, signal?: AbortSignal, timing?: AiTiming) {
   const base = normaliseBaseUrl(s.openai.baseUrl);
   const host = hostOf(base) || 'the service';
   const local = isLocalBase(base);
@@ -312,7 +319,7 @@ async function checkOpenAi(k: Check, s: AiSettings, signal?: AbortSignal) {
 
   k.set('answer', 'running', 'Asking for a one-word reply…');
   try {
-    const reply = await askOpenAiCompatible({ baseUrl: base, apiKey: key, model }, TEST_PROMPT, { signal, trace: k.c.attempts, timeoutMs: local ? 0 : CHECK_TIMEOUT_MS });
+    const reply = await askOpenAiCompatible({ baseUrl: base, apiKey: key, model }, TEST_PROMPT, { signal, trace: k.c.attempts, timeoutMs: local ? 0 : CHECK_TIMEOUT_MS, timing });
     k.c.reply = reply.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
     k.c.model = model;
     k.c.tried = [model];
@@ -335,11 +342,11 @@ async function checkOpenAi(k: Check, s: AiSettings, signal?: AbortSignal) {
   }
 }
 
-async function checkSimple(k: Check, signal?: AbortSignal) {
+async function checkSimple(k: Check, signal?: AbortSignal, timing?: AiTiming) {
   k.steps(['answer']);
   k.set('answer', 'running', 'Asking for a one-word reply…');
   try {
-    k.c.reply = await testAiConnection(signal);
+    k.c.reply = await testAiConnection(signal, timing);
     k.c.ok = true;
     k.set('answer', 'ok', `It answered: "${k.c.reply.slice(0, 60)}"`);
   } catch (e) {
@@ -354,10 +361,11 @@ export async function runConnectionCheck(opts: { signal?: AbortSignal; onUpdate?
   const s = getAiSettings();
   const provider = effectiveProvider(s);
   const k = new Check(provider, s, opts.onUpdate);
+  const timing = startAiTiming('test-connection', provider ?? undefined);
   try {
-    if (provider === 'gemini') await checkGemini(k, s, opts.signal);
-    else if (provider === 'openai') await checkOpenAi(k, s, opts.signal);
-    else if (provider) await checkSimple(k, opts.signal);
+    if (provider === 'gemini') await checkGemini(k, s, opts.signal, timing);
+    else if (provider === 'openai') await checkOpenAi(k, s, opts.signal, timing);
+    else if (provider) await checkSimple(k, opts.signal, timing);
     else {
       k.steps(['answer']);
       k.fail({ code: 'not_configured' });
@@ -370,8 +378,13 @@ export async function runConnectionCheck(opts: { signal?: AbortSignal; onUpdate?
   }
   k.c.running = false;
   k.c.finishedAt = new Date().toISOString();
+  timing.finish(k.c.ok, k.c.error);
+  k.c.timing = timing.lines();
   // A failed check goes into Help > Error log, like any other AI error (keys are removed there too).
-  if (!k.c.ok && k.raw && k.c.error?.code !== 'cancelled') logError('ai', k.raw, { op: 'test-connection', provider: provider ?? 'none', model: k.c.model ?? k.c.tried?.[k.c.tried.length - 1] });
+  // An expected failure (wrong key, no connection, a limit) is a warning, not an app error (no red dot on Help).
+  if (!k.c.ok && k.raw && k.c.error?.code !== 'cancelled') logAiError(k.raw, { op: 'test-connection', provider: provider ?? 'none', model: k.c.model ?? k.c.tried?.[k.c.tried.length - 1] });
+  // The AI status (top-bar chip) follows the result of the check.
+  if (k.c.error?.code !== 'cancelled') recordAiConnection(k.c.ok, k.c.ok ? null : { code: k.c.error?.code ?? 'unavailable' });
   k.emit();
   return k.snapshot();
 }
@@ -471,6 +484,7 @@ export function connectionReport(c: ConnectionCheck, s: AiSettings = getAiSettin
     '',
     'Requests:',
     ...(c.attempts.length ? c.attempts.map(attemptLine) : ['  (none)']),
+    ...(c.timing?.length ? ['', ...c.timing] : []),
   ];
   return redactSecrets(lines.join('\n'), allKeys(s));
 }
@@ -493,6 +507,14 @@ export function aiErrorReport(e: unknown, context = ''): string {
     ...errorLines(errorOf(err)),
     ...(err.daily !== undefined || err.perMinute !== undefined ? [`Limit: ${err.daily ? 'daily' : err.perMinute ? 'per minute' : 'unknown'}${err.zeroQuota ? ', free limit is 0' : ''}${err.retryAfterMs ? `, retry after ${Math.ceil(err.retryAfterMs / 1000)} s` : ''}`] : []),
     ...(trace.length ? ['', 'Requests:', ...trace.map(attemptLine)] : []),
+    ...timingLines(),
   ];
   return redactSecrets(lines.join('\n'), allKeys(s));
+}
+
+/** The last few AI actions' timelines (no content), for error reports. */
+function timingLines(): string[] {
+  const list = recentAiTimings().slice(-3);
+  if (!list.length) return [];
+  return ['', 'Recent AI timings (newest last):', ...list.flatMap((t) => t.lines().map((l) => `  ${l}`))];
 }

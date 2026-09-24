@@ -19,6 +19,8 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - name: Relationship map is up to date (docs/map; run `npm run map` after changing the code)
+        run: node scripts/map/build-map.mjs --check
       - name: Build static site
         run: npm run build
       - name: Build single-file artifact

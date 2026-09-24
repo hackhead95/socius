@@ -7,7 +7,7 @@ area: features/data
 
 # src/features/data/DataGrid.tsx
 
-*Module* · area [[features - data|features/data]] · 540 lines
+*Module* · area [[features - data|features/data]] · 544 lines
 
 > Virtualised Data View grid (rows AND columns), SPSS-style: sticky variable-name header, sticky case numbers (struck through when filtered out), keyboard navigation, type-to-edit, value-label dropdown, TSV copy/paste, and one extra "ghost" row and column for adding data.
 

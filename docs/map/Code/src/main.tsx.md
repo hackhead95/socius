@@ -7,13 +7,14 @@ area: app
 
 # src/main.tsx
 
-*Module* · area [[Areas/app|app]] · 24 lines
+*Module* · area [[Areas/app|app]] · 30 lines
 
 ## Imports
 - [[react]] · value
 - [[react-dom]] · value
 - [[App.tsx]] · value
 - [[ErrorBoundary.tsx]] · value
+- [[menuKnowledge.ts]] · value
 - [[ui-store.ts]] · value
 - [[install.ts]] · value
 - `src/styles/base.css` · side-effect
@@ -23,12 +24,14 @@ area: app
 ## Calls
 - [[ui-store.ts#applyTheme|applyTheme()]]
 - [[install.ts#installErrorLog|installErrorLog()]]
+- [[menuKnowledge.ts#registerMenuKnowledge|registerMenuKnowledge()]]
 
 ## Renders
 - [[Components/App|<App>]]
 - [[AppErrorBoundary|<AppErrorBoundary>]]
 
 ## Uses
+- [[install.ts#reactRootErrorOptions|reactRootErrorOptions]]
 - [[useUi]]
 
 ## Reads

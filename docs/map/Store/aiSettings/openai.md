@@ -2,13 +2,13 @@
 id: "store-key:aiSettings.openai"
 type: store-key
 file: src/platform/ai.ts
-line: 28
+line: 33
 area: platform
 ---
 
 # aiSettings.openai
 
-*Store state key* · defined in [[platform/ai.ts]] (line 28) · area [[platform]]
+*Store state key* · defined in [[platform/ai.ts]] (line 33) · area [[platform]]
 
 - **Store:** aiSettings
 
@@ -16,6 +16,7 @@ area: platform
 - [[AiSettingsDialog|<AiSettingsDialog>]] · getter
 - [[LocalSetup|<LocalSetup>]] · getter
 - [[OpenAiSection|<OpenAiSection>]] · alias
+- [[WebLlmSetup|<WebLlmSetup>]] · getter
 - [[ai-diagnose.ts#aiErrorReport|aiErrorReport()]] · alias
 - [[ai-diagnose.ts#allKeys|allKeys()]] · alias
 - [[ai-diagnose.ts#checkOpenAi|checkOpenAi()]] · alias
@@ -29,6 +30,7 @@ area: platform
 - [[AiSettingsDialog|<AiSettingsDialog>]] · setter
 - [[LocalSetup|<LocalSetup>]] · setter
 - [[OpenAiSection|<OpenAiSection>]] · setter
+- [[WebLlmSetup|<WebLlmSetup>]] · setter
 - [[platform/ai.ts#forgetAiKey|forgetAiKey()]] · setter
 - [[ai-diagnose.test.ts]] · setter
 - [[ai.test.ts]] · setter

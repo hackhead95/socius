@@ -24,4 +24,6 @@ area: app
 - [[ai-local.spec.ts]] · menu label
 - [[ai.spec.ts]] · menu label
 - [[errorlog.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
+- [[about-storage.test.tsx]] · menu label
 - [[navigation-audit.test.tsx]] · menu label

@@ -2,13 +2,13 @@
 id: "src/app/ui-store.ts#useUi"
 type: store
 file: src/app/ui-store.ts
-line: 77
+line: 83
 area: app
 ---
 
 # useUi
 
-*Store* · defined in [[ui-store.ts]] (line 77) · area [[Areas/app|app]]
+*Store* · defined in [[ui-store.ts]] (line 83) · area [[Areas/app|app]]
 
 - **Exported:** yes
 
@@ -19,15 +19,16 @@ area: app
 | [[cleanDataset]] | 1 ([[markClean()\|useUi.markClean()]]) | 3 |
 | [[confirmReq]] | 2 ([[confirm()\|useUi.confirm()]], [[settleConfirm()\|useUi.settleConfirm()]]) | 3 |
 | [[currentVarId]] | 1 ([[setCurrentVarId()\|useUi.setCurrentVarId()]]) | 3 |
-| [[findSeq]] | 1 ([[requestFind()\|useUi.requestFind()]]) | 2 |
+| [[drawerOpen]] | 1 ([[setDrawerOpen()\|useUi.setDrawerOpen()]]) | 5 |
+| [[findSeq]] | 2 ([[shortcut-precedence.test.tsx]], [[requestFind()\|useUi.requestFind()]]) | 3 |
 | [[gotoSeq]] | 1 ([[requestGoto()\|useUi.requestGoto()]]) | 2 |
 | [[gridTarget]] | 2 ([[palette.test.tsx]], [[focusGrid()\|useUi.focusGrid()]]) | 2 |
 | [[home (store-key)\|home]] | 1 ([[setHome()\|useUi.setHome()]]) | 4 |
 | [[outputTarget]] | 1 ([[focusOutput()\|useUi.focusOutput()]]) | 3 |
-| [[paletteOpen]] | 2 ([[palette.test.tsx]], [[setPaletteOpen()\|useUi.setPaletteOpen()]]) | 3 |
+| [[paletteOpen]] | 3 ([[palette.test.tsx]], [[shortcut-precedence.test.tsx]], [[setPaletteOpen()\|useUi.setPaletteOpen()]]) | 4 |
 | [[restoredAt]] | 1 ([[setRestoredAt()\|useUi.setRestoredAt()]]) | 1 |
 | [[useUi/sampleBanner\|sampleBanner]] | 1 ([[setSampleBanner()\|useUi.setSampleBanner()]]) | 1 |
-| [[sidebarOpen]] | 1 ([[setSidebarOpen()\|useUi.setSidebarOpen()]]) | 2 |
+| [[sidebarOpen]] | 1 ([[setSidebarOpen()\|useUi.setSidebarOpen()]]) | 3 |
 | [[useUi/theme\|theme]] | 1 ([[setTheme()\|useUi.setTheme()]]) | 4 |
 | [[varViewTarget]] | 1 ([[focusVariableView()\|useUi.focusVariableView()]]) | 1 |
 
@@ -35,7 +36,7 @@ area: app
 | action | writes | callers |
 |---|---|---|
 | [[confirm()]] | [[confirmReq]] | 9 |
-| [[focusGrid()]] | [[gridTarget]] | 3 |
+| [[focusGrid()]] | [[gridTarget]] | 4 |
 | [[focusOutput()]] | [[outputTarget]] | 4 |
 | [[focusVariableView()]] | [[varViewTarget]] | 3 |
 | [[markClean()]] | [[cleanDataset]] | 5 |
@@ -43,15 +44,18 @@ area: app
 | [[requestGoto()]] | [[gotoSeq]] | 3 |
 | [[setBusy()]] | [[busy]] | 3 |
 | [[setCurrentVarId()]] | [[currentVarId]] | 1 |
-| [[setHome()]] | [[home (store-key)\|home]] | 3 |
+| [[setDrawerOpen()]] | [[drawerOpen]] | 3 |
+| [[setHome()]] | [[home (store-key)\|home]] | 4 |
 | [[setPaletteOpen()]] | [[paletteOpen]] | 5 |
 | [[setRestoredAt()]] | [[restoredAt]] | 2 |
 | [[setSampleBanner()]] | [[useUi/sampleBanner\|sampleBanner]] | 7 |
-| [[setSidebarOpen()]] | [[sidebarOpen]] | 4 |
+| [[setSidebarOpen()]] | [[sidebarOpen]] | 3 |
 | [[setTheme()]] | [[useUi/theme\|theme]] | 6 |
 | [[settleConfirm()]] | [[confirmReq]] | 1 |
+| [[toggleVariableList()]] |  | 2 |
 
 ## Calls
+- [[ui-store.ts#isNarrow|isNarrow()]]
 - [[persistence.ts#readPref|readPref()]]
 - [[persistence.ts#writePref|writePref()]]
 
@@ -67,6 +71,7 @@ area: app
 - [[cleanDataset|useUi.cleanDataset]]
 - [[confirmReq|useUi.confirmReq]]
 - [[currentVarId|useUi.currentVarId]]
+- [[drawerOpen|useUi.drawerOpen]]
 - [[findSeq|useUi.findSeq]]
 - [[gotoSeq|useUi.gotoSeq]]
 - [[gridTarget|useUi.gridTarget]]
@@ -89,6 +94,7 @@ area: app
 - [[requestGoto()|useUi.requestGoto()]]
 - [[setBusy()|useUi.setBusy()]]
 - [[setCurrentVarId()|useUi.setCurrentVarId()]]
+- [[setDrawerOpen()|useUi.setDrawerOpen()]]
 - [[setHome()|useUi.setHome()]]
 - [[setPaletteOpen()|useUi.setPaletteOpen()]]
 - [[setRestoredAt()|useUi.setRestoredAt()]]
@@ -96,6 +102,7 @@ area: app
 - [[setSidebarOpen()|useUi.setSidebarOpen()]]
 - [[setTheme()|useUi.setTheme()]]
 - [[settleConfirm()|useUi.settleConfirm()]]
+- [[toggleVariableList()|useUi.toggleVariableList()]]
 
 ## Called by
 - [[Components/App|<App>]]
@@ -109,6 +116,7 @@ area: app
 - [[Sidebar|<Sidebar>]]
 - [[Components/Toasts|<Toasts>]]
 - [[TopBar|<TopBar>]]
+- [[VariableList|<VariableList>]]
 - [[VariableViewInner|<VariableViewInner>]]
 - [[Welcome (app-Welcome)|<Welcome>]]
 - [[useMenus|useMenus()]]
@@ -121,9 +129,12 @@ area: app
 - [[Mark|<Mark>]]
 - [[SelectCasesDialog|<SelectCasesDialog>]]
 - [[Components/Toasts|<Toasts>]]
+- [[VariableDrawer|<VariableDrawer>]]
 - [[Welcome (app-Welcome)|<Welcome>]]
 - [[fileActions.ts#activateDataset|activateDataset()]]
 - [[fileActions.ts#applyProject|applyProject()]]
+- [[transform/common.tsx#applyTransform|applyTransform()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 - [[output/actions.ts#confirmAndClearOutputs|confirmAndClearOutputs()]]
 - [[fileActions.ts#confirmReplace|confirmReplace()]]
 - [[fileActions.ts#exportXlsxFile|exportXlsxFile()]]
@@ -139,7 +150,7 @@ area: app
 - [[features.test.ts]]
 - [[navigation-audit.test.tsx]] · whole-state
 - [[palette.test.tsx]]
+- [[shortcut-precedence.test.tsx]]
 - [[useAutosave|useAutosave()]]
 - [[useEntries|useEntries()]]
-- [[useMenus|useMenus()]]
 - [[useStartup|useStartup()]]

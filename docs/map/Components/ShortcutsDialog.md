@@ -2,13 +2,13 @@
 id: "src/app/HelpDialogs.tsx#ShortcutsDialog"
 type: component
 file: src/app/HelpDialogs.tsx
-line: 40
+line: 41
 area: app
 ---
 
 # <ShortcutsDialog>
 
-*React component* · defined in [[HelpDialogs.tsx]] (line 40) · area [[Areas/app|app]]
+*React component* · defined in [[HelpDialogs.tsx]] (line 41) · area [[Areas/app|app]]
 
 - **Exported:** yes
 

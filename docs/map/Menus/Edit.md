@@ -17,7 +17,7 @@ area: app
 - [[Undo|Edit > Undo]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

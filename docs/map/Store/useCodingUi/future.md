@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.future"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 41
+line: 46
 area: features/coding
 ---
 
 # useCodingUi.future
 
-*Store state key* · defined in [[uiStore.ts]] (line 41) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 46) · area [[features - coding|features/coding]]
 
 > Coding changes undone, newest last, for Redo.
 
@@ -29,6 +29,7 @@ area: features/coding
 - [[coding/actions.ts#setActiveCoder|setActiveCoder()]] · alias.set, set()
 - [[navigation-audit.test.tsx]] · setState
 - [[shell-fixes.test.ts]] · setState
+- [[ui-fixes.test.tsx]] · setState
 - [[coding/actions.ts#undoCoding|undoCoding()]] · alias.set, set()
 
 ## Store

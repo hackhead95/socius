@@ -2,13 +2,13 @@
 id: "src/features/charts/common.tsx#ChartHeader"
 type: component
 file: src/features/charts/common.tsx
-line: 84
+line: 98
 area: features/charts
 ---
 
 # <ChartHeader>
 
-*React component* · defined in [[charts/common.tsx]] (line 84) · area [[features - charts|features/charts]]
+*React component* · defined in [[charts/common.tsx]] (line 98) · area [[features - charts|features/charts]]
 
 - **Exported:** yes
 

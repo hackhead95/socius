@@ -2,13 +2,13 @@
 id: "store-key:aiSettings.webllm"
 type: store-key
 file: src/platform/ai.ts
-line: 29
+line: 34
 area: platform
 ---
 
 # aiSettings.webllm
 
-*Store state key* · defined in [[platform/ai.ts]] (line 29) · area [[platform]]
+*Store state key* · defined in [[platform/ai.ts]] (line 34) · area [[platform]]
 
 - **Store:** aiSettings
 

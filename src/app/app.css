@@ -69,7 +69,7 @@ html, body { overflow: hidden; }
   min-width: 220px; max-width: 360px; padding: 4px; background: var(--surface); border: 1px solid var(--border-strong);
   border-radius: var(--r-md); box-shadow: var(--shadow-2); display: flex; flex-direction: column;
 }
-.menu-dropdown { position: absolute; top: calc(100% + 4px); left: 0; z-index: 90; }
+.menu-dropdown { position: absolute; top: calc(100% + 4px); left: 0; z-index: 98; } /* above the assistant panel and the variable drawer */
 .menu-scroll { max-height: calc(100vh - 64px); overflow-y: auto; }
 .menu-dropdown-right { left: auto; right: 0; }
 .menu-item-wrap { position: relative; }
@@ -82,6 +82,9 @@ html, body { overflow: hidden; }
    whose submenu is open stays highlighted too. */
 .menu:focus { outline: none; }
 .menu-item:focus, .menu-item[aria-expanded='true'] { background: var(--accent-soft); outline: none; }
+/* ...unless another item of the same menu has the highlight now (the pointer or an arrow key moved on
+   while the submenu is still closing): then only that item is highlighted. */
+.menu:has(> .menu-item-wrap > .menu-item:focus) > .menu-item-wrap > .menu-item[aria-expanded='true']:not(:focus) { background: none; }
 .menu-item:focus-visible { box-shadow: inset 0 0 0 1.5px var(--focus); }
 .menu-item[aria-disabled='true'] { color: var(--faint); cursor: default; }
 .menu-item[aria-disabled='true']:focus { background: var(--surface-2); }
@@ -95,9 +98,8 @@ html, body { overflow: hidden; }
 .menu-sub-arrow { color: var(--muted); }
 .menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
 .menu-group { font-size: var(--fs-xs); color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 6px 10px 2px; }
-.menu-submenu { position: absolute; left: calc(100% - 2px); top: -5px; z-index: 91; }
+.menu-submenu { position: absolute; left: calc(100% - 2px); top: -5px; z-index: 99; }
 .context-menu .menu { min-width: 200px; }
-.menu-button-wrap { position: relative; display: inline-block; }
 
 /* Narrow-screen menu sheet */
 .sheet-backdrop { position: fixed; inset: 0; background: var(--backdrop); z-index: 110; display: flex; }
@@ -162,6 +164,8 @@ html, body { overflow: hidden; }
 .sample-banner > svg { color: var(--accent); }
 .sample-banner > span:first-of-type { flex: 1 1 220px; min-width: 0; }
 .sample-banner .btn { background: var(--surface); }
+.sample-banner-actions { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; flex: none; }
+.sample-banner .btn-ghost { background: transparent; }
 
 /* ---------- Welcome ---------- */
 .welcome { flex: 1; overflow-y: auto; padding: var(--space-6) var(--space-4); }
@@ -206,6 +210,15 @@ html, body { overflow: hidden; }
   animation: toast-in 0.16s ease-out;
 }
 .toast > svg { margin-top: 2px; }
+/* A toast never blocks the controls under it: clicks go through it, except on its own buttons. */
+.toasts, .toast { pointer-events: none; }
+.toast .btn { pointer-events: auto; }
+.toast-action { flex: none; }
+/* While a dialog is open the toasts sit beside it (placed in src/app/Overlays.tsx); where there is no
+   room they only show, and let every click through. */
+.toasts-by-modal { transition: top 0.12s ease, bottom 0.12s ease; }
+.toasts-passive .toast { opacity: 0.94; }
+.toasts-passive .toast .btn { pointer-events: none; }
 .toast-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .toast-success { border-left-color: var(--good); }
 .toast-success > svg { color: var(--good); }
@@ -246,8 +259,15 @@ html, body { overflow: hidden; }
 }
 @media (max-width: 900px) {
   .workspace.with-sidebar { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { display: none; }
+  .sidebar:not(.sidebar-drawer) { display: none; }
 }
+/* Narrow windows: View > Variable list opens the list as a drawer over the data (src/app/Sidebar.tsx). */
+.sidebar-drawer {
+  position: fixed; left: 0; top: var(--shell-top, 0px); bottom: 0; z-index: 97; width: min(300px, 86vw);
+  box-shadow: var(--shadow-2); animation: drawer-in 0.14s ease-out;
+}
+.sidebar-drawer-backdrop { position: fixed; left: 0; right: 0; top: var(--shell-top, 0px); bottom: 0; z-index: 97; background: var(--backdrop); }
+@keyframes drawer-in { from { transform: translateX(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 760px) {
   .menubar { display: none; }
   .menu-sheet-btn { display: inline-flex; }

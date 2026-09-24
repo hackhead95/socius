@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { band, formatTick, formatValue, linear, niceTicks, labelStride } from './scale';
-import { ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, YAxis, fit, headerLayout, listText, maxLabelWidth, measureText, seriesColor, type LegendItem, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, YAxis, fit, useHeaderLayout, listText, maxLabelWidth, measureText, seriesColor, type LegendItem, type SetTip } from './common';
 
 type LineSpec = Extract<ChartSpec, { type: 'line' }>;
 
@@ -18,7 +18,7 @@ export function LineChart({ spec, width, setTip }: { spec: LineSpec; width: numb
   const S = spec.series.length;
   const C = spec.categories.length;
   const legend: LegendItem[] = spec.series.map((s, i) => ({ label: s.name, color: seriesColor(i), kind: 'line' }));
-  const head = headerLayout(spec.title, legend, width);
+  const head = useHeaderLayout(spec.title, legend, width);
   let lo = Infinity;
   let hi = -Infinity;
   for (const s of spec.series)

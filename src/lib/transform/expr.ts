@@ -134,11 +134,34 @@ export type Node =
 
 const REL = new Set(['=', '~=', '<', '<=', '>', '>=']);
 
+/**
+ * Limits that keep the recursive parser, the compiler and the evaluator well inside the browser's
+ * call stack. Hand-written or generated SPSS syntax stays far below them; beyond them the user gets
+ * an ExprError that says what to do instead of a raw "Maximum call stack size exceeded".
+ */
+export const EXPR_LIMITS = {
+  /** Parentheses, function calls and signs (-, +, NOT) inside one another. */
+  nesting: 100,
+  /** Operators applied one after another in one chain (a + b + c ... has one level per +). */
+  depth: 500,
+  /** Characters in one expression. */
+  length: 100_000,
+} as const;
+
+const TOO_DEEP = `This expression is nested too deeply (more than ${EXPR_LIMITS.nesting} parentheses, functions or signs inside one another). Remove extra parentheses or signs, or split the calculation into several Compute steps.`;
+
 /** Parse an expression. Throws ExprError with the position of the problem. */
 export function parse(src: string): Node {
   if (!src.trim()) throw new ExprError('Type an expression.', 0, 1);
+  if (src.length > EXPR_LIMITS.length)
+    throw new ExprError(`This expression is ${src.length.toLocaleString('en-US')} characters long; the limit is ${EXPR_LIMITS.length.toLocaleString('en-US')}. Split it into several Compute steps.`, EXPR_LIMITS.length, src.length);
   const toks = tokenize(src);
   let p = 0;
+  /** Current nesting of parentheses, calls and signs (see EXPR_LIMITS.nesting). */
+  let nest = 0;
+  const enter = (t: Token) => {
+    if (++nest > EXPR_LIMITS.nesting) throw new ExprError(TOO_DEEP, t.pos, t.end);
+  };
   const peek = () => toks[p];
   const next = () => toks[p++];
 
@@ -175,7 +198,9 @@ export function parse(src: string): Node {
   function parseNot(): Node {
     if (peek().kind === 'op' && peek().text === 'NOT') {
       const op = next();
+      enter(op);
       const a = parseNot();
+      nest--;
       return { k: 'un', op: 'NOT', a, pos: op.pos, end: a.end };
     }
     return parseRel();
@@ -211,7 +236,9 @@ export function parse(src: string): Node {
     const t = peek();
     if (t.kind === 'op' && (t.text === '-' || t.text === '+')) {
       next();
+      enter(t);
       const a = parseUnary();
+      nest--;
       return { k: 'un', op: t.text as '-' | '+', a, pos: t.pos, end: a.end };
     }
     return parsePow();
@@ -241,13 +268,16 @@ export function parse(src: string): Node {
       case 'str':
         return { k: 'str', v: t.text, pos: t.pos, end: t.end };
       case 'lparen': {
+        enter(t);
         const e = parseOr();
         expectRparen(t);
+        nest--;
         return e;
       }
       case 'ident': {
         if (peek().kind === 'lparen') {
           const open = next();
+          enter(open);
           const args: Node[] = [];
           if (peek().kind !== 'rparen') {
             for (;;) {
@@ -260,6 +290,7 @@ export function parse(src: string): Node {
             }
           }
           const close = expectRparen(open);
+          nest--;
           return { k: 'call', name: t.text.toUpperCase(), args, pos: t.pos, end: close.end, nameEnd: t.end };
         }
         return { k: 'ident', name: t.text, pos: t.pos, end: t.end };
@@ -294,5 +325,30 @@ export function parse(src: string): Node {
       throw new ExprError(`An operator (such as + or AND) is missing before ${describe(t)}.`, t.pos, t.end);
     throw new ExprError(`Unexpected ${describe(t)}.`, t.pos, t.end);
   }
+  checkDepth(root);
   return root;
+}
+
+/** Children of a node (for the iterative depth check). */
+function children(n: Node): Node[] {
+  return n.k === 'un' ? [n.a] : n.k === 'bin' ? [n.a, n.b] : n.k === 'call' ? n.args : [];
+}
+
+/**
+ * Reject trees too deep for the recursive compiler and evaluator (a sum of thousands of terms is a
+ * chain thousands of levels deep). Iterative, so the check itself cannot overflow.
+ */
+function checkDepth(root: Node): void {
+  const stack: Array<[Node, number]> = [[root, 1]];
+  while (stack.length) {
+    const [n, d] = stack.pop()!;
+    if (d > EXPR_LIMITS.depth) {
+      throw new ExprError(
+        `This expression is too long to calculate in one step (more than ${EXPR_LIMITS.depth} operations in a chain). For long lists of variables use SUM(q1 TO q500) or MEAN(q1 TO q500), or split the calculation into several Compute steps.`,
+        n.pos,
+        n.end,
+      );
+    }
+    for (const c of children(n)) stack.push([c, d + 1]);
+  }
 }

@@ -23,4 +23,6 @@ area: app
 - [[Menus/Text coding|Text coding]]
 
 ## Tested by
+- [[coding-output-fixes.spec.ts]] · menu label
 - [[search.test.ts]] · menu label
+- [[ui-fixes.test.tsx]] · menu label

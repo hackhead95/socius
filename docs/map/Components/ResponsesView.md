@@ -2,13 +2,13 @@
 id: "src/features/coding/ResponsesView.tsx#ResponsesView"
 type: component
 file: src/features/coding/ResponsesView.tsx
-line: 16
+line: 17
 area: features/coding
 ---
 
 # <ResponsesView>
 
-*React component* · defined in [[ResponsesView.tsx]] (line 16) · area [[features - coding|features/coding]]
+*React component* · defined in [[ResponsesView.tsx]] (line 17) · area [[features - coding|features/coding]]
 
 - **Exported:** yes
 
@@ -28,11 +28,13 @@ area: features/coding
 
 ## Renders
 - [[CodeChip|<CodeChip>]]
+- [[ExampleNextSteps|<ExampleNextSteps>]]
 - [[Floating|<Floating>]]
 - [[QuickCode|<QuickCode>]]
 - [[ResponseRow|<ResponseRow>]]
 
 ## Uses
+- [[exampleGuide.ts#NOT_CODED_FILTER_LABEL|NOT_CODED_FILTER_LABEL]]
 - [[useCodingUi]]
 
 ## Reads
@@ -56,6 +58,7 @@ area: features/coding
 
 ## Rendered by
 - [[CodingWorkspace|<CodingWorkspace>]]
+- [[shortcut-precedence.test.tsx]]
 
 ## Binds shortcut
 - [[- (ResponsesView)|/ (ResponsesView)]]

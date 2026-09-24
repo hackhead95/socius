@@ -26,6 +26,11 @@ export interface LocalDialog {
 
 interface CodingUiState {
   view: CodingView;
+  /**
+   * The researcher chose the view with its tab. Until then an empty Documents view (the default)
+   * gives way to Responses when the project has only responses; after a click it stays (UI-002).
+   */
+  viewPicked: boolean;
   analyseTab: AnalyseTab;
   activeDocId: string | null;
   selectedCodeId: string | null;
@@ -55,6 +60,7 @@ interface CodingUiState {
 
 export const useCodingUi = create<CodingUiState>((set) => ({
   view: 'documents',
+  viewPicked: false,
   analyseTab: 'frequencies',
   activeDocId: null,
   selectedCodeId: null,

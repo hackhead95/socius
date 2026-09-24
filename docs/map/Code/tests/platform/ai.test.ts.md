@@ -7,7 +7,7 @@ area: tests
 
 # tests/platform/ai.test.ts
 
-*Test file* · area [[tests]] · 285 lines
+*Test file* · area [[tests]] · 286 lines
 
 > Provider layer: settings persistence, provider choice, tolerant JSON, routing, the unchanged Claude path.
 
@@ -96,6 +96,7 @@ area: tests
 - [[aiSettings/gemini|aiSettings.gemini]] · setter
 - [[aiSettings/openai|aiSettings.openai]] · setter
 - [[provider|aiSettings.provider]] · setter
+- [[remember|aiSettings.remember]] · setter
 
 ## Tests
 - [[ai-http.ts]] · import

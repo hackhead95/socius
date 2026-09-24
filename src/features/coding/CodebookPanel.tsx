@@ -10,6 +10,7 @@ import { applyCode, createCode, createMemo, deleteCode, moveCode, updateCode } f
 import { useOrderedCodes, useVisibleSegments, toast, plural } from './hooks';
 import { useCodingUi, openLocalDialog } from './uiStore';
 import { MenuButton, Floating } from './ui';
+import { describeCodebookSize } from '../../lib/coding/example';
 import { aiFeature } from '../ai/features';
 
 export function CodebookPanel(props: { quickKeys?: boolean }) {
@@ -102,7 +103,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
     <section className="cw-panel cw-codebook" aria-label="Codebook">
       <div className="cw-panel-head">
         <h3>Codebook</h3>
-        <span className="badge">{codes.length}</span>
+        <span className="badge" title={describeCodebookSize(codes)} aria-label={describeCodebookSize(codes)}>{codes.length}</span>
         <span className="spacer" />
         <MenuButton
           label="More"
@@ -186,7 +187,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
                   setColorFor({ id: c.id, anchor: { left: r.left, top: r.top, bottom: r.bottom } });
                 }}
               />
-              <button className="cw-codename" onClick={() => onRowClick(c)} onDoubleClick={() => openLocalDialog('code-edit', { codeId: c.id })} title={c.description || c.name}>
+              <button className="cw-codename" onClick={() => onRowClick(c)} onDoubleClick={() => openLocalDialog('code-edit', { codeId: c.id })} title={c.description ? `${c.name}: ${c.description}` : c.name}>
                 <span className="cw-codename-text">{c.name}</span>
               </button>
               {props.quickKeys && quickIndex.has(c.id) ? <span className="kbd cw-qk">{quickIndex.get(c.id)}</span> : null}
@@ -203,7 +204,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
                   { label: 'Add sub-code…', onSelect: () => openLocalDialog('code-edit', { parentId: c.id }) },
                   { label: 'Retrieve coded segments', onSelect: () => set({ selectedCodeId: c.id, view: 'retrieve' }) },
                   { label: 'Write a memo on this code', onSelect: () => { createMemo({ title: `Memo on ${c.name}`, codeId: c.id }); set({ view: 'memos' }); } },
-                  { label: 'Move to top level', disabled: !c.parentId, onSelect: () => moveCode(c.id, null, null) },
+                  { label: 'Move to top level', disabled: !c.parentId, disabledReason: 'Already at the top level.', onSelect: () => moveCode(c.id, null, null) },
                   { label: 'Merge into another code…', onSelect: () => openLocalDialog('merge-code', { codeId: c.id }) },
                   { label: 'Delete…', danger: true, separator: true, onSelect: () => setConfirmDel({ code: c, keepChildren: true }) },
                 ]}

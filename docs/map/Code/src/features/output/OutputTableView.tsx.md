@@ -20,11 +20,11 @@ area: features/output
 ## Symbols
 
 ### useScrollEdges
-*hook* · line 6 · note: [[useScrollEdges|useScrollEdges()]]
+*hook* · line 6 · note: [[useScrollEdges (features-output-OutputTableView)|useScrollEdges()]]
 > Which sides of a horizontal scroller have content out of view (updates on scroll and resize).
 
 ### OutputTableView
 *component* · line 31 · exported · note: [[OutputTableView|<OutputTableView>]]
 > An output table on screen: APA (horizontal rules only) or SPSS (light grid) style.
-- Calls: [[output/format.ts#formatCell|formatCell()]], [[output/format.ts#isSignificantP|isSignificantP()]], [[output/format.ts#layoutRows|layoutRows()]], [[output/format.ts#percentColumns|percentColumns()]], [[output/format.ts#stubCount|stubCount()]], [[useScrollEdges|useScrollEdges()]]
+- Calls: [[output/format.ts#formatCell|formatCell()]], [[output/format.ts#isSignificantP|isSignificantP()]], [[output/format.ts#layoutRows|layoutRows()]], [[output/format.ts#percentColumns|percentColumns()]], [[output/format.ts#stubCount|stubCount()]], [[useScrollEdges (features-output-OutputTableView)|useScrollEdges()]]
 - Rendered by: [[BlockView|<BlockView>]]

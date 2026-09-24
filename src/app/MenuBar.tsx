@@ -1,10 +1,39 @@
 // Menubar with keyboard-accessible dropdowns; collapses into a menu sheet on narrow screens.
 import { useEffect, useRef, useState } from 'react';
-import { MenuList, type MenuItem } from '../ui/Menu';
+import { MenuList, type MenuItem, type Point } from '../ui/Menu';
+import { setDialogReturnFocus } from '../ui/Modal';
 import { Icon } from '../ui/Icon';
 import { useMenus, type TopMenu } from './menus';
 import { useStore } from '../core/store';
 import { useUnseenErrors } from '../features/errorlog/actions';
+
+/** How long a pointer resting on another menu title, after heading into the open menu, waits before switching (ms). */
+export const MENUBAR_AIM_MS = 250;
+
+/**
+ * Is the pointer, moving from `from` to `to`, heading down into the open dropdown `rect`? True when
+ * `to` lies in the triangle between `from` and the dropdown's top edge, so crossing the next menu
+ * title on the way to an item does not switch menus ("safe triangle", as in desktop menubars).
+ */
+export function aimsAtDropdown(from: Point, to: Point, rect: { left: number; right: number; top: number }): boolean {
+  if (to.y <= from.y) return false;
+  const a = from;
+  const b = { x: rect.left - 8, y: rect.top };
+  const c = { x: rect.right + 8, y: rect.top };
+  const sign = (p: Point, q: Point, r: Point) => (p.x - r.x) * (q.y - r.y) - (q.x - r.x) * (p.y - r.y);
+  const d1 = sign(to, a, b);
+  const d2 = sign(to, b, c);
+  const d3 = sign(to, c, a);
+  const neg = d1 < 0 || d2 < 0 || d3 < 0;
+  const pos = d1 > 0 || d2 > 0 || d3 > 0;
+  return !(neg && pos);
+}
+
+/** Where a dialog chosen from a menu gives focus back: where the user was working, else the menu's button. */
+function dialogReturnTarget(before: HTMLElement | null, menuBtn: HTMLElement | null): HTMLElement | null {
+  if (before && before !== document.body && before.isConnected && before.closest('#main, .sidebar, .topbar, .tabbar')) return before;
+  return menuBtn;
+}
 
 export function MenuBar() {
   const menus = useMenus();
@@ -21,8 +50,19 @@ export function MenuBar() {
   // apps), so a menu button never keeps focus, or a focus ring, after a mouse click. A dialog opened
   // from the menu hands focus back there too. Opened from the keyboard, that is the menu button.
   const returnTo = useRef<HTMLElement | null>(null);
+  // Hover intent between menu titles (see aimsAtDropdown).
+  const pointer = useRef<Point | null>(null);
+  const hoverIdx = useRef<number | null>(null);
+  const switchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openRef = useRef<number | null>(null);
+  openRef.current = open;
+  const clearSwitch = () => {
+    if (switchTimer.current) clearTimeout(switchTimer.current);
+    switchTimer.current = null;
+  };
 
   const close = (restore: boolean) => {
+    clearSwitch();
     setOpen(null);
     const el = returnTo.current;
     returnTo.current = null;
@@ -51,12 +91,17 @@ export function MenuBar() {
     const hidden = () => {
       if (document.visibilityState === 'hidden') away();
     };
+    const move = (e: PointerEvent) => {
+      pointer.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('pointermove', move);
     window.addEventListener('pointerdown', down, true);
     window.addEventListener('keydown', key);
     window.addEventListener('blur', away);
     window.addEventListener('resize', away);
     document.addEventListener('visibilitychange', hidden);
     return () => {
+      window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerdown', down, true);
       window.removeEventListener('keydown', key);
       window.removeEventListener('blur', away);
@@ -70,7 +115,33 @@ export function MenuBar() {
     setOpen(null);
   }, [tab]);
 
+  useEffect(() => clearSwitch, []);
+
+  /** Is the pointer (last seen at `pointer`, now at `to`) on its way into the open dropdown? */
+  const aiming = (to: Point): boolean => {
+    const from = pointer.current;
+    const dd = barRef.current?.querySelector<HTMLElement>('.menu-dropdown');
+    return !!from && !!dd && aimsAtDropdown(from, to, dd.getBoundingClientRect());
+  };
+
+  /** The pointer is over another menu title while a menu is open: switch now, or shortly if it is only passing by. */
+  const hoverSwitch = (i: number, to: Point) => {
+    if (openRef.current === null || openRef.current === i) return;
+    if (!aiming(to)) {
+      clearSwitch();
+      openAt(i, 'menu');
+      return;
+    }
+    if (switchTimer.current) return;
+    switchTimer.current = setTimeout(() => {
+      switchTimer.current = null;
+      // Still resting on that title: the user wants that menu after all.
+      if (hoverIdx.current === i && openRef.current !== null && openRef.current !== i) openAt(i, 'menu');
+    }, MENUBAR_AIM_MS);
+  };
+
   const openAt = (i: number, mode: true | 'menu') => {
+    clearSwitch();
     if (open === null && !returnTo.current) {
       const active = document.activeElement as HTMLElement | null;
       returnTo.current = active && !barRef.current?.contains(active) ? active : null;
@@ -123,9 +194,19 @@ export function MenuBar() {
                 }
               }}
               onPointerEnter={(e) => {
-                // Once a menu is open, pointing at another menu opens it at once (as in desktop apps).
+                // Once a menu is open, pointing at another menu opens it (as in desktop apps), unless the
+                // pointer is only crossing it on the way down into the open menu.
                 // Not for touch, where "enter" is a tap that opens the menu anyway.
-                if (e.pointerType !== 'touch' && open !== null && open !== i) openAt(i, 'menu');
+                if (e.pointerType === 'touch') return;
+                hoverIdx.current = i;
+                hoverSwitch(i, { x: e.clientX, y: e.clientY });
+              }}
+              onPointerMove={(e) => {
+                if (e.pointerType === 'touch' || hoverIdx.current !== i) return;
+                hoverSwitch(i, { x: e.clientX, y: e.clientY });
+              }}
+              onPointerLeave={() => {
+                if (hoverIdx.current === i) hoverIdx.current = null;
               }}
               onKeyDown={(e) => onBtnKey(e, i)}
               aria-describedby={m.id === 'help' && unseenErrors ? 'help-errors-note' : undefined}
@@ -147,7 +228,12 @@ export function MenuBar() {
                   openAt(j, true);
                 }}
                 onClose={(reason) => {
-                  if (reason === 'tab') {
+                  if (reason === 'select') {
+                    // A dialog opened by this item gives focus back to where the user was working,
+                    // or to this menu's button (never to the page body).
+                    setDialogReturnFocus(dialogReturnTarget(returnTo.current, btnRefs.current[i]));
+                    close(true);
+                  } else if (reason === 'tab') {
                     // Tab leaves the menu bar from its button, like the other controls.
                     setOpen(null);
                     returnTo.current = null;
@@ -249,6 +335,8 @@ function MenuSheetButton({ menus }: { menus: TopMenu[] }) {
                               onClick={() => {
                                 if (it.disabled) return;
                                 setOpen(false);
+                                // A dialog opened from here gives focus back to the Menu button.
+                                setDialogReturnFocus(btnRef.current);
                                 it.onSelect?.();
                               }}
                             >

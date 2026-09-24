@@ -27,13 +27,24 @@ function inTextField(el: Element | null): boolean {
   return (el as HTMLElement).isContentEditable;
 }
 
+/**
+ * App-wide keys (registered on window in App.tsx).
+ *
+ * Precedence, for keys that a view also handles itself ("/" in the Text coding Responses view,
+ * Ctrl/Cmd+F in the Data View grid, Ctrl/Cmd+K inside the search palette): the view's own handler wins
+ * while focus is in that view. View handlers are React handlers on the view's element, so they run
+ * first (React listens at the app root, inside window); a view that handles a key calls
+ * preventDefault(), and a key that was handled is left alone here. Anywhere else, the global meaning
+ * applies. A key is never acted on twice.
+ */
 export function handleGlobalKey(e: KeyboardEvent): void {
+  if (e.defaultPrevented) return;
   const mod = e.ctrlKey || e.metaKey;
   const key = e.key.toLowerCase();
   const modalOpen = !!document.querySelector('.modal');
   // Search palette: Ctrl/Cmd+K anywhere, "/" when not typing.
   if ((mod && !e.altKey && !e.shiftKey && key === 'k') || (!mod && !e.altKey && e.key === '/' && !inTextField(document.activeElement))) {
-    if (e.defaultPrevented || modalOpen || document.querySelector('.menu-sheet, .menu-dropdown')) return;
+    if (modalOpen || document.querySelector('.menu-sheet, .menu-dropdown')) return;
     e.preventDefault();
     const ui = useUi.getState();
     ui.setPaletteOpen(!ui.paletteOpen);

@@ -26,14 +26,21 @@ export function frequenciesOutput(
 ): OutputItem {
   const byId = new Map(codes.map((c) => [c.id, c]));
   const unit = opts.unitLabel;
-  const bodyRows: Cell[][] = rows.map((r) => [
-    hcell(byId.get(r.codeId)?.name ?? '', { indent: opts.depthOf(r.codeId) }),
-    cell(r.segments, 'int'),
-    cell(r.docs, 'int'),
-    cell(r.pctDocs, 'pct'),
-    cell(r.docsInclSub, 'int'),
-    cell(r.pctDocsInclSub, 'pct'),
-  ]);
+  // Themes (codes with sub-codes) show their totals including the sub-codes, marked "a", so a theme
+  // never reads as "0 / 0.0%" while its sub-codes cover half the answers (UI-019).
+  const bodyRows: Cell[][] = rows.map((r) => {
+    const name = byId.get(r.codeId)?.name ?? '';
+    if (!r.hasChildren) return [hcell(name, { indent: opts.depthOf(r.codeId) }), cell(r.segments, 'int'), cell(r.docs, 'int'), cell(r.pctDocs, 'pct')];
+    return [
+      hcell(name, { indent: opts.depthOf(r.codeId), bold: true, mark: 'a' }),
+      cell(r.segmentsInclSub, 'int', { bold: true }),
+      cell(r.docsInclSub, 'int', { bold: true }),
+      cell(r.pctDocsInclSub, 'pct', { bold: true }),
+    ];
+  });
+  const themeNotes = rows
+    .filter((r) => r.hasChildren && r.docs > 0)
+    .map((r) => `${byId.get(r.codeId)?.name ?? ''}: coded with the theme itself in ${r.docs} ${r.docs === 1 ? singular(unit) : unit} (${fmtPct(r.pctDocs)}), included in its total.`);
   const top = [...rows].filter((r) => r.docs > 0).sort((a, b) => b.docs - a.docs).slice(0, 3);
   const interp = top.length
     ? `The most frequent code${top.length > 1 ? 's were' : ' was'} ${top
@@ -47,9 +54,12 @@ export function frequenciesOutput(
       table: {
         title: 'Code frequencies',
         subtitle: opts.scopeNote,
-        header: [[hcell('Code'), hcell('Segments'), hcell(cap(unit)), hcell(`% of ${unit}`), hcell(`${cap(unit)} incl. sub-codes`), hcell('% incl. sub-codes')]],
+        header: [[hcell('Code'), hcell('Segments'), hcell(cap(unit)), hcell(`% of ${unit}`)]],
         rows: bodyRows,
-        footnotes: [`Percentages are of all ${nDocs} ${unit} in scope. A ${singular(unit)} counts once per code however many segments it has.`],
+        footnotes: [
+          `Percentages are of all ${nDocs} ${unit} in scope. A ${singular(unit)} counts once per code however many segments it has.`,
+          ...(rows.some((r) => r.hasChildren) ? [`a. Theme: the total of the theme and all its sub-codes. A ${singular(unit)} with several of its sub-codes counts once.`, ...themeNotes] : []),
+        ],
       },
     },
     { kind: 'text', style: 'interpretation', text: interp },

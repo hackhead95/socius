@@ -111,6 +111,10 @@ export function MenuList({ items, onClose, onNavigate, autoFocus = true, classNa
       j = (j + delta + bs.length) % bs.length;
       if (bs[j].getAttribute('aria-disabled') !== 'true') break;
     }
+    // Moving on with the keyboard closes a submenu opened by pointing: one item is active at a time.
+    if (timer.current) clearTimeout(timer.current);
+    if (openSubRef.current && bs[j]?.dataset.itemId !== openSubRef.current) setOpenSub(null);
+    hovered.current = null;
     bs[j]?.focus();
   };
 
@@ -322,65 +326,6 @@ export function ContextMenu({ x, y, items, onClose, label }: { x: number; y: num
   return (
     <div ref={ref} className="context-menu" style={{ position: 'fixed', left: pos.left, top: pos.top, zIndex: 120 }}>
       <MenuList items={items} onClose={() => onClose()} label={label} autoFocus="menu" />
-    </div>
-  );
-}
-
-/** A button that opens a dropdown menu below it. */
-export function MenuButton({ label, items, className, title, children, align = 'left' }: { label: string; items: MenuItem[]; className?: string; title?: string; children?: React.ReactNode; align?: 'left' | 'right' }) {
-  const [open, setOpen] = useState(false);
-  // Opened with the keyboard: the first item is highlighted; with the mouse: nothing until you point.
-  const [focusMode, setFocusMode] = useState<true | 'menu'>(true);
-  const wrap = useRef<HTMLDivElement>(null);
-  const btn = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const down = (e: PointerEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const away = () => setOpen(false);
-    window.addEventListener('pointerdown', down, true);
-    window.addEventListener('blur', away);
-    return () => {
-      window.removeEventListener('pointerdown', down, true);
-      window.removeEventListener('blur', away);
-    };
-  }, [open]);
-  return (
-    <div ref={wrap} className="menu-button-wrap">
-      <button
-        ref={btn}
-        type="button"
-        className={className ?? 'btn btn-sm'}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={title}
-        onClick={(e) => {
-          setFocusMode(e.detail === 0 ? true : 'menu');
-          setOpen((o) => !o);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setFocusMode(true);
-            setOpen(true);
-          }
-        }}
-      >
-        {children ?? label}
-      </button>
-      {open ? (
-        <MenuList
-          items={items}
-          label={label}
-          className={`menu-dropdown ${align === 'right' ? 'menu-dropdown-right' : ''}`}
-          autoFocus={focusMode}
-          onClose={(reason) => {
-            setOpen(false);
-            if (reason !== 'select') btn.current?.focus();
-          }}
-        />
-      ) : null}
     </div>
   );
 }

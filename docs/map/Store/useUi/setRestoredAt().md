@@ -2,13 +2,13 @@
 id: "store-action:useUi.setRestoredAt"
 type: store-action
 file: src/app/ui-store.ts
-line: 58
+line: 64
 area: app
 ---
 
 # useUi.setRestoredAt()
 
-*Store action* · defined in [[ui-store.ts]] (line 58) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 64) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

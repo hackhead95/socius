@@ -1,6 +1,7 @@
 // Linear Regression (SPSS REGRESSION): hierarchical blocks, automatic dummy coding, Enter or
 // Stepwise, SPSS tables, residual diagnostics, interpretation and APA text.
 
+import { ciOption, confLevel, levelText } from '../text';
 import type { Dataset } from '../../core/types';
 import type { ProcedureDef, OptionValues, SlotValues } from '../../core/procedure';
 import type { Cell, OutputBlock, OutputTable } from '../../core/output';
@@ -39,6 +40,9 @@ import {
   thin,
   type ReferenceChoice,
   type Term,
+  colProse,
+  proseNamer,
+  type Namer,
 } from './common';
 
 interface DesignCol {
@@ -113,7 +117,7 @@ export const linearRegression: ProcedureDef = {
       group: 'Categorical predictors',
     },
     { key: 'ci', label: 'Confidence intervals for B', type: 'checkbox', default: true, group: 'Statistics' },
-    { key: 'confLevel', label: 'Confidence level (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Statistics' },
+    ciOption('confLevel', 'Confidence level (%)', 'Statistics'),
     { key: 'collinearity', label: 'Collinearity diagnostics (tolerance, VIF)', type: 'checkbox', default: true, group: 'Statistics' },
     { key: 'zpp', label: 'Part and partial correlations', type: 'checkbox', default: false, group: 'Statistics' },
     { key: 'durbinWatson', label: 'Durbin-Watson', type: 'checkbox', default: false, group: 'Residuals' },
@@ -149,7 +153,7 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const dummy = optBool(opts, 'dummy', true);
   const reference = optStr<ReferenceChoice>(opts, 'reference', 'first');
   const showCI = optBool(opts, 'ci', true);
-  const confPct = Math.min(Math.max(optNum(opts, 'confLevel', 95), 50), 99.9);
+  const confPct = confLevel(opts, 'confLevel', 'Confidence level (%)') * 100;
   const conf = confPct / 100;
   const showCollin = optBool(opts, 'collinearity', true);
   const showZpp = optBool(opts, 'zpp', false);
@@ -259,7 +263,8 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   // ----- Model Summary -----
   const changes = fits.map((f, m) => r2Change(m === 0 ? null : fits[m - 1], f));
   const showChange = nModels > 1 || method === 'stepwise' || blocksIds.length > 1;
-  const dw = showDW ? durbinWatson(final.residuals, w) : NaN;
+  // With an exact fit the residuals are rounding noise: Durbin-Watson (a ratio of them) is undefined.
+  const dw = showDW && final.ssRes > 0 ? durbinWatson(final.residuals, w) : NaN;
   {
     const top: Cell[] = [hcell('Model', { rowSpan: showChange ? 2 : 1 }), hcell('R', { rowSpan: showChange ? 2 : 1 }), hcell('R Square', { rowSpan: showChange ? 2 : 1 }), hcell('Adjusted R Square', { rowSpan: showChange ? 2 : 1 }), hcell('Std. Error of the Estimate', { rowSpan: showChange ? 2 : 1 })];
     const sub: Cell[] = [];
@@ -302,7 +307,7 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     const top: Cell[] = [hcell('Model', { colSpan: 2, rowSpan: 2 }), hcell('Unstandardized Coefficients', { colSpan: 2 }), hcell('Standardized Coefficients'), hcell('t', { rowSpan: 2 }), hcell('Sig.', { rowSpan: 2 })];
     const sub: Cell[] = [hcell('B'), hcell('Std. Error'), hcell('Beta')];
     if (showCI) {
-      top.push(hcell(`${confPct.toFixed(1)}% Confidence Interval for B`, { colSpan: 2 }));
+      top.push(hcell(`${levelText(confPct / 100)}% Confidence Interval for B`, { colSpan: 2 }));
       sub.push(hcell('Lower Bound'), hcell('Upper Bound'));
     }
     if (showZpp) {
@@ -318,14 +323,14 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     fits.forEach((f, m) => {
       if (m > 0) rules.push(rows.length);
       const k = f.b.length;
-      const first: Cell[] = [cell(m + 1, 'int', { rowSpan: k + 1 }), cell('(Constant)', 'text'), coefCell(f.b0), coefCell(f.seB0), cell(null), cell(f.tB0, 'dec3'), pCell(f.pB0)];
+      const first: Cell[] = [cell(m + 1, 'int', { rowSpan: k + 1 }), cell('(Constant)', 'text'), coefCell(f.b0, 'coef', f.seB0), coefCell(f.seB0), cell(null), cell(f.tB0, 'dec3'), pCell(f.pB0)];
       if (showCI) first.push(coefCell(f.ciB0[0]), coefCell(f.ciB0[1]));
       if (showZpp) first.push(cell(null), cell(null), cell(null));
       if (showCollin) first.push(cell(null), cell(null));
       rows.push(first);
       for (let a = 0; a < k; a++) {
         const c = inModel[m][a];
-        const r: Cell[] = [cell(cols[c].name, 'text'), coefCell(f.b[a]), coefCell(f.se[a]), cell(f.beta[a], 'coef'), cell(f.t[a], 'dec3'), pCell(f.p[a])];
+        const r: Cell[] = [cell(cols[c].name, 'text'), coefCell(f.b[a], 'coef', f.se[a]), coefCell(f.se[a]), cell(f.beta[a], 'coef'), cell(f.t[a], 'dec3'), pCell(f.p[a])];
         if (showCI) r.push(coefCell(f.ci[a][0]), coefCell(f.ci[a][1]));
         if (showZpp) r.push(cell(f.zeroOrder[a], 'r'), cell(f.partial[a], 'r'), cell(f.part[a], 'r'));
         if (showCollin) r.push(cell(f.tolerance[a], 'r'), cell(f.vif[a], 'dec3', f.vif[a] >= 10 ? { tone: 'bad' } : f.vif[a] >= 5 ? { tone: 'warn' } : {}));
@@ -350,7 +355,7 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const meanPred = weightedMeanArr(final.fitted, w);
   const sdPred = Math.sqrt(weightedSSArr(final.fitted, w, meanPred) / (W - 1));
   const zpred = Float64Array.from(final.fitted, (v) => (sdPred > 0 ? (v - meanPred) / sdPred : NaN));
-  const zres = Float64Array.from(final.residuals, (v) => v / final.seEstimate);
+  const zres = Float64Array.from(final.residuals, (v) => (final.seEstimate > 0 ? v / final.seEstimate : NaN));
   {
     const stat = (a: Float64Array) => {
       let mn = Infinity, mx = -Infinity;
@@ -384,7 +389,10 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   }
 
   // ----- Charts -----
-  if (showPlots) {
+  // Standardized residuals are undefined for an exact fit (no residual variation): no residual plots then.
+  const anyZ = Array.from(zres).some((z, i) => Number.isFinite(z) && Number.isFinite(zpred[i]));
+  if (showPlots && !anyZ) notes.push('Residual plots are not shown: the residuals have no variation, so standardized residuals cannot be computed.');
+  if (showPlots && anyZ) {
     blocksOut.push(chartBlock(standardizedHistogram(zres, w, `Histogram of standardized residuals (dependent: ${depVar.name})`, 'Regression Standardized Residual')));
     const idx = thin(n);
     blocksOut.push(
@@ -393,7 +401,7 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
         title: `Standardized residuals vs standardized predicted values (dependent: ${depVar.name})`,
         xLabel: 'Regression Standardized Predicted Value',
         yLabel: 'Regression Standardized Residual',
-        points: idx.map((i) => ({ x: zpred[i], y: zres[i] })),
+        points: idx.filter((i) => Number.isFinite(zpred[i]) && Number.isFinite(zres[i])).map((i) => ({ x: zpred[i], y: zres[i] })),
       }),
     );
   }
@@ -405,6 +413,7 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   if (vifBad.length) warnings.push(`Serious multicollinearity: VIF ≥ 10 for ${listText(vifBad)}. These predictors overlap so strongly that their separate coefficients are unstable and their standard errors inflated. Consider dropping or combining overlapping predictors.`);
   if (vifMid.length) warnings.push(`Moderate multicollinearity: VIF between 5 and 10 for ${listText(vifMid)}. Interpret their separate effects with care.`);
   const perPred = k > 0 ? W / k : Infinity;
+  if (fits.some((x) => x.ssRes === 0 && x.dfReg > 0)) warnings.push(`The predictors reproduce ${depVar.name} exactly (no residual variation), so F and t are infinite and their significance is not meaningful. Check whether a predictor duplicates the outcome or there are only as many distinct cases as parameters.`);
   if (perPred < 10) warnings.push(`Only ${num(perPred, 1)} cases per predictor. A common rule of thumb asks for at least 10 to 15; with fewer, estimates are unstable and R² is inflated.`);
   const distinctY = distinctValues(ds, depVar, sel.rows);
   if (distinctY.length === 2) warnings.push(`${depVar.name} has only two values. For a yes/no outcome, Binary Logistic Regression is usually the better choice.`);
@@ -419,8 +428,10 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   // ----- Interpretation & APA -----
   blocksOut.unshift(heading(`Linear Regression: ${footName(depVar)}`));
-  blocksOut.push(textBlock('interpretation', interpretation(textName(depVar), fits, specs, inModel, cols, changes, blocksIds.length, method)));
-  blocksOut.push(textBlock('apa', apaText(textName(depVar), fits, inModel, cols, changes, specs, method, confPct)));
+  // One naming convention for every sentence: labels only if all the variables have usable labels.
+  const nm = proseNamer([depVar, ...cols.map((c) => c.term.variable)]);
+  blocksOut.push(textBlock('interpretation', interpretation(nm(depVar), fits, specs, inModel, cols, changes, blocksIds.length, method, nm)));
+  blocksOut.push(textBlock('apa', apaText(nm(depVar), fits, inModel, cols, changes, specs, method, confPct, nm)));
 
   return makeItem(linearRegression.id, title, ds, blocksOut, syntax, note);
 }
@@ -478,14 +489,14 @@ function excludedTable(
   return { title: 'Excluded Variables', header: showCollin ? [top, sub] : [top], rows, stubColumns: 2, ruleBefore: rules, footnotes: foot };
 }
 
-function predictorPhrase(c: DesignCol, b: number, p: number, depText: string): string {
+function predictorPhrase(c: DesignCol, b: number, p: number, depText: string, nm: Namer): string {
   const dir = b > 0 ? 'higher' : 'lower';
   const mag = fmtCoef(Math.abs(b));
   const t = c.term;
   if (t.kind === 'factor') {
-    return `compared with the reference group (${t.variable.name} = ${t.refLabel}), cases in the "${t.levelLabels[c.level]}" group score ${mag} points ${dir} on ${depText} on average (${fmtP(p)}).`;
+    return `compared with the reference group (${nm(t.variable)} = ${t.refLabel}), cases in the "${t.levelLabels[c.level]}" group score ${mag} points ${dir} on ${depText} on average (${fmtP(p)}).`;
   }
-  return `each one-unit increase in ${textName(t.variable)} is associated with a ${mag}-point ${dir} ${depText} (${fmtP(p)}).`;
+  return `each one-unit increase in ${nm(t.variable)} is associated with a ${mag}-point ${dir} ${depText} (${fmtP(p)}).`;
 }
 
 function interpretation(
@@ -497,12 +508,15 @@ function interpretation(
   changes: ReturnType<typeof r2Change>[],
   nBlocks: number,
   method: 'enter' | 'stepwise',
+  nm: Namer,
 ): string {
   const m = fits.length - 1;
   const f = fits[m];
   const parts: string[] = [];
   const sig = f.pF < 0.05;
-  parts.push(
+  if (!(f.dfReg > 0) || !Number.isFinite(f.pF))
+    parts.push(`No predictor could be estimated (constant or collinear predictors are left out), so the ${fits.length > 1 ? 'final ' : ''}model cannot be tested against simply using the average of ${depText}.`);
+  else parts.push(
     `The ${fits.length > 1 ? 'final ' : ''}model explains ${pct(f.r2)} of the variation in ${depText} (adjusted R² = ${noLead(f.adjR2)}). ` +
       (sig
         ? `This is statistically significant (${fmtP(f.pF)}): taken together, the predictors predict ${depText} better than simply using its average.`
@@ -511,8 +525,12 @@ function interpretation(
   if (method === 'enter' && nBlocks > 1) {
     for (let b = 1; b < fits.length; b++) {
       const c = changes[b];
-      const added = specs[b].entered.filter((x) => inModel[b].includes(x)).map((x) => cols[x].term.variable.name);
+      const added = specs[b].entered.filter((x) => inModel[b].includes(x)).map((x) => nm(cols[x].term.variable));
       const uniq = [...new Set(added)];
+      if (!uniq.length || !(c.df1 > 0) || !Number.isFinite(c.pChange)) {
+        parts.push(`Block ${b + 1} added no predictor that could be estimated (collinear or constant predictors are left out), so the explained variance did not change.`);
+        continue;
+      }
       parts.push(
         `Adding block ${b + 1} (${listText(uniq)}) ${c.pChange < 0.05 ? 'significantly ' : ''}increased the explained variance by ${(c.r2Change * 100).toFixed(1)} percentage points (${fmtP(c.pChange)})` +
           (c.pChange < 0.05 ? '.' : ', which is not a significant improvement.'),
@@ -520,24 +538,24 @@ function interpretation(
     }
   }
   if (method === 'stepwise') {
-    const order = specs.flatMap((s) => s.entered.map((c) => cols[c].name));
-    parts.push(`Stepwise selection entered ${listText(order)}${specs.some((s) => s.removed.length) ? ' and later removed ' + listText(specs.flatMap((s) => s.removed.map((c) => cols[c].name))) : ''}. Stepwise selection capitalises on chance; treat the chosen set as exploratory.`);
+    const order = specs.flatMap((s) => s.entered.map((c) => colProse(cols[c], nm)));
+    parts.push(`Stepwise selection entered ${listText(order)}${specs.some((s) => s.removed.length) ? ' and later removed ' + listText(specs.flatMap((s) => s.removed.map((c) => colProse(cols[c], nm)))) : ''}. Stepwise selection capitalises on chance; treat the chosen set as exploratory.`);
   }
   const k = f.b.length;
   const sigIdx: number[] = [], nonsigCols: DesignCol[] = [];
   for (let a = 0; a < k; a++) (f.p[a] < 0.05 ? sigIdx.push(a) : nonsigCols.push(cols[inModel[m][a]]));
   sigIdx.forEach((a, i) => {
-    const phrase = predictorPhrase(cols[inModel[m][a]], f.b[a], f.p[a], depText);
+    const phrase = predictorPhrase(cols[inModel[m][a]], f.b[a], f.p[a], depText, nm);
     parts.push(i === 0 && k > 1 ? `Holding the other predictors constant, ${phrase}` : capitalize(phrase));
   });
   if (nonsigCols.length) {
-    const names = describeCols(nonsigCols);
+    const names = describeCols(nonsigCols, nm);
     parts.push(`Not significantly related to ${depText}${k > 1 ? ' once the other predictors were taken into account' : ''} (p ≥ .05): ${listText(names)}.`);
   }
   if (sigIdx.length > 1) {
     let best = sigIdx[0];
     for (const a of sigIdx) if (Math.abs(f.beta[a]) > Math.abs(f.beta[best])) best = a;
-    parts.push(`Judging by the standardized coefficients, ${cols[inModel[m][best]].name} has the strongest association (β = ${noLead(f.beta[best], 2)}).`);
+    parts.push(`Judging by the standardized coefficients, ${colProse(cols[inModel[m][best]], nm)} has the strongest association (β = ${noLead(f.beta[best], 2)}).`);
   }
   return parts.filter(Boolean).join(' ');
 }
@@ -551,28 +569,35 @@ function apaText(
   specs: ModelSpec[],
   method: 'enter' | 'stepwise',
   confPct: number,
+  nm: Namer,
 ): string {
   const m = fits.length - 1;
   const f = fits[m];
   const s: string[] = [];
+  const ok = (x: LinearFit) => x.dfReg > 0 && !Number.isNaN(x.F) && Number.isFinite(x.pF) && Number.isFinite(x.adjR2);
+  const NOT_TESTED = 'contained no predictor that could be estimated (constant or collinear predictors are left out), so it was not tested';
   const Fs = (x: LinearFit) => `F(${dfText(x.dfReg)}, ${dfText(x.dfRes)}) = ${num(x.F, 2)}, ${fmtP(x.pF)}`;
   if (fits.length === 1) {
-    s.push(`A ${f.dfReg === 1 ? 'simple' : 'multiple'} linear regression was conducted to predict ${depText}. The model explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}.`);
+    s.push(`A ${f.dfReg === 1 ? 'simple' : 'multiple'} linear regression was conducted to predict ${depText}. The model ${ok(f) ? `explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}` : NOT_TESTED}.`);
   } else if (method === 'enter') {
-    s.push(`A hierarchical multiple regression was conducted to predict ${depText}. In Step 1 the model explained ${pct(fits[0].r2)} of the variance, ${Fs(fits[0])}.`);
+    s.push(`A hierarchical multiple regression was conducted to predict ${depText}. In Step 1 the model ${ok(fits[0]) ? `explained ${pct(fits[0].r2)} of the variance, ${Fs(fits[0])}` : NOT_TESTED}.`);
     for (let b = 1; b < fits.length; b++) {
       const c = changes[b];
+      if (!(c.df1 > 0) || !Number.isFinite(c.pChange) || !Number.isFinite(c.fChange)) {
+        s.push(`Step ${b + 1} added no predictor that could be estimated, so R² did not change.`);
+        continue;
+      }
       s.push(`Adding the Step ${b + 1} predictors increased R² by ${noLead(c.r2Change)}, F change(${dfText(c.df1)}, ${dfText(c.df2)}) = ${num(c.fChange, 2)}, ${fmtP(c.pChange)}.`);
     }
-    s.push(`The final model explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}.`);
+    s.push(`The final model ${ok(f) ? `explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}` : NOT_TESTED}.`);
   } else {
-    s.push(`A stepwise multiple regression (entry p ≤ .05, removal p ≥ .10) was conducted to predict ${depText}. The final model (${specs.length} steps) explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}.`);
+    s.push(`A stepwise multiple regression (entry p ≤ .05, removal p ≥ .10) was conducted to predict ${depText}. The final model (${specs.length} steps) ${ok(f) ? `explained ${pct(f.r2)} of the variance, ${Fs(f)}, adjusted R² = ${noLead(f.adjR2)}` : NOT_TESTED}.`);
   }
   const k = f.b.length;
   const sig: string[] = [];
   for (let a = 0; a < k; a++) {
     if (!(f.p[a] < 0.05)) continue;
-    sig.push(`${cols[inModel[m][a]].name} (B = ${fmtCoef(f.b[a])}, ${confPct.toFixed(0)}% CI [${fmtCoef(f.ci[a][0])}, ${fmtCoef(f.ci[a][1])}], β = ${noLead(f.beta[a], 2)}, t(${dfText(f.dfRes)}) = ${num(f.t[a], 2)}, ${fmtP(f.p[a])})`);
+    sig.push(`${colProse(cols[inModel[m][a]], nm)} (B = ${fmtCoef(f.b[a])}, ${levelText(confPct / 100)}% CI [${fmtCoef(f.ci[a][0])}, ${fmtCoef(f.ci[a][1])}], β = ${noLead(f.beta[a], 2)}, t(${dfText(f.dfRes)}) = ${num(f.t[a], 2)}, ${fmtP(f.p[a])})`);
   }
   if (sig.length) s.push(`Significant predictors were ${listText(sig)}.`);
   else if (k) s.push('No individual predictor was statistically significant.');
@@ -592,7 +617,7 @@ function buildSyntax(
     lines.push('* Dummy variables for categorical predictors.', ...compute, 'EXECUTE.');
   }
   const stats = ['COEFF', 'OUTS', 'R', 'ANOVA'];
-  if (o.showCI) stats.splice(2, 0, `CI(${Number(o.confPct.toFixed(1))})`);
+  if (o.showCI) stats.splice(2, 0, `CI(${levelText(o.confPct / 100)})`);
   if (o.blocks > 1 || method === 'stepwise') stats.push('CHANGE');
   if (o.showCollin) stats.push('COLLIN', 'TOL');
   if (o.showZpp) stats.push('ZPP');

@@ -17,13 +17,24 @@ function typeName(v: Variable): string {
   return 'Numeric';
 }
 
+/**
+ * A string value as SPSS syntax writes it: in single quotes, with an embedded quote doubled
+ * ('it''s'); trailing blanks (SPSS padding) are dropped. Quoting lets values that contain ", ",
+ * "; " or " = ", and the empty value '', be read back exactly (parseMissingText and
+ * parseValueLabelsText in xlsx.ts).
+ */
+export function quoteValue(s: string): string {
+  return `'${s.replace(/ +$/, '').replace(/'/g, "''")}'`;
+}
+
 function valueText(x: number | string): string {
-  if (typeof x === 'string') return x.replace(/ +$/, '');
+  if (typeof x === 'string') return quoteValue(x);
   if (x === Infinity) return 'HI';
   if (x === -Infinity) return 'LO';
   return String(x);
 }
 
+/** "LO THRU 0, -1" for numbers; "'DK', ''" for text (quoted, see quoteValue). */
 export function missingText(v: Variable): string {
   const parts: string[] = [];
   if (v.missing.range) {
@@ -34,6 +45,7 @@ export function missingText(v: Variable): string {
   return parts.join(', ');
 }
 
+/** "1 = Male; 2 = Female" for numbers; "'KOL' = Kolkata; '' = No answer" for text. */
 export function valueLabelsText(v: Variable): string {
   return v.valueLabels.map((l) => `${valueText(l.value)} = ${l.label}`).join('; ');
 }

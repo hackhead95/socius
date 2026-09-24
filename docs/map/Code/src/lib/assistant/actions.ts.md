@@ -7,7 +7,7 @@ area: lib/assistant
 
 # src/lib/assistant/actions.ts
 
-*Module* · area [[lib - assistant|lib/assistant]] · 52 lines
+*Module* · area [[lib - assistant|lib/assistant]] · 68 lines
 
 > Applying what the assistant proposed, only ever from a user's click. Transforms go through the store's mutateDataset (so Edit > Undo reverses them) and are logged like the Transform dialogs.
 
@@ -29,12 +29,15 @@ area: lib/assistant
 ## Types
 ApplyResult (line 12)
 
+## Private helpers
+transformName() (line 54)
+
 ## Symbols
 
 ### applyProposal
 *function* · line 18 · exported
 > Apply a proposal against the data as it is now.
-- Calls: [[log.ts#transformLogItem|transformLogItem()]], [[transform.ts#buildTransform|buildTransform()]], [[varUtils.ts#remember|remember()]]
+- Calls: [[assistant/actions.ts]], [[log.ts#transformLogItem|transformLogItem()]], [[transform.ts#buildTransform|buildTransform()]], [[varUtils.ts#remember|remember()]]
 - Used in: [[controller.ts]], [[scenarios.test.ts]]
 
 ### addToOutput

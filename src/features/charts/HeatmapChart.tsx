@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { formatValue } from './scale';
-import { ChartHeader, ChartSvg, FS_TICK, TipRow, fit, headerLayout, maxLabelWidth, useUid, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_TICK, TipRow, fit, useHeaderLayout, maxLabelWidth, useUid, type SetTip } from './common';
 
 type HeatSpec = Extract<ChartSpec, { type: 'heatmap' }>;
 
@@ -52,7 +52,7 @@ export function heatmapDesc(spec: HeatSpec): string {
 export function HeatmapChart({ spec, width, setTip }: { spec: HeatSpec; width: number; setTip: SetTip }) {
   const [hover, setHover] = useState<[number, number] | null>(null);
   const gid = useUid('hmg');
-  const head = headerLayout(spec.title, [], width);
+  const head = useHeaderLayout(spec.title, [], width);
   const R = spec.rowLabels.length;
   const C = spec.colLabels.length;
   let mn = Infinity;

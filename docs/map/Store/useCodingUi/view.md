@@ -14,6 +14,7 @@ area: features/coding
 
 ## Read by
 - [[CodingWorkspace|<CodingWorkspace>]] · hook (destructured)
+- [[ui-fixes.test.tsx]] · getState
 
 ## Written by
 - [[CodebookPanel|<CodebookPanel>]] · set alias
@@ -28,6 +29,7 @@ area: features/coding
 - [[features.ts#runAiFeature|runAiFeature()]] · alias.set, set()
 - [[ImportDialog.tsx]] · alias.set, set()
 - [[summarise|Summarise a code]]
+- [[ui-fixes.test.tsx]] · setState
 - [[useEntries|useEntries()]] · getState.set, set()
 - [[CodingDialog.tsx#ViewSwitch|ViewSwitch()]] · alias.set, set()
 

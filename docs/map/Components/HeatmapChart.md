@@ -14,12 +14,12 @@ area: features/charts
 
 ## Calls
 - [[charts/common.tsx#fit|fit()]]
-- [[charts/common.tsx#headerLayout|headerLayout()]]
 - [[HeatmapChart.tsx#heatFill|heatFill()]]
 - [[HeatmapChart.tsx#heatIntensity|heatIntensity()]]
 - [[HeatmapChart.tsx#heatmapDesc|heatmapDesc()]]
 - [[HeatmapChart.tsx#heatText|heatText()]]
 - [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]]
+- [[useHeaderLayout|useHeaderLayout()]]
 - [[useUid|useUid()]]
 
 ## Renders

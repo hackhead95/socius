@@ -17,6 +17,7 @@ area: core
 - [[OutputViewer.tsx#blockLabel|blockLabel()]] · renderer
 - [[assistant/format.ts#blockText|blockText()]] · consumer
 - [[exportDocx.ts#buildDocx|buildDocx()]] · exporter
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · consumer
 - [[reportHtml.ts#itemToHtml|itemToHtml()]] · exporter
 - [[exportText.ts#itemToText|itemToText()]] · exporter
 - [[explainPrompt.ts#outputItemContext|outputItemContext()]] · consumer

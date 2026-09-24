@@ -32,7 +32,7 @@ area: features/ai
 
 ### ExplainPanel
 *component* · line 16 · exported · note: [[ExplainPanel|<ExplainPanel>]]
-- Renders: [[AiErrorDetails|<AiErrorDetails>]], [[AiLoadProgress|<AiLoadProgress>]], [[AiProviderNote|<AiProviderNote>]], [[AiText|<AiText>]]
+- Renders: [[AiActivityLine|<AiActivityLine>]], [[AiErrorDetails|<AiErrorDetails>]], [[AiLoadProgress|<AiLoadProgress>]], [[AiProviderNote|<AiProviderNote>]], [[AiText|<AiText>]]
 - Calls: [[ai/hooks.ts#openAiSettings|openAiSettings()]], [[explainPrompt.ts#buildExplainPrompt|buildExplainPrompt()]], [[explainPrompt.ts#byteLength|byteLength()]], [[explainPrompt.ts#plainText|plainText()]], [[host.ts#copyToClipboard|copyToClipboard()]], [[open.ts#openAssistant|openAssistant()]], [[platform/ai.ts#aiPromptBudget|aiPromptBudget()]], [[useAiStatus|useAiStatus()]], [[useExplain]]
 - Uses: [[AiBits.tsx#SET_UP_AI|SET_UP_AI]], [[useExplain]], [[useStore]]
 - Reads: [[panels|useExplain.panels]]

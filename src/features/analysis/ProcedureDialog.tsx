@@ -6,6 +6,7 @@ import type { Dataset, Variable } from '../../core/types';
 import type { OptionDef, OptionValues, ProcedureDef, SlotValues, VarSlot } from '../../core/procedure';
 import { categoryLabel, distinctValues } from '../../core/data';
 import { getProcedure } from '../../procedures';
+import { startProcedureRun, StoppedError, type ProcedureRun } from './runProcedure';
 import { logFailure, logSlow } from '../../platform/errorlog';
 import { Modal } from '../../ui/Modal';
 import { copyText } from '../output/actions';
@@ -148,6 +149,8 @@ function DialogBody({ def, ds, onClose }: { def: ProcedureDef; ds: Dataset; onCl
   const [problems, setProblems] = useState<string[] | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ started: number; background: boolean; elapsed: number } | null>(null);
+  const runHandle = useRef<ProcedureRun | null>(null);
   const [showSyntax, setShowSyntax] = useState(false);
   const [hover, setHover] = useState<{ id: string; rect: DOMRect } | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
@@ -330,28 +333,50 @@ function DialogBody({ def, ds, onClose }: { def: ProcedureDef; ds: Dataset; onCl
     }
     setError(null);
     setRunning(true);
+    setProgress({ started: performance.now(), background: false, elapsed: 0 });
     const snapshot = { slots, options };
+    // Let the "Running" state paint first; large analyses then run in a worker (runProcedure.ts), so the
+    // page stays responsive and the elapsed time and Stop button below keep working.
     requestAnimationFrame(() => {
       window.setTimeout(() => {
-        try {
-          const cur = useStore.getState().dataset ?? ds;
-          const t0 = performance.now();
-          const item = def.run(cur, snapshot.slots, snapshot.options);
-          logSlow('analysis', def.id, performance.now() - t0);
-          remember(def.id, { ...snapshot, syntax: item.syntax });
-          addOutput(item);
-          onClose();
-        } catch (e) {
-          logFailure('analysis', e, { op: def.id });
-          remember(def.id, snapshot);
-          const msg = e instanceof Error ? e.message : String(e);
-          setError(msg || 'The analysis could not be completed.');
-          setRunning(false);
-          requestAnimationFrame(() => alertRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
-        }
+        const cur = useStore.getState().dataset ?? ds;
+        const t0 = performance.now();
+        const handle = startProcedureRun(def, cur, snapshot.slots, snapshot.options);
+        runHandle.current = handle;
+        if (handle.background) setProgress({ started: t0, background: true, elapsed: 0 });
+        handle.result.then(
+          (item) => {
+            runHandle.current = null;
+            logSlow('analysis', def.id, performance.now() - t0);
+            remember(def.id, { ...snapshot, syntax: item.syntax });
+            addOutput(item);
+            setProgress(null);
+            onClose();
+          },
+          (e) => {
+            runHandle.current = null;
+            setProgress(null);
+            setRunning(false);
+            remember(def.id, snapshot);
+            if (e instanceof StoppedError) return;
+            logFailure('analysis', e, { op: def.id });
+            const msg = e instanceof Error ? e.message : String(e);
+            setError(msg || 'The analysis could not be completed.');
+            requestAnimationFrame(() => alertRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+          },
+        );
       }, 0);
     });
   };
+  const stopRun = () => runHandle.current?.stop();
+  // Elapsed time while a background run is in progress.
+  useEffect(() => {
+    if (!progress?.background) return;
+    const t = window.setInterval(() => setProgress((p) => (p ? { ...p, elapsed: performance.now() - p.started } : p)), 250);
+    return () => window.clearInterval(t);
+  }, [progress?.background]);
+  // Closing the dialog (or unmounting) stops a background run.
+  useEffect(() => () => runHandle.current?.stop(), []);
 
   const groups = useMemo(() => {
     const order: string[] = [];
@@ -383,7 +408,17 @@ function DialogBody({ def, ds, onClose }: { def: ProcedureDef; ds: Dataset; onCl
           </button>
           <span className="spacer" />
           <button className="btn" onClick={reset} disabled={running}>Reset</button>
-          <button className="btn" onClick={onClose} disabled={running}>Cancel</button>
+          {progress?.background ? (
+            <span className="pd-progress" role="status" aria-live="polite">
+              <span className="pd-progress-bar" role="progressbar" aria-label="Analysis in progress" />
+              Running in the background: {Math.floor(progress.elapsed / 1000)} s
+            </span>
+          ) : null}
+          {progress?.background ? (
+            <button className="btn" onClick={stopRun}>Stop</button>
+          ) : (
+            <button className="btn" onClick={onClose} disabled={running}>Cancel</button>
+          )}
           <button className="btn btn-primary pd-run" onClick={run} disabled={running} aria-busy={running}>
             {running ? <span className="pd-spinner" aria-hidden="true" /> : null}
             {running ? 'Running…' : 'Run'}

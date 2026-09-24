@@ -14,12 +14,16 @@ area: core
 ## Tested by
 - [[explainPrompt.test.ts]] · import
 - [[scenarios.test.ts]] · import
+- [[findings-repro.test.ts]] · import
 - [[invariants.ts]] · import
 - [[proc-harness.ts]] · import
 - [[procedures-oracle.fuzz.test.ts]] · import
+- [[procedures-text.fuzz.test.ts]] · import
+- [[figures.test.tsx]] · import
 - [[fixtures.ts]] · import
 - [[format.test.ts]] · import
 - [[graphs.test.ts]] · import
+- [[fuzz-fixes.test.ts]] · import
 - [[stats-core/procedures.test.ts]] · import
 - [[sample-survey.test.ts]] · import
 - [[stats-models/procedures.test.ts]] · import
@@ -32,6 +36,7 @@ area: core
 - [[explainPrompt.ts]] · type-only
 - [[explainStore.ts]] · type-only
 - [[features.ts]] · type-only
+- [[runProcedure.ts]] · type-only
 - [[BarChart.tsx]] · type-only
 - [[BoxChart.tsx]] · type-only
 - [[Chart.tsx]] · type-only
@@ -76,14 +81,19 @@ area: core
 - [[nomreg.ts]] · type-only
 - [[plum.ts]] · type-only
 - [[models/reliability.ts]] · type-only
+- [[procedures/text.ts]] · type-only
 - [[explainPrompt.test.ts]] · value
 - [[scenarios.test.ts]] · type-only
+- [[findings-repro.test.ts]] · type-only
 - [[invariants.ts]] · type-only
 - [[proc-harness.ts]] · type-only
 - [[procedures-oracle.fuzz.test.ts]] · type-only
+- [[procedures-text.fuzz.test.ts]] · type-only
+- [[figures.test.tsx]] · type-only
 - [[fixtures.ts]] · value
 - [[format.test.ts]] · value
 - [[graphs.test.ts]] · type-only
+- [[fuzz-fixes.test.ts]] · type-only
 - [[stats-core/procedures.test.ts]] · type-only
 - [[sample-survey.test.ts]] · type-only
 - [[stats-models/procedures.test.ts]] · type-only

@@ -9,6 +9,7 @@ import { nextCodeColor } from '../../lib/coding/palette';
 import { canReparent, descendantIds } from '../../lib/coding/tree';
 import { buildWorkedExample, canBuildWorkedExample, type WorkedExample } from '../../lib/coding/example';
 import { useCodingUi } from './uiStore';
+import { workedExampleGuide } from './exampleGuide';
 
 const HISTORY_LIMIT = 40;
 
@@ -122,7 +123,7 @@ export function deleteDocs(docIds: string[]): void {
 export function loadWorkedExample(): WorkedExample | null {
   const st = useStore.getState();
   if (!canBuildWorkedExample(st.dataset)) return null;
-  const ex = buildWorkedExample(st.dataset!, st.coding.activeCoder, st.coding);
+  const ex = buildWorkedExample(st.dataset!, st.coding.activeCoder, st.coding, workedExampleGuide());
   if (!ex.docs.length) return null;
   commit('Load the worked example', (c) => ({
     ...c,

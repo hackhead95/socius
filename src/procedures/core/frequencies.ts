@@ -160,7 +160,8 @@ function statisticsTable(fs: VarFreq[], opts: OptionValues, pcts: number[]): { t
         // string variables: mode of the valid categories
         const t = fs[i].table.valid;
         if (!t.length) return cell(NaN);
-        const best = Math.max(...t.map((r) => r.count));
+        let best = -Infinity; // a loop, not Math.max(...): string variables can have 100k+ categories
+        for (const r of t) if (r.count > best) best = r.count;
         const ms = t.filter((r) => r.count === best);
         if (ms.length > 1) multiModeVars.add(i);
         return cell(String(ms[0].value), 'text', ms.length > 1 ? { mark: 'a' } : {});

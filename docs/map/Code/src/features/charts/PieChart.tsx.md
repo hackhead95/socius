@@ -27,6 +27,6 @@ area: features/charts
 ### PieChart
 *component* · line 14 · exported · note: [[PieChart|<PieChart>]]
 - Renders: [[ChartHeader|<ChartHeader>]], [[ChartSvg|<ChartSvg>]], [[TipRow|<TipRow>]]
-- Calls: [[PieChart.tsx#pieDesc|pieDesc()]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#headerLayout|headerLayout()]], [[charts/common.tsx#measureText|measureText()]], [[charts/common.tsx#seriesColor|seriesColor()]], [[scale.ts#arcPath|arcPath()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#pieAngles|pieAngles()]]
+- Calls: [[PieChart.tsx#pieDesc|pieDesc()]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#measureText|measureText()]], [[charts/common.tsx#seriesColor|seriesColor()]], [[scale.ts#arcPath|arcPath()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#pieAngles|pieAngles()]], [[useHeaderLayout|useHeaderLayout()]]
 - Uses: [[charts/common.tsx#FS_LEGEND|FS_LEGEND]], [[charts/common.tsx#FS_TICK|FS_TICK]]
 - Rendered by: [[ChartBody|<ChartBody>]]

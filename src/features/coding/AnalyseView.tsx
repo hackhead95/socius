@@ -139,35 +139,59 @@ function Frequencies({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }
               <th className="num">{cap(unitLabel)}</th>
               <th className="num">% of {unitLabel}</th>
               <th className="cw-barcol" aria-hidden />
-              {hasSub ? <th className="num">Incl. sub-codes</th> : null}
             </tr>
           </thead>
           <tbody>
             {f.rows.map((r) => {
               const c = nodes.find((n) => n.code.id === r.codeId)!;
+              // Themes (codes with sub-codes) show their total including the sub-codes, marked as
+              // such, instead of "0 / 0.0%" with the real total far to the right (UI-019).
+              const theme = r.hasChildren;
+              const segsN = theme ? r.segmentsInclSub : r.segments;
+              const docsN = theme ? r.docsInclSub : r.docs;
+              const pct = theme ? r.pctDocsInclSub : r.pctDocs;
               return (
-                <tr key={r.codeId}>
+                <tr key={r.codeId} className={theme ? 'cw-ftheme' : undefined}>
                   <td style={{ paddingLeft: 10 + c.depth * 16 }}>
                     <span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
                       <Swatch color={c.code.color} />
-                      {c.code.name}
+                      <span className="cw-fname" title={c.code.name}>{c.code.name}</span>
+                      {theme ? (
+                        <span className="cw-ftag" title={`Total of ${c.code.name} and all its sub-codes. A ${unitLabel.replace(/s$/, '')} with several of them counts once.`}>
+                          theme total
+                        </span>
+                      ) : null}
                     </span>
+                    {theme && r.docs > 0 ? (
+                      <span className="help cw-fown">
+                        incl. {plural(r.docs, unitLabel.replace(/s$/, ''), unitLabel)} coded with the theme itself
+                      </span>
+                    ) : null}
                   </td>
-                  <td className="num">{r.segments}</td>
-                  <td className="num">{r.docs}</td>
-                  <td className="num">{r.pctDocs.toFixed(1)}%</td>
+                  <td className="num">{segsN}</td>
+                  <td className="num">{docsN}</td>
+                  <td className="num">{pct.toFixed(1)}%</td>
                   <td className="cw-barcol">
-                    <Bar pct={r.pctDocs} color={c.code.color} />
+                    <Bar pct={pct} color={c.code.color} />
                   </td>
-                  {hasSub ? <td className="num">{r.docsInclSub !== r.docs ? `${r.docsInclSub} (${r.pctDocsInclSub.toFixed(1)}%)` : ''}</td> : null}
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+      {hasSub ? <p className="help">Theme rows add up their sub-codes: a {unitLabel.replace(/s$/, '')} counts once per theme however many of its sub-codes it has.</p> : null}
     </div>
   );
+}
+
+/**
+ * Share of the accent colour in a co-occurrence cell (10 to 70%). Capped at 70% so the cell text keeps
+ * at least 3.4:1 contrast in both themes (UI-014: white on light blue was 2.74:1); the text colour
+ * for strong cells is set per theme in coding.css (.cw-heat-strong).
+ */
+export function heatPct(v: number, max: number): number {
+  return Math.round(10 + 60 * (max > 0 ? v / max : 0));
 }
 
 function Cooccurrence({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string }) {
@@ -226,8 +250,8 @@ function Cooccurrence({ docs, unitLabel }: { docs: TextDoc[]; unitLabel: string 
                 {m[i].map((v, j) => (
                   <td
                     key={j}
-                    className={i === j ? 'cw-heat-diag num' : 'num'}
-                    style={i === j ? undefined : { background: v ? `color-mix(in srgb, var(--accent) ${Math.round(10 + 70 * (v / max))}%, var(--surface))` : undefined, color: v / max > 0.55 ? 'var(--accent-text)' : undefined }}
+                    className={i === j ? 'cw-heat-diag num' : heatPct(v, max) >= 55 ? 'num cw-heat-strong' : 'num'}
+                    style={i === j ? undefined : { background: v ? `color-mix(in srgb, var(--accent) ${heatPct(v, max)}%, var(--surface))` : undefined }}
                     title={`${r.name} and ${codes[j].name}: ${v}`}
                   >
                     {v || ''}

@@ -1,5 +1,6 @@
 // Analyze > Compare Means: One-Sample, Independent-Samples and Paired-Samples T Test (SPSS T-TEST).
 
+import { ciOption, confLevel, levelText } from '../text';
 import { selectCases } from '../../core/data';
 import type { Dataset } from '../../core/types';
 import type { ChartSpec, OutputBlock } from '../../core/output';
@@ -34,12 +35,12 @@ import {
   vlabel,
   vprose,
   type Cell,
+  selMissing,
+  allFinite,
 } from './common';
 
 function confOpt(opts: OptionValues): number {
-  const c = optNum(opts, 'ciLevel', 95) / 100;
-  if (!(c > 0.5 && c < 1)) throw new Error('The confidence level must be between 50 and 99.9 percent.');
-  return c;
+  return confLevel(opts, 'ciLevel', 'Confidence interval (%)');
 }
 
 function effectRows(label: string, effects: EffectSize[], first: boolean, span: number): Cell[][] {
@@ -83,7 +84,7 @@ function runOneSample(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       rows: results.map(({ v, r }) => [hcell(vlabel(v)), cell(r.stats.N, 'int'), cell(r.stats.mean, decFmt(v)), cell(r.stats.sd, decFmt(v)), cell(r.stats.se, decFmt(v, 3))]),
     }),
   );
-  const pc = Math.round(conf * 1000) / 10;
+  const pc = levelText(conf);
   blocks.push(
     tableBlock({
       title: 'One-Sample Test',
@@ -113,7 +114,7 @@ function runOneSample(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   for (const { v, r } of results) if (r.stats.N < 30) blocks.push(text('warning', `${v.name}: small sample (N = ${fmtN(r.stats.N)}). The t test assumes the variable is roughly normal; check a histogram or use Explore.`));
   const syntax = `T-TEST\n  /TESTVAL=${tv}\n  /MISSING=${listwise ? 'LISTWISE' : 'ANALYSIS'}\n  /VARIABLES=${vs.map((v) => v.name).join(' ')}\n  /ES DISPLAY(${optBool(opts, 'effectSizes', true) ? 'TRUE' : 'FALSE'})\n  /CRITERIA=CI(${conf.toFixed(3).replace(/0+$/, '')}).`;
   const r0 = results[0];
-  return item('ttest-one-sample', 'One-Sample T Test', ds, blocks, syntax, caseNote(ds, selN(r0.sel), r0.sel.nMissing));
+  return item('ttest-one-sample', 'One-Sample T Test', ds, blocks, syntax, caseNote(ds, selN(r0.sel), selMissing(ds, r0.sel)));
 }
 
 export const oneSampleTTest: ProcedureDef = {
@@ -124,7 +125,7 @@ export const oneSampleTTest: ProcedureDef = {
   slots: [{ key: 'variables', label: 'Test Variable(s)', min: 1, max: Infinity, types: ['numeric'], measures: ['scale'] }],
   options: [
     { key: 'testValue', label: 'Test value', type: 'number', default: 0, step: 0.1 },
-    { key: 'ciLevel', label: 'Confidence interval (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Options' },
+    ciOption('ciLevel', 'Confidence interval (%)', 'Options'),
     { key: 'effectSizes', label: 'Estimate effect sizes', type: 'checkbox', default: true, group: 'Options' },
     {
       key: 'missing',
@@ -176,7 +177,7 @@ function runIndependent(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     gRows.push([hcell(g.labelB), cell(r.g2.N, 'int'), cell(r.g2.mean, decFmt(v)), cell(r.g2.sd, decFmt(v)), cell(r.g2.se, decFmt(v, 3))]);
   });
   blocks.push(tableBlock({ title: 'Group Statistics', header: [[hcell(''), hcell(gv.name), hcell('N'), hcell('Mean'), hcell('Std. Deviation'), hcell('Std. Error Mean')]], rows: gRows, stubColumns: 2 }));
-  const pc = Math.round(conf * 1000) / 10;
+  const pc = levelText(conf);
   const tRows: Cell[][] = [];
   results.forEach(({ v, r }) => {
     const row = (label: string, t: typeof r.equal, lev: boolean): Cell[] => [
@@ -262,7 +263,7 @@ function runIndependent(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const Nused = r0.r.g1.N + r0.r.g2.N;
   // Rounded so that floating-point residue from non-integer weights never shows as "0 in other groups".
   const outside = Math.round((selN(r0.sel) - Nused) * 10) / 10;
-  return item('ttest-independent', 'Independent-Samples T Test', ds, blocks, syntax, caseNote(ds, Nused, r0.sel.nMissing, outside > 0 ? `${fmtN(outside)} in other groups of ${gv.name}` : undefined));
+  return item('ttest-independent', 'Independent-Samples T Test', ds, blocks, syntax, caseNote(ds, Nused, selMissing(ds, r0.sel), outside > 0 ? `${fmtN(outside)} in other groups of ${gv.name}` : undefined));
 }
 
 export const independentTTest: ProcedureDef = {
@@ -288,7 +289,7 @@ export const independentTTest: ProcedureDef = {
     },
     { key: 'groups', label: 'Groups', type: 'groupPair', slot: 'group' },
     { key: 'cutPoint', label: 'Cut point', type: 'number', default: 0, step: 0.5 },
-    { key: 'ciLevel', label: 'Confidence interval (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Options' },
+    ciOption('ciLevel', 'Confidence interval (%)', 'Options'),
     { key: 'effectSizes', label: 'Estimate effect sizes', type: 'checkbox', default: true, group: 'Options' },
     { key: 'chart', label: 'Chart of means with 95% error bars', type: 'checkbox', default: false, group: 'Options' },
     {
@@ -352,7 +353,7 @@ function runPaired(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       stubColumns: 2,
     }),
   );
-  const pc = Math.round(conf * 1000) / 10;
+  const pc = levelText(conf);
   blocks.push(
     tableBlock({
       title: 'Paired Samples Test',
@@ -390,7 +391,7 @@ function runPaired(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const higher = r.test.meanDiff > 0 ? a : b;
     const lower = r.test.meanDiff > 0 ? b : a;
     return r.test.p < 0.05
-      ? `Scores on ${vprose(higher)} (M = ${apaNum(higher === a ? r.first.mean : r.second.mean)}) were significantly higher than on ${vprose(lower)} (M = ${apaNum(lower === a ? r.first.mean : r.second.mean)}); the mean difference (${a.name} - ${b.name}) is ${apaNum(r.test.meanDiff)} (${pc}% CI ${apaNum(r.test.ciLower)} to ${apaNum(r.test.ciUpper)}), a ${labelD(d)} effect (d_z = ${apaNum(Math.abs(d))}). The two measures correlate at r = ${apaNum(r.correlation.r, 2, true)} (${labelR(r.correlation.r)}).`
+      ? `Scores on ${vprose(higher)} (M = ${apaNum(higher === a ? r.first.mean : r.second.mean)}) were significantly higher than on ${vprose(lower)} (M = ${apaNum(lower === a ? r.first.mean : r.second.mean)}); the mean difference (${a.name} - ${b.name}) is ${apaNum(r.test.meanDiff)} (${pc}% CI ${apaNum(r.test.ciLower)} to ${apaNum(r.test.ciUpper)}), a ${labelD(d)} effect (d_z = ${apaNum(Math.abs(d))}).${allFinite(r.correlation.r) ? ` The two measures correlate at r = ${apaNum(r.correlation.r, 2, true)} (${labelR(r.correlation.r)}).` : ''}`
       : `${vprose(a)} (M = ${apaNum(r.first.mean)}) and ${vprose(b)} (M = ${apaNum(r.second.mean)}) did not differ significantly (${apaP(r.test.p)}; mean difference ${apaNum(r.test.meanDiff)}, ${pc}% CI ${apaNum(r.test.ciLower)} to ${apaNum(r.test.ciUpper)}).`;
   });
   blocks.push(text('interpretation', interp.join(' ') + ` ${COHEN_NOTE}`));
@@ -398,7 +399,7 @@ function runPaired(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   for (const { a, b, r } of pairs) if (r.first.N < 30) blocks.push(text('warning', `Pair ${a.name} - ${b.name}: small sample (N = ${fmtN(r.first.N)}). The paired t test assumes the differences are roughly normal; the Wilcoxon signed-rank test is a check.`));
   const syntax = `T-TEST PAIRS=${first.map((v) => v.name).join(' ')} WITH ${second.map((v) => v.name).join(' ')} (PAIRED)\n  /ES DISPLAY(${optBool(opts, 'effectSizes', true) ? 'TRUE' : 'FALSE'}) STANDARDIZER(SD)\n  /CRITERIA=CI(${conf.toFixed(3).replace(/0+$/, '')})\n  /MISSING=${listwise ? 'LISTWISE' : 'ANALYSIS'}.`;
   const p0 = pairs[0];
-  return item('ttest-paired', 'Paired-Samples T Test', ds, blocks, syntax, caseNote(ds, selN(p0.sel), p0.sel.nMissing));
+  return item('ttest-paired', 'Paired-Samples T Test', ds, blocks, syntax, caseNote(ds, selN(p0.sel), selMissing(ds, p0.sel)));
 }
 
 export const pairedTTest: ProcedureDef = {
@@ -412,7 +413,7 @@ export const pairedTTest: ProcedureDef = {
     { key: 'second', label: 'Variable 2', min: 1, max: Infinity, types: ['numeric'], measures: ['scale'] },
   ],
   options: [
-    { key: 'ciLevel', label: 'Confidence interval (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Options' },
+    ciOption('ciLevel', 'Confidence interval (%)', 'Options'),
     { key: 'effectSizes', label: 'Estimate effect sizes', type: 'checkbox', default: true, group: 'Options' },
     {
       key: 'missing',

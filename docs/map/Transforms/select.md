@@ -30,14 +30,10 @@ area: transforms
 - [[Syntax/COMPUTE|COMPUTE]]
 - [[END IF]]
 - [[EXECUTE]]
-- [[FILTER]]
 - [[FILTER OFF]]
-- [[FORMATS]]
 - [[SELECT IF]]
 - [[SET]]
 - [[USE ALL]]
-- [[VALUE LABELS]]
-- [[VARIABLE LABELS]]
 
 ## Configured in dialog
 - [[transform/select|transform: select]]

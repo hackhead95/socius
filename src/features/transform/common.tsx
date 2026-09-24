@@ -7,25 +7,49 @@ import { Modal } from '../../ui/Modal';
 import { VarMeasureIcon } from '../../ui/MeasureIcon';
 import { Icon } from '../../ui/Icon';
 import { logFailure } from '../../platform/errorlog';
+import { useUi } from '../../app/ui-store';
 
-/** Apply a transformation: undoable dataset change + quiet log entry + summary toast. */
-export function applyTransform(res: TransformResult) {
+/**
+ * Apply a transformation: undoable dataset change + quiet log entry + summary toast.
+ * `label` names the step for Edit > Undo ("Undo Recode into different variables"); use the menu
+ * item's words, plus the new variable's name where there is one ("Compute variable agegrp").
+ */
+export function applyTransform(res: TransformResult, label: string) {
   const st = useStore.getState();
   const name = st.dataset?.name;
-  st.mutateDataset(() => res.dataset);
+  const before = new Set(st.dataset?.variables.map((v) => v.id) ?? []);
+  st.mutateDataset(() => res.dataset, { label });
   st.addOutput(transformLogItem(res, name), { focus: false });
-  st.toast(res.summary, 'success');
+  // New variables (Recode into different variables, Compute...) are added at the end: "Show" takes
+  // the Data View to the first of them (next step is usually its value labels).
+  const added = res.dataset.variables.find((v) => !before.has(v.id));
+  st.toast(
+    res.summary,
+    'success',
+    added
+      ? {
+          action: {
+            label: 'Show',
+            run: () => {
+              useUi.getState().setHome(false);
+              useUi.getState().focusGrid({ varId: added.id });
+              useStore.getState().setTab('data');
+            },
+          },
+        }
+      : undefined,
+  );
   for (const w of res.warnings.slice(0, 3)) st.toast(w, 'warning');
 }
 
 /** FILTER OFF / WEIGHT OFF from a chip or menu, logged like the dialogs so the syntax log stays complete. */
 export function turnFilterOff() {
   const ds = useStore.getState().dataset;
-  if (ds?.filterVarId) applyTransform(selectCasesTransform(ds, { kind: 'all' }, 'filter'));
+  if (ds?.filterVarId) applyTransform(selectCasesTransform(ds, { kind: 'all' }, 'filter'), 'Turn filter off');
 }
 export function turnWeightOff() {
   const ds = useStore.getState().dataset;
-  if (ds?.weightVarId) applyTransform(weightCases(ds, null));
+  if (ds?.weightVarId) applyTransform(weightCases(ds, null), 'Turn weighting off');
 }
 
 export function TransformModal(props: {

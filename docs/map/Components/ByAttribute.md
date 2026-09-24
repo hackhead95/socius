@@ -2,13 +2,13 @@
 id: "src/features/coding/AnalyseView.tsx#ByAttribute"
 type: component
 file: src/features/coding/AnalyseView.tsx
-line: 245
+line: 269
 area: features/coding
 ---
 
 # <ByAttribute>
 
-*React component* · defined in [[AnalyseView.tsx]] (line 245) · area [[features - coding|features/coding]]
+*React component* · defined in [[AnalyseView.tsx]] (line 269) · area [[features - coding|features/coding]]
 
 ## Calls
 - [[coding/analysis.ts#attributeKeys|attributeKeys()]]

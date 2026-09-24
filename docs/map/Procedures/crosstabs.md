@@ -73,13 +73,16 @@ area: procedures
 - [[core/data.ts#varDisplayName|varDisplayName()]]
 
 ## Uses
+- [[procedures/text.ts#allFinite|allFinite()]] · procedure helper
 - [[core/common.ts#apaNum|apaNum()]] · procedure helper
 - [[core/common.ts#apaP|apaP()]] · procedure helper
 - [[core/common.ts#blank|blank()]] · procedure helper
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
 - [[core/common.ts#categoriesOf|categoriesOf()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
 - [[core/common.ts#COHEN_NOTE|COHEN_NOTE]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
 - [[core/common.ts#fmtCount|fmtCount()]] · procedure helper
@@ -87,11 +90,13 @@ area: procedures
 - [[core/common.ts#heading|heading()]] · procedure helper
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#labelV|labelV()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#optBool|optBool()]] · procedure helper
 - [[core/common.ts#optStr|optStr()]] · procedure helper
 - [[core/common.ts#pcell|pcell()]] · procedure helper
 - [[core/common.ts#pct|pct()]] · procedure helper
 - [[core/common.ts#sameValue|sameValue()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#sigWord|sigWord()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
@@ -115,7 +120,9 @@ area: procedures
 - [[search.test.ts]] · menu label, procedure id
 - [[scenarios.test.ts]] · procedure id
 - [[units.test.ts]] · menu label, procedure id
+- [[findings-repro.test.ts]] · procedure id
 - [[procedures-oracle.fuzz.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 

@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.collapsed"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 34
+line: 39
 area: features/coding
 ---
 
 # useCodingUi.collapsed
 
-*Store state key* · defined in [[uiStore.ts]] (line 34) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 39) · area [[features - coding|features/coding]]
 
 - **Store:** useCodingUi
 

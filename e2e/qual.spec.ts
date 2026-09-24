@@ -140,9 +140,16 @@ test('worked example: one click loads answers, a starter codebook and keyword co
   // Loading the sample from the welcome screen leaves its own toast, so pick the example's.
   const exToast = page.locator('.toast', { hasText: 'Example loaded' });
   await expect(exToast).toBeVisible();
-  await expect(exToast).toContainText('review them');
+  // Short toast (UI-018) whose code count is the codebook's own count (UI-029).
+  const codebookCount = await page.locator('.cw-codebook .cw-panel-head .badge').innerText();
+  await expect(exToast).toContainText(`and ${codebookCount} codes (`);
+  expect((await exToast.locator('.toast-text').innerText()).split(/\s+/).length).toBeLessThan(30);
   const note = page.locator('.cw-example-note');
   await expect(note).toContainText('Worked example.');
+  // The guidance lives in the note, with the real menu names.
+  await expect(note).toContainText('Text coding > Codes by attribute');
+  await expect(note).toContainText('Text coding > Export codes to dataset...');
+  await expect(note).toContainText('Analyze > Descriptive Statistics > Crosstabs...');
   await expect(note).toContainText(`coded ${coded} of 630 answers automatically`);
   await expect(page.locator('.cw-resp-row').first()).toContainText('area:');
   for (const name of ['Infrastructure and services', 'Water supply', 'Drainage and flooding', 'Safety at night', 'Rent and housing', 'Air pollution']) {
@@ -162,10 +169,10 @@ test('worked example: one click loads answers, a starter codebook and keyword co
   await expect(page.locator('.cw-main')).toContainText('About this worked example');
 
   // One undo step removes the whole example and the offer comes back.
-  await page.locator('.cw-toolbar button', { hasText: /^Undo$/ }).click();
+  await page.locator('.cw-toolbar button', { hasText: /^Undo coding$/ }).click();
   await page.locator('.cw-viewtabs [role=tab]', { hasText: 'Responses' }).click();
   await expect(card).toBeVisible();
-  await expect(page.locator('.cw-toolbar button', { hasText: /^Undo$/ })).toBeDisabled();
+  await expect(page.locator('.cw-toolbar button', { hasText: /^Undo coding$/ })).toBeDisabled();
 });
 
 test('auto-coding preview, apply, undo and apply again', async ({ page }) => {
@@ -323,8 +330,9 @@ test('outside the artifact, AI items lead to free set-up instead of disappearing
   await expect(page.locator('.menu-dropdown [role=menuitem]', { hasText: /\bAI\b/ })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await importChallenge(page);
-  await expect(page.locator('.cw-ainote')).toContainText('Optional: AI can draft a codebook');
-  await expect(page.locator('.cw-ainote button', { hasText: 'Set up AI' })).toBeVisible();
+  // One AI prompt in the toolbar, not three: no separate banner; the set-up link says what AI adds.
+  await expect(page.locator('.cw-ainote')).toHaveCount(0);
+  await expect(page.locator('.cw-ai-group').getByRole('button', { name: 'Set up AI' })).toHaveAttribute('title', /AI can draft a codebook/);
   // The toolbar's AI group stays visible, disabled, with a set-up link next to it.
   await expect(page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' })).toBeDisabled();
   await expect(page.locator('.cw-ai-group').getByRole('button', { name: 'Set up AI' })).toBeVisible();

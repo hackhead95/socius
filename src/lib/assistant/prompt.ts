@@ -1,5 +1,5 @@
-// The specialist: system prompt and live context. The procedure catalogue and Text coding menu are
-// generated from the running app, so the assistant's knowledge of Socius stays current.
+// The specialist: system prompt and live context. The menus (every command) are generated from the
+// running app's menu model, so the assistant's knowledge of Socius stays current.
 import type { OutputItem } from '../../core/output';
 import { procedures } from '../../procedures';
 import { codingMenuItems } from '../../features/coding/menu';
@@ -56,21 +56,34 @@ const TESTS = `## Choosing a test (outcome by predictor)
 - Same people measured twice: Paired-Samples T Test or Wilcoxon; 3+ related: Friedman.
 - Items for a scale: Reliability Analysis (models.reliability), Factor Analysis (models.factor).`;
 
-function catalogue(): string {
+// The menus are generated from the app's real menu model (src/app/menuKnowledge.ts registers it at
+// start-up), so the assistant knows every command, including new ones. Without it (a unit test that
+// never loads the app), the analyses and the Text coding menu are still generated from the registry.
+let menuKnowledge: (() => string) | null = null;
+
+/** Called by the app at start-up with a function that describes every menu command. */
+export function setMenuKnowledgeProvider(fn: (() => string) | null): void {
+  menuKnowledge = fn;
+}
+
+function fallbackCatalogue(): string {
   const lines = procedures.map((p) => `- ${p.title} (${p.id}): **${menuPath(p)}**`);
-  return `## Socius menus (current version)
-- File: Open data file... (SPSS .sav/.zsav, CSV, Excel), Load sample survey, Save project, Save data as (SPSS, CSV, Excel), Export codebook.
-- Edit: Undo / Redo (Ctrl+Z / Ctrl+Y), Find in data, Go to case.
-- View: Data View, Variable View (labels, value labels, missing values, measure), Output, Text coding, Value labels in Data View, Theme.
-- Data: Copy variable properties..., Sort cases..., Select cases... (filter), Weight cases..., Merge files, Aggregate..., Turn filter off, Turn weighting off.
-- Transform: Compute variable..., Count values within cases..., Recode into same variables..., Recode into different variables..., Automatic recode..., Visual binning..., Reverse-code items..., Create scale / index..., Standardize (z-scores)..., Rank cases...
-- Analyze and Graphs (analysis id in brackets, for run_analysis):
+  return `## Socius menus (analyses and Text coding; analysis id in brackets, for run_analysis)
 ${lines.join('\n')}
 - Text coding: ${codingMenuItems.map((c) => c.label.replace(/[.…]+$/, '')).join(', ')}.
-- Output tab: every result has SPSS-style tables, an interpretation, an APA sentence and SPSS syntax; buttons copy a table or the APA sentence, and the report exports to Word, HTML, Excel or text. A switch shows tables in APA or SPSS style.
-- AI: Ask the Socius assistant... (Ctrl+J), Explain a result..., Suggest a codebook..., Suggest codes for open-ended answers..., Summarise a code..., AI assistant settings... (the only place to set up AI help).
-- Help: Getting started, User guide, Keyboard shortcuts, Send feedback or report a problem, About Socius.
-Socius follows SPSS: user-missing codes are excluded, listwise deletion per analysis, frequency weights (WEIGHT BY) apply to all counts and statistics, and a filter (FILTER BY) leaves unselected cases out. Data never leaves the computer except what this assistant sends to the AI service.`;
+- The other menus are File, Edit, View, Data, Transform, AI (every AI feature and AI assistant settings) and Help; search_help finds the steps for anything else.`;
+}
+
+function catalogue(): string {
+  if (menuKnowledge) {
+    try {
+      const text = menuKnowledge();
+      if (text) return text;
+    } catch {
+      /* fall back below */
+    }
+  }
+  return fallbackCatalogue();
 }
 
 function seeLine(p: AssistantPermissions): string {

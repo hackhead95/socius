@@ -17,7 +17,7 @@ area: lib/assistant
 - [[assistant/format.ts#byteLength|byteLength()]]
 - [[coding.ts#docLabel|docLabel()]]
 - [[assistant/format.ts#enc|enc]]
-- [[text.ts#kwic|kwic()]]
+- [[coding/text.ts#kwic|kwic()]]
 - [[coding.ts#NO_CODING|NO_CODING]]
 - [[coding.ts#projectOf|projectOf()]]
 - [[coding.ts#TEXTS_OFF|TEXTS_OFF]]

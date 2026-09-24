@@ -2,13 +2,13 @@
 id: "store-key:useUi.sampleBanner"
 type: store-key
 file: src/app/ui-store.ts
-line: 31
+line: 37
 area: app
 ---
 
 # useUi.sampleBanner
 
-*Store state key* · defined in [[ui-store.ts]] (line 31) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 37) · area [[Areas/app|app]]
 
 > "You are exploring sample data" banner.
 

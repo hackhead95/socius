@@ -8,43 +8,11 @@
 
 import type { MLCEngine } from '@mlc-ai/web-llm';
 import { AiUnavailableError } from './claude';
+import { checkSpaceFor, deleteStoredModel, estimateStorage, formatBytes, freeBytes, requestPersist } from './ai-storage';
 
-export interface WebLlmModelChoice {
-  /** Model id for GPUs with 16-bit float shaders (most recent GPUs). */
-  id: string;
-  /** Fallback id for GPUs without the shader-f16 feature. */
-  id32: string;
-  label: string;
-  detail: string;
-  /** Approximate download, for the user. */
-  download: string;
-  /** Graphics memory needed, from the package's model list (16-bit files). */
-  vramMB: number;
-  /** Graphics memory needed by the 32-bit fallback files. */
-  vramMB32: number;
-}
-
-// Ids checked against prebuiltAppConfig in @mlc-ai/web-llm 0.2.85 (tests/platform/webllm.test.ts).
-export const WEBLLM_MODELS: WebLlmModelChoice[] = [
-  {
-    id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-    id32: 'Qwen2.5-1.5B-Instruct-q4f32_1-MLC',
-    label: 'Small and fast',
-    detail: 'Qwen 2.5, 1.5 billion parameters. Works on most laptops with a recent browser.',
-    download: 'about 1 GB',
-    vramMB: 1630,
-    vramMB32: 1889,
-  },
-  {
-    id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
-    id32: 'Llama-3.2-3B-Instruct-q4f32_1-MLC',
-    label: 'Better quality',
-    detail: 'Llama 3.2, 3 billion parameters. Slower, needs a computer with more graphics memory.',
-    download: 'about 1.8 GB',
-    vramMB: 2264,
-    vramMB32: 2952,
-  },
-];
+// The model list lives in ai-webllm-models.ts (also read by ai-storage.ts, without a cycle).
+export { WEBLLM_MODELS, type WebLlmModelChoice } from './ai-webllm-models';
+import { WEBLLM_MODELS, type WebLlmModelChoice } from './ai-webllm-models';
 
 export const DEFAULT_WEBLLM_MODEL = WEBLLM_MODELS[0].id;
 /** Both models have a 4,096-token context window: keep prompts small and leave room for the reply. */
@@ -162,11 +130,13 @@ export async function storageFreeMB(): Promise<number | null> {
 
 /** Ask the browser to keep the downloaded model when disk space runs low (best effort, never throws). */
 export async function requestPersistentStorage(): Promise<boolean> {
-  try {
-    return !!(await (globalThis as any).navigator?.storage?.persist?.());
-  } catch {
-    return false;
-  }
+  return requestPersist();
+}
+
+/** Bytes a model id needs in browser storage (its download). */
+export function modelDownloadBytes(modelId: string): number {
+  const c = webLlmChoice(modelId);
+  return (modelId === c.id32 ? c.downloadMB32 : c.downloadMB) * 1e6;
 }
 
 /** Memory this computer reports (Chrome and Edge only, rounded, at most 8 or so), or null. */
@@ -270,6 +240,14 @@ export async function ensureEngine(modelId: string, signal?: AbortSignal): Promi
   const gpu = await detectWebGpu();
   if (!gpu.ok) throw new AiUnavailableError('webgpu_unavailable', 'WebGPU is not available in this browser.');
   if (signal?.aborted) throw new AiUnavailableError('cancelled', 'Stopped.');
+  // Never fill the browser's storage: a full quota also stops autosave. Check before downloading.
+  const space = await checkSpaceFor(modelId, modelDownloadBytes(modelId)).catch(() => null);
+  if (space && !space.ok)
+    throw Object.assign(
+      new AiUnavailableError('model_storage_full', 'Not enough browser storage for the model.', `needs about ${formatBytes(space.need)}, and the browser allows about ${formatBytes(space.free)} more for this site`),
+      { need: space.need, free: space.free },
+    );
+  if (space && space.need > 0) void requestPersist();
   const promise = (async () => {
     let mod: WebLlmModule;
     try {
@@ -297,6 +275,14 @@ export async function ensureEngine(modelId: string, signal?: AbortSignal): Promi
         throw new AiUnavailableError('cancelled', 'Stopped.');
       }
       const code = loadErrorCode(e);
+      // Storage ran out part-way: remove the partial download at once, so it does not keep the
+      // browser's storage full (which also stops autosave). Other failures keep finished parts so a
+      // retry continues where it stopped, unless free space is now low.
+      if (code === 'model_storage_full') await deleteStoredModel(modelId).catch(() => 0);
+      else if (code === 'model_download_failed') {
+        const free = freeBytes(await estimateStorage());
+        if (free !== null && free < 500e6) await deleteStoredModel(modelId).catch(() => 0);
+      }
       // A 16-bit shader problem is retried with the 32-bit model files (see loadChoice): not an error yet.
       setState(code === 'webgpu_f16' ? { phase: 'idle', modelId: null, progress: 0, text: '' } : { phase: 'error', progress: 0, text: String(e?.message ?? e) });
       throw new AiUnavailableError(code, 'The on-device model could not be loaded.', String(e?.message ?? e).slice(0, 300));
@@ -407,6 +393,16 @@ export async function isWebLlmCached(choiceId: string): Promise<boolean> {
   }
 }
 
+/** Remove one stored model by its exact id (as listed in Browser storage), unloading it first if it is loaded. */
+export async function deleteWebLlmModelId(modelId: string): Promise<number> {
+  if (engine && loadedModel === modelId) {
+    await engine.unload().catch(() => undefined);
+    loadedModel = null;
+    setState({ phase: 'idle', modelId: null, progress: 0, text: '' });
+  }
+  return deleteStoredModel(modelId);
+}
+
 /** Remove the model files from the browser cache to free disk space. */
 export async function deleteWebLlmModel(choiceId: string): Promise<void> {
   const modelId = await resolveModelId(choiceId);
@@ -415,8 +411,13 @@ export async function deleteWebLlmModel(choiceId: string): Promise<void> {
     loadedModel = null;
     setState({ phase: 'idle', modelId: null, progress: 0, text: '' });
   }
-  const mod = await loadModule();
-  await mod.deleteModelAllInfoInCache(modelId);
+  try {
+    const mod = await loadModule();
+    await mod.deleteModelAllInfoInCache(modelId);
+  } catch {
+    /* the package could not load: delete the files directly below */
+  }
+  await deleteStoredModel(modelId);
 }
 
 /** Test hook: replace the package loader (and forget the engine, GPU check and state). */

@@ -6,15 +6,16 @@ area: features/coding
 
 # Area: features/coding
 
-21 files, 5345 lines.
+22 files, 5586 lines.
 
 ## Depends on (module imports)
-- [[lib - coding|lib/coding]]: 43
-- [[core]]: 34
+- [[lib - coding|lib/coding]]: 45
+- [[core]]: 35
 - [[features - ai|features/ai]]: 10
 - [[ui]]: 9
 - [[platform]]: 7
 - [[Areas/app|app]]: 1
+- [[procedures]]: 1
 - [[samples]]: 1
 
 ## Used by areas
@@ -33,6 +34,7 @@ area: features/coding
 - [[ExportDialogs.tsx]]: Export coded segments, the qualitative report and the codebook; import a codebook; export codes to the dataset as 0/1 variables (mixed-metho…
 - [[ImportDialog.tsx]]: Import sources: files (.txt .md .docx .csv .xlsx), pasted text, sample interviews, and open-ended answers from a string variable of the acti…
 - [[SmallDialogs.tsx]]: Code editor, merge, source editor and coder management dialogs.
+- [[exampleGuide.ts]]: Names the worked example's toast, note and memo use for places in the app, taken from the real menu model (the Text coding menu, the procedu…
 - [[coding/hooks.ts]]: Shared selectors and helpers for the coding UI.
 - [[MemosView.tsx]]: Memos: project memos and memos linked to a code or a source.
 - [[menu.ts]]: The "Text coding" menu. The app shell renders these; selecting one switches to the coding tab and calls openDialog({ kind: 'coding', id }). …
@@ -46,10 +48,10 @@ area: features/coding
 - [[uiStore.ts]]: UI state for the Text coding workspace (not saved with the project).
 
 ## Components
-[[AiCodebookDialog|<AiCodebookDialog>]] · [[AiGate|<AiGate>]] · [[AiSuggestDialog|<AiSuggestDialog>]] · [[AnalyseView|<AnalyseView>]] · [[AutoCodeDialog|<AutoCodeDialog>]] · [[Components/Bar|<Bar>]] · [[ByAttribute|<ByAttribute>]] · [[CodebookPanel|<CodebookPanel>]] · [[CodeChip|<CodeChip>]] · [[CodeEditDialog|<CodeEditDialog>]] · [[CodersDialog|<CodersDialog>]] · [[CodingDialog|<CodingDialog>]] · [[CodingWorkspace|<CodingWorkspace>]] · [[Cooccurrence|<Cooccurrence>]] · [[DocEditDialog|<DocEditDialog>]] · [[ExportDialog|<ExportDialog>]] · [[ExportToDatasetDialog|<ExportToDatasetDialog>]] · [[FilesTab|<FilesTab>]] · [[Floating|<Floating>]] · [[Components/Frequencies|<Frequencies>]] · [[ImportDialog (features-coding-dialogs-ImportDialog)|<ImportDialog>]] · [[Kwic|<Kwic>]] · [[MemosView|<MemosView>]] · [[MenuButton (features-coding-ui)|<MenuButton>]] · [[MergeCodeDialog|<MergeCodeDialog>]] · [[OneSidedNote|<OneSidedNote>]] · [[Para|<Para>]] · [[PasteTab|<PasteTab>]] · [[QuickCode|<QuickCode>]] · [[Reader|<Reader>]] · [[ReliabilityView|<ReliabilityView>]] · [[ResponseRow|<ResponseRow>]] · [[ResponsesView|<ResponsesView>]] · [[RetrievalView|<RetrievalView>]] · [[SamplesTab|<SamplesTab>]] · [[Segmented|<Segmented>]] · [[SendButton|<SendButton>]] · [[SourcesPanel|<SourcesPanel>]] · [[SurveyTab|<SurveyTab>]] · [[Swatch|<Swatch>]] · [[TableImport|<TableImport>]] · [[Welcome (features-coding-CodingWorkspace)|<Welcome>]] · [[Words|<Words>]] · [[WordTable|<WordTable>]]
+[[AiCodebookDialog|<AiCodebookDialog>]] · [[AiGate|<AiGate>]] · [[AiSuggestDialog|<AiSuggestDialog>]] · [[AnalyseView|<AnalyseView>]] · [[AutoCodeDialog|<AutoCodeDialog>]] · [[Components/Bar|<Bar>]] · [[ByAttribute|<ByAttribute>]] · [[CodebookPanel|<CodebookPanel>]] · [[CodeChip|<CodeChip>]] · [[CodeEditDialog|<CodeEditDialog>]] · [[CodersDialog|<CodersDialog>]] · [[CodingDialog|<CodingDialog>]] · [[CodingWorkspace|<CodingWorkspace>]] · [[Cooccurrence|<Cooccurrence>]] · [[DocEditDialog|<DocEditDialog>]] · [[ExampleNextSteps|<ExampleNextSteps>]] · [[ExportDialog|<ExportDialog>]] · [[ExportToDatasetDialog|<ExportToDatasetDialog>]] · [[FilesTab|<FilesTab>]] · [[Floating|<Floating>]] · [[Components/Frequencies|<Frequencies>]] · [[ImportDialog (features-coding-dialogs-ImportDialog)|<ImportDialog>]] · [[Kwic|<Kwic>]] · [[MemosView|<MemosView>]] · [[MenuButton|<MenuButton>]] · [[MergeCodeDialog|<MergeCodeDialog>]] · [[OneSidedNote|<OneSidedNote>]] · [[Para|<Para>]] · [[PasteTab|<PasteTab>]] · [[QuickCode|<QuickCode>]] · [[Reader|<Reader>]] · [[ReliabilityView|<ReliabilityView>]] · [[ResponseRow|<ResponseRow>]] · [[ResponsesView|<ResponsesView>]] · [[RetrievalView|<RetrievalView>]] · [[SamplesTab|<SamplesTab>]] · [[Segmented|<Segmented>]] · [[SendButton|<SendButton>]] · [[SourcesPanel|<SourcesPanel>]] · [[SurveyTab|<SurveyTab>]] · [[Swatch|<Swatch>]] · [[TableImport|<TableImport>]] · [[Welcome (features-coding-CodingWorkspace)|<Welcome>]] · [[Words|<Words>]] · [[WordTable|<WordTable>]]
 
 ## Hooks
-[[useCodeMap|useCodeMap()]] · [[useOrderedCodes|useOrderedCodes()]] · [[useQuickKeyCodes|useQuickKeyCodes()]] · [[useSegmentIndex|useSegmentIndex()]] · [[useVisibleSegments|useVisibleSegments()]]
+[[useCodeMap|useCodeMap()]] · [[useOrderedCodes|useOrderedCodes()]] · [[useQuickKeyCodes|useQuickKeyCodes()]] · [[useScrollEdges (features-coding-ui)|useScrollEdges()]] · [[useSegmentIndex|useSegmentIndex()]] · [[useVisibleSegments|useVisibleSegments()]]
 
 ## Stores
 [[useCodingUi]]

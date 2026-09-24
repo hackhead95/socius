@@ -26,5 +26,5 @@ area: ui
 - [[DefinePropertiesDialog|<DefinePropertiesDialog>]]
 - [[ExpressionHelper|<ExpressionHelper>]]
 - [[ImportDialog (features-project-FileDialogs)|<ImportDialog>]]
-- [[Sidebar|<Sidebar>]]
+- [[VariableList|<VariableList>]]
 - [[VarPicker|<VarPicker>]]

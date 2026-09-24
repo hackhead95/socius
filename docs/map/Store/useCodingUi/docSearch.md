@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.docSearch"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 44
+line: 49
 area: features/coding
 ---
 
 # useCodingUi.docSearch
 
-*Store state key* · defined in [[uiStore.ts]] (line 44) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 49) · area [[features - coding|features/coding]]
 
 > Source list filters.
 

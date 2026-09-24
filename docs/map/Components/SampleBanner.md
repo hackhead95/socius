@@ -2,13 +2,13 @@
 id: "src/app/Welcome.tsx#SampleBanner"
 type: component
 file: src/app/Welcome.tsx
-line: 106
+line: 107
 area: app
 ---
 
 # <SampleBanner>
 
-*React component* · defined in [[Welcome.tsx]] (line 106) · area [[Areas/app|app]]
+*React component* · defined in [[Welcome.tsx]] (line 107) · area [[Areas/app|app]]
 
 - **Exported:** yes
 

@@ -6,13 +6,15 @@ import { activeCaseMask, caseWeights, isMissingValue, validateVarName } from '..
 import { bump, newNumericVar, plural, type TransformResult } from './dsops';
 import { lines, q, varList } from './syntax';
 
-export type AggFunction = 'mean' | 'sum' | 'n' | 'nu' | 'min' | 'max' | 'sd' | 'first' | 'last';
+export type AggFunction = 'mean' | 'sum' | 'n' | 'nu' | 'nvalid' | 'nmiss' | 'min' | 'max' | 'sd' | 'first' | 'last';
 
 export const AGG_FUNCTIONS: Array<{ id: AggFunction; label: string; spss: string }> = [
   { id: 'mean', label: 'Mean', spss: 'MEAN' },
   { id: 'sum', label: 'Sum', spss: 'SUM' },
   { id: 'n', label: 'Number of cases (weighted)', spss: 'N' },
   { id: 'nu', label: 'Number of cases (unweighted)', spss: 'NU' },
+  { id: 'nvalid', label: 'Number of valid values', spss: 'N' },
+  { id: 'nmiss', label: 'Number of missing values', spss: 'NMISS' },
   { id: 'min', label: 'Minimum', spss: 'MIN' },
   { id: 'max', label: 'Maximum', spss: 'MAX' },
   { id: 'sd', label: 'Standard deviation', spss: 'SD' },
@@ -37,6 +39,20 @@ export interface AggregateSpec {
 }
 
 export class AggregateError extends Error {}
+
+/** Functions that work on string (text) variables, as in SPSS AGGREGATE. */
+export const STRING_AGG_FUNCTIONS: readonly AggFunction[] = ['first', 'last', 'min', 'max', 'nvalid', 'nmiss'];
+
+/** Functions that need a source variable (all except the group counts N and NU). */
+export const aggNeedsSource = (fn: AggFunction) => fn !== 'n' && fn !== 'nu';
+
+/** Functions whose result is a count (numeric, whatever the source type). */
+const isCount = (fn: AggFunction) => fn === 'n' || fn === 'nu' || fn === 'nvalid' || fn === 'nmiss';
+
+const labelOf = (fn: AggFunction) => AGG_FUNCTIONS.find((f) => f.id === fn)!.label;
+
+/** "First value, Last value, Minimum, Maximum, Number of valid values or Number of missing values". */
+const STRING_FUNCTIONS_TEXT = STRING_AGG_FUNCTIONS.map(labelOf).map((l, i, a) => (i === a.length - 1 ? `or ${l}` : l)).join(', ').replace(', or ', ' or ');
 
 export function aggregate(ds: Dataset, spec: AggregateSpec): TransformResult & { newDataset?: Dataset } {
   if (!spec.items.length) throw new AggregateError('Add at least one summary (for example the mean of income).');
@@ -65,11 +81,11 @@ export function aggregate(ds: Dataset, spec: AggregateSpec): TransformResult & {
     if (err) throw new AggregateError(`${it.name || 'Summary name'}: ${err}`);
     if (names.has(it.name.trim().toLowerCase())) throw new AggregateError(`The name ${it.name} is used twice.`);
     names.add(it.name.trim().toLowerCase());
-    if (it.fn !== 'n' && it.fn !== 'nu') {
+    if (aggNeedsSource(it.fn)) {
       const v = ds.variables.find((x) => x.id === it.sourceId);
       if (!v) throw new AggregateError(`Choose a source variable for ${it.name}.`);
-      if (v.type !== 'numeric' && !['first', 'last', 'min', 'max'].includes(it.fn)) throw new AggregateError(`${v.name} is a string variable; use First, Last, Minimum or Maximum.`);
-      if (v.type !== 'numeric' && (it.fn === 'min' || it.fn === 'max')) throw new AggregateError(`${v.name} is a string variable; use First or Last.`);
+      if (v.type !== 'numeric' && !STRING_AGG_FUNCTIONS.includes(it.fn))
+        throw new AggregateError(`${v.name} is a string (text) variable, so its ${labelOf(it.fn).toLowerCase()} cannot be computed. For text, use ${STRING_FUNCTIONS_TEXT}.`);
     }
   }
   const summarize = (it: AggItem, rows: number[]): number | string => {
@@ -77,13 +93,35 @@ export function aggregate(ds: Dataset, spec: AggregateSpec): TransformResult & {
     if (it.fn === 'nu') return rows.length;
     const v = ds.variables.find((x) => x.id === it.sourceId)!;
     const col = ds.columns[v.id];
+    if (it.fn === 'nvalid' || it.fn === 'nmiss') {
+      // SPSS N(var) / NMISS(var): weighted counts of the cases with a valid / a missing value.
+      let k = 0;
+      for (const i of rows) if (w[i] > 0 && isMissingValue(v, col[i]) === (it.fn === 'nmiss')) k += w[i];
+      return k;
+    }
     const valid = rows.filter((i) => w[i] > 0 && !isMissingValue(v, col[i]));
-    if (it.fn === 'first') return valid.length ? col[valid[0]] : v.type === 'numeric' ? NaN : '';
-    if (it.fn === 'last') return valid.length ? col[valid[valid.length - 1]] : v.type === 'numeric' ? NaN : '';
+    const empty = v.type === 'numeric' ? NaN : '';
+    if (it.fn === 'first') return valid.length ? col[valid[0]] : empty;
+    if (it.fn === 'last') return valid.length ? col[valid[valid.length - 1]] : empty;
+    if (!valid.length) return empty;
+    if (it.fn === 'min' || it.fn === 'max') {
+      // A loop, not Math.min(...values): spreading a large group overflows the call stack.
+      const sign = it.fn === 'min' ? -1 : 1;
+      if (v.type === 'string') {
+        const sc = col as string[];
+        let best = sc[valid[0]].trimEnd();
+        for (const i of valid) {
+          const x = sc[i].trimEnd();
+          if (sign < 0 ? x < best : x > best) best = x;
+        }
+        return best;
+      }
+      const nc = col as Float64Array;
+      let best = nc[valid[0]];
+      for (const i of valid) if (sign < 0 ? nc[i] < best : nc[i] > best) best = nc[i];
+      return best;
+    }
     const nc = col as Float64Array;
-    if (!valid.length) return NaN;
-    if (it.fn === 'min') return Math.min(...valid.map((i) => nc[i]));
-    if (it.fn === 'max') return Math.max(...valid.map((i) => nc[i]));
     let sw = 0, sx = 0;
     for (const i of valid) { sw += w[i]; sx += w[i] * nc[i]; }
     if (it.fn === 'sum') return sx;
@@ -98,10 +136,10 @@ export function aggregate(ds: Dataset, spec: AggregateSpec): TransformResult & {
 
   const itemVar = (it: AggItem): Variable => {
     const src = it.sourceId ? ds.variables.find((x) => x.id === it.sourceId) : undefined;
-    const fnLabel = AGG_FUNCTIONS.find((f) => f.id === it.fn)!.label;
+    const fnLabel = labelOf(it.fn);
     const label = it.label || (src ? `${fnLabel} of ${src.label || src.name}` : fnLabel);
-    if (src && src.type === 'string') return { ...src, id: newId('v'), name: it.name.trim(), label };
-    const dec = it.fn === 'n' || it.fn === 'nu' ? (ds.weightVarId && it.fn === 'n' ? 2 : 0) : it.fn === 'first' || it.fn === 'last' || it.fn === 'min' || it.fn === 'max' ? src?.decimals ?? 2 : 2;
+    if (src && src.type === 'string' && !isCount(it.fn)) return { ...src, id: newId('v'), name: it.name.trim(), label };
+    const dec = isCount(it.fn) ? (ds.weightVarId && it.fn !== 'nu' ? 2 : 0) : it.fn === 'first' || it.fn === 'last' || it.fn === 'min' || it.fn === 'max' ? src?.decimals ?? 2 : 2;
     return newNumericVar(it.name.trim(), { label, decimals: dec, measure: 'scale', valueLabels: (it.fn === 'first' || it.fn === 'last') && src ? src.valueLabels : [] });
   };
   const fnSyn = spec.items

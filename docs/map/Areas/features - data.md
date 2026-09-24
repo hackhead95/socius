@@ -6,14 +6,15 @@ area: features/data
 
 # Area: features/data
 
-8 files, 3469 lines.
+8 files, 3461 lines.
 
 ## Depends on (module imports)
 - [[core]]: 20
 - [[ui]]: 13
-- [[lib - transform|lib/transform]]: 4
+- [[lib - transform|lib/transform]]: 6
 - [[Areas/app|app]]: 3
 - [[lib - io|lib/io]]: 2
+- [[features - transform|features/transform]]: 1
 - [[platform]]: 1
 
 ## Used by areas

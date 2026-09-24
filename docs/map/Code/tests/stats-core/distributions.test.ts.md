@@ -7,7 +7,7 @@ area: tests
 
 # tests/stats-core/distributions.test.ts
 
-*Test file* · area [[tests]] · 143 lines
+*Test file* · area [[tests]] · 163 lines
 
 > Distribution functions vs high-precision references (mpmath at 40 digits; scipy/Boost for very large parameters; scipy for the studentized range). Fixture: scripts/oracle/core_oracle_dist.py.
 
@@ -37,6 +37,9 @@ area: tests
   - cdf/sf match scipy to 1e-10 absolute
   - k = 2 reduces to the t distribution: P(Q > q) = P(|T| > q / sqrt 2)
   - ppf inverts cdf
+  - matches scipy for fractional df, both tails and extreme quantiles
+  - k = 2 upper tail keeps relative accuracy far out (t distribution identity)
+  - is fast enough for Games-Howell: 50 quantiles and 200 p-values with fractional df in well under a second
 
 ## Imports
 - [[distributions.ts]] · value

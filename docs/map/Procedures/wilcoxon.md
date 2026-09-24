@@ -36,7 +36,9 @@ area: procedures
 - [[core/common.ts#blank|blank()]] · procedure helper
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
 - [[core/common.ts#COHEN_NOTE|COHEN_NOTE]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
 - [[core/common.ts#fmtCount|fmtCount()]] · procedure helper
@@ -44,8 +46,10 @@ area: procedures
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#labelR|labelR()]] · procedure helper
 - [[core/common.ts#numericValues|numericValues()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#pcell|pcell()]] · procedure helper
 - [[core/common.ts#requireNumeric|requireNumeric()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
 - [[core/common.ts#tableBlock|tableBlock()]] · procedure helper

@@ -25,14 +25,15 @@ flowchart TB
   n12["#lt;TopBar#gt;"]
   n13["#lt;AiSettingsHost#gt;"]
   n14["#lt;AssistantRoot#gt;"]
+  n15["#lt;UpdateBanner#gt;"]
   end
   subgraph tabs["Main tabs (useStore.tab)"]
-  n15["#lt;SampleBanner#gt;"]
-  n16["#lt;Welcome#gt;"]
-  n17["#lt;CodingWorkspace#gt;"]
-  n18["#lt;DataView#gt;"]
-  n19["#lt;VariableView#gt;"]
-  n20["#lt;OutputViewer#gt;"]
+  n16["#lt;SampleBanner#gt;"]
+  n17["#lt;Welcome#gt;"]
+  n18["#lt;CodingWorkspace#gt;"]
+  n19["#lt;DataView#gt;"]
+  n20["#lt;VariableView#gt;"]
+  n21["#lt;OutputViewer#gt;"]
   end
   n0 --> n2
   n0 --> n3
@@ -45,34 +46,35 @@ flowchart TB
   n0 --> n10
   n0 --> n11
   n0 --> n12
-  n0 --> n15
   n0 --> n16
+  n0 --> n17
   n0 --> n13
   n0 --> n14
-  n0 --> n17
   n0 --> n18
   n0 --> n19
   n0 --> n20
-  n21["#lt;MenuBar#gt;"]
-  n12 --> n21
-  n22{{"menus: File · Edit · View · Data · Transform · Analyze · Graphs · Text coding · AI · Help"}}
-  n21 -->|"useMenus()"| n22
-  n23("coding dialogs")
-  n3 -->|"dialog.kind"| n23
-  n24["#lt;CodingDialog#gt;"]
-  n23 --> n24
-  n25("custom dialogs")
-  n3 -->|"dialog.kind"| n25
-  n26("file dialogs")
+  n0 --> n15
+  n0 --> n21
+  n22["#lt;MenuBar#gt;"]
+  n12 --> n22
+  n23{{"menus: File · Edit · View · Data · Transform · Analyze · Graphs · Text coding · AI · Help"}}
+  n22 -->|"useMenus()"| n23
+  n24("coding dialogs")
+  n3 -->|"dialog.kind"| n24
+  n25["#lt;CodingDialog#gt;"]
+  n24 --> n25
+  n26("custom dialogs")
   n3 -->|"dialog.kind"| n26
-  n27("procedure dialogs")
+  n27("file dialogs")
   n3 -->|"dialog.kind"| n27
-  n28["#lt;ProcedureDialog#gt;"]
-  n27 --> n28
-  n29("transform dialogs")
-  n3 -->|"dialog.kind"| n29
-  n30["#lt;TransformDialog#gt;"]
-  n29 --> n30
+  n28("procedure dialogs")
+  n3 -->|"dialog.kind"| n28
+  n29["#lt;ProcedureDialog#gt;"]
+  n28 --> n29
+  n30("transform dialogs")
+  n3 -->|"dialog.kind"| n30
+  n31["#lt;TransformDialog#gt;"]
+  n30 --> n31
 ```
 
 ## 2. Data flow: import → store → procedures → output → export
@@ -116,7 +118,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  n0[("AI settings (localStorage socius.ai): gemini, openai, provider, webllm")]
+  n0[("AI settings (localStorage socius.ai): gemini, notice, openai, provider, remember, webllm")]
   n1["#lt;AiSettingsDialog#gt;"]
   n1 -->|"saveAiSettings()"| n0
   n2{{"platform/ai.ts: askAI / askAIJson / tool calls"}}
@@ -127,7 +129,7 @@ flowchart LR
   n3 --> n4
   n5("provider: webllm")
   n2 --> n5
-  n6["ai-webllm.ts, webllm-stub.ts"]
+  n6["ai-storage.ts, ai-webllm-models.ts, ai-webllm.ts, webllm-stub.ts"]
   n5 --> n6
   n7("provider: gemini")
   n2 --> n7

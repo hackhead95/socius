@@ -29,6 +29,7 @@ area: features/coding
 ## Rendered by
 - [[CodingWorkspace|<CodingWorkspace>]]
 - [[DialogHost|<DialogHost>]]
+- [[ui-fixes.test.tsx]]
 
 ## Renders
 - [[coding dialogs]]

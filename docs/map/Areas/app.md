@@ -6,28 +6,29 @@ area: app
 
 # Area: app
 
-18 files, 2835 lines.
+19 files, 3417 lines.
 
 ## Depends on (module imports)
-- [[core]]: 17
-- [[ui]]: 13
-- [[features - project|features/project]]: 11
-- [[features - errorlog|features/errorlog]]: 8
+- [[core]]: 21
+- [[ui]]: 15
+- [[features - project|features/project]]: 12
+- [[features - errorlog|features/errorlog]]: 10
+- [[features - ai|features/ai]]: 6
 - [[features - coding|features/coding]]: 6
-- [[features - ai|features/ai]]: 5
 - [[features - data|features/data]]: 4
 - [[features - transform|features/transform]]: 3
 - [[platform]]: 3
+- [[procedures]]: 3
+- [[samples]]: 3
 - [[features - analysis|features/analysis]]: 2
 - [[features - assistant|features/assistant]]: 2
 - [[features - output|features/output]]: 2
-- [[procedures]]: 2
-- [[samples]]: 2
+- [[lib - assistant|lib/assistant]]: 1
 
 ## Used by areas
 - [[features - data|features/data]]: 3
-- [[features - output|features/output]]: 2
-- [[features - transform|features/transform]]: 2
+- [[features - output|features/output]]: 3
+- [[features - transform|features/transform]]: 3
 - [[features - ai|features/ai]]: 1
 - [[features - coding|features/coding]]: 1
 - [[features - errorlog|features/errorlog]]: 1
@@ -43,6 +44,7 @@ area: app
 - [[helpTopics.ts]]: Sections of the beginner's guide (public/guide/index.html, built from docs/guide/guide.md) offered by the search palette. Each `anchor` must…
 - [[links.ts]]: Links out of the app: the website, the user guide and the feedback form (GitHub issues). On GitHub Pages (https://<owner>.github.io/<repo>/)…
 - [[MenuBar.tsx]]: Menubar with keyboard-accessible dropdowns; collapses into a menu sheet on narrow screens.
+- [[menuKnowledge.ts]]: What the Socius assistant knows about the menus: generated at run time from the real menu model (menus.ts, every command whatever is open), …
 - [[menus.ts]]: Menubar model: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, AI, Help. The search palette (CommandPalette) searches these…
 - [[Overlays.tsx]]: Toasts, global confirm dialog, busy overlay and the drag-and-drop target.
 - [[search.ts]]: Matching and ranking for the search palette (Ctrl+K). Pure: no React, no store. Matching works on words: every word of the query must match …
@@ -55,10 +57,10 @@ area: app
 - [[main.tsx]]
 
 ## Components
-[[AboutDialog|<AboutDialog>]] · [[Components/App|<App>]] · [[AppErrorBoundary|<AppErrorBoundary>]] · [[BusyOverlay|<BusyOverlay>]] · [[CommandPalette|<CommandPalette>]] · [[CommandPaletteHost|<CommandPaletteHost>]] · [[ConfirmHost|<ConfirmHost>]] · [[CrashScreen|<CrashScreen>]] · [[DatasetName|<DatasetName>]] · [[DialogHost|<DialogHost>]] · [[DropOverlay|<DropOverlay>]] · [[GettingStartedDialog|<GettingStartedDialog>]] · [[GuardedDialogs|<GuardedDialogs>]] · [[Mark|<Mark>]] · [[MenuBar|<MenuBar>]] · [[MenuSheetButton|<MenuSheetButton>]] · [[PanelBoundary|<PanelBoundary>]] · [[QuietBoundary|<QuietBoundary>]] · [[Components/SampleBanner|<SampleBanner>]] · [[ShortcutsDialog|<ShortcutsDialog>]] · [[Sidebar|<Sidebar>]] · [[Components/Toasts|<Toasts>]] · [[TopBar|<TopBar>]] · [[Welcome (app-Welcome)|<Welcome>]]
+[[AboutDialog|<AboutDialog>]] · [[Components/App|<App>]] · [[AppErrorBoundary|<AppErrorBoundary>]] · [[BrowserStorageNote|<BrowserStorageNote>]] · [[BusyOverlay|<BusyOverlay>]] · [[CommandPalette|<CommandPalette>]] · [[CommandPaletteHost|<CommandPaletteHost>]] · [[ConfirmHost|<ConfirmHost>]] · [[CrashScreen|<CrashScreen>]] · [[DatasetName|<DatasetName>]] · [[DialogHost|<DialogHost>]] · [[DropOverlay|<DropOverlay>]] · [[GettingStartedDialog|<GettingStartedDialog>]] · [[GuardedDialogs|<GuardedDialogs>]] · [[Mark|<Mark>]] · [[MenuBar|<MenuBar>]] · [[MenuSheetButton|<MenuSheetButton>]] · [[PanelBoundary|<PanelBoundary>]] · [[QuietBoundary|<QuietBoundary>]] · [[Components/SampleBanner|<SampleBanner>]] · [[ShortcutsDialog|<ShortcutsDialog>]] · [[Sidebar|<Sidebar>]] · [[Components/Toasts|<Toasts>]] · [[TopBar|<TopBar>]] · [[VariableDrawer|<VariableDrawer>]] · [[VariableList|<VariableList>]] · [[Welcome (app-Welcome)|<Welcome>]]
 
 ## Hooks
-[[useAutosave|useAutosave()]] · [[useEntries|useEntries()]] · [[useMenus|useMenus()]] · [[useStartup|useStartup()]] · [[useUndoRedo|useUndoRedo()]]
+[[useAutosave|useAutosave()]] · [[useEntries|useEntries()]] · [[useMenus|useMenus()]] · [[useNarrow|useNarrow()]] · [[useShellMetrics|useShellMetrics()]] · [[useStartup|useStartup()]] · [[useToastPlacement|useToastPlacement()]] · [[useUndoRedo|useUndoRedo()]]
 
 ## Stores
 [[useUi]]

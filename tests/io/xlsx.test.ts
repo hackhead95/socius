@@ -130,8 +130,10 @@ describe('XLSX export', () => {
   it('writes labels instead of codes when asked, and a codebook sheet', async () => {
     const bytes = new Uint8Array(await (await exportXlsx(exportSample(), { values: 'labels' })).arrayBuffer());
     const r = await importFile('x.xlsx', bytes);
-    expect(col(r, 'gender').data).toEqual(['Male', 'Female', '9']);
-    expect(col(r, 'gender').v.valueLabels).toEqual([]); // codes 1/2 are not in the label text data
+    // The Variables sheet is authoritative: gender is numeric there, so the label texts become codes again.
+    expect(col(r, 'gender').data).toEqual([1, 2, 9]);
+    expect(col(r, 'gender').v.valueLabels).toEqual([{ value: 1, label: 'Male' }, { value: 2, label: 'Female' }]);
+    expect(col(r, 'gender').v.missing).toEqual({ discrete: [9] });
     const book = await importFile('x.xlsx', bytes, { sheet: 'Variables' });
     const names = col(book, 'Name').data;
     expect(names).toEqual(['gender', 'comment', 'when', 'dur', 'income']);

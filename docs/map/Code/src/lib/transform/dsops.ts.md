@@ -7,7 +7,7 @@ area: lib/transform
 
 # src/lib/transform/dsops.ts
 
-*Module* · area [[lib - transform|lib/transform]] · 106 lines
+*Module* · area [[lib - transform|lib/transform]] · 122 lines
 
 > Immutable dataset helpers shared by all transformations. Each returns a NEW Dataset (version + 1) that shares unchanged columns with the input, so undo stays cheap.
 
@@ -91,11 +91,20 @@ TransformResult (line 7)
 *function* · line 98 · exported
 > Filter mask helper: indexes of cases in play, optional.
 
+### minOf
+*function* · line 109 · exported
+> Smallest / largest number in a list (Infinity / -Infinity when empty). Use these instead of Math.min(...values): spreading a data-sized list as call arguments overflows the call stack (about 120,000 values in V8).
+- Used in: [[derive.ts]], [[properties.ts]], [[data-fixes.test.ts]]
+
+### maxOf
+*function* · line 114 · exported
+- Used in: [[derive.ts]], [[properties.ts]], [[data-fixes.test.ts]]
+
 ### fmtN
-*function* · line 104 · exported
+*function* · line 120 · exported
 - Used in: [[DefineProperties.tsx]], [[binning.ts]], [[cases.ts]], [[compute.ts]], [[derive.ts]], [[merge.ts]], [[properties.ts]]
 
 ### plural
-*function* · line 105 · exported
+*function* · line 121 · exported
 - Calls: [[dsops.ts#fmtN|fmtN()]]
 - Used in: [[DefineProperties.tsx]], [[aggregate.ts]], [[cases.ts]], [[merge.ts]], [[properties.ts]], [[recode.ts]]

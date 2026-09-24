@@ -1,9 +1,10 @@
 // Binary Logistic Regression (SPSS LOGISTIC REGRESSION, METHOD=ENTER).
 
+import { ciOption, confLevel, labelOf, levelText } from '../text';
 import type { Dataset, Variable } from '../../core/types';
 import type { OptionValues, ProcedureDef, SlotValues } from '../../core/procedure';
 import type { Cell, OutputBlock, OutputTable } from '../../core/output';
-import { categoryLabel, requireVariable } from '../../core/data';
+import { requireVariable } from '../../core/data';
 import { sum } from '../../lib/stats/models-util';
 import { chi2Sf } from '../../lib/stats/distributions';
 import {
@@ -45,9 +46,10 @@ import {
   slot,
   syntaxPreamble,
   textBlock,
-  textName,
   type ReferenceChoice,
   type Term,
+  colProse,
+  proseNamer,
 } from './common';
 
 interface Col {
@@ -98,7 +100,7 @@ export const binaryLogistic: ProcedureDef = {
     },
     { key: 'cut', label: 'Classification cutoff', type: 'number', default: 0.5, min: 0.01, max: 0.99, step: 0.05, group: 'Options' },
     { key: 'ci', label: 'CI for Exp(B)', type: 'checkbox', default: true, group: 'Options' },
-    { key: 'confLevel', label: 'Confidence level (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Options' },
+    ciOption('confLevel', 'Confidence level (%)', 'Options'),
     { key: 'hl', label: 'Hosmer-Lemeshow goodness of fit', type: 'checkbox', default: true, group: 'Options' },
     { key: 'hlTable', label: 'Hosmer-Lemeshow contingency table', type: 'checkbox', default: false, group: 'Options' },
     { key: 'block0', label: 'Show Block 0 (constant-only model)', type: 'checkbox', default: true, group: 'Options' },
@@ -132,7 +134,7 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const reference = optStr<ReferenceChoice>(opts, 'reference', 'first');
   const cut = Math.min(Math.max(optNum(opts, 'cut', 0.5), 0.001), 0.999);
   const showCI = optBool(opts, 'ci', true);
-  const confPct = Math.min(Math.max(optNum(opts, 'confLevel', 95), 50), 99.9);
+  const confPct = confLevel(opts, 'confLevel', 'Confidence level (%)') * 100;
   const showHL = optBool(opts, 'hl', true);
   const showHLTable = optBool(opts, 'hlTable', false);
   const showBlock0 = optBool(opts, 'block0', true);
@@ -152,8 +154,8 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const eventIdx = eventChoice === 'higher' ? 1 : 0;
   const eventValue = depLevels[eventIdx].value;
   const nonEventValue = depLevels[1 - eventIdx].value;
-  const eventLabel = categoryLabel(depVar, eventValue);
-  const nonEventLabel = categoryLabel(depVar, nonEventValue);
+  const eventLabel = labelOf(depVar, eventValue);
+  const nonEventLabel = labelOf(depVar, nonEventValue);
   const y = Float64Array.from(depVals, (v) => (v === eventValue ? 1 : 0));
 
   const terms = buildTerms(ds, covIds, sel.rows, w, { dummy, reference });
@@ -175,7 +177,8 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const fit = fitBinaryLogit(y, X, w, { maxIter });
   const ll0 = multinomialNullLogLik(y, 2, w);
   const m2ll0 = -2 * ll0;
-  const modelChi = m2ll0 - fit.m2ll;
+  // Cannot be negative (the null model is nested); a tiny negative value is rounding.
+  const modelChi = Math.max(0, m2ll0 - fit.m2ll);
   const modelP = chi2Sf(modelChi, p);
   const pr = pseudoR2(ll0, fit.logLik, W);
   const sep = detectSeparation(y, X, w, fit);
@@ -232,7 +235,7 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
         title: 'Variables in the Equation',
         header: [[hcell('', { colSpan: 2 }), hcell('B'), hcell('S.E.'), hcell('Wald'), hcell('df'), hcell('Sig.'), hcell('Exp(B)')]],
         stubColumns: 2,
-        rows: [[cell('Step 0', 'text'), cell('Constant', 'text'), coefCell(b0), coefCell(se0), cell(wald0, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald0, 1)), cell(Math.exp(b0), 'dec3')]],
+        rows: [[cell('Step 0', 'text'), cell('Constant', 'text'), coefCell(b0, 'coef', se0), coefCell(se0), cell(wald0, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald0, 1)), cell(Math.exp(b0), 'dec3')]],
       }),
     );
     if (p > 0) {
@@ -311,7 +314,7 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     const top: Cell[] = [hcell('', { colSpan: 2, rowSpan: showCI ? 2 : 1 }), hcell('B', { rowSpan: showCI ? 2 : 1 }), hcell('S.E.', { rowSpan: showCI ? 2 : 1 }), hcell('Wald', { rowSpan: showCI ? 2 : 1 }), hcell('df', { rowSpan: showCI ? 2 : 1 }), hcell('Sig.', { rowSpan: showCI ? 2 : 1 }), hcell('Exp(B)', { rowSpan: showCI ? 2 : 1 })];
     const header: Cell[][] = [top];
     if (showCI) {
-      top.push(hcell(`${confPct.toFixed(1)}% C.I. for EXP(B)`, { colSpan: 2 }));
+      top.push(hcell(`${levelText(confPct / 100)}% C.I. for EXP(B)`, { colSpan: 2 }));
       header.push([hcell('Lower'), hcell('Upper')]);
     }
     const body: Cell[][] = [];
@@ -323,7 +326,7 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
         seCell.mark = 'a';
         anyMarked = true;
       }
-      const r: Cell[] = [cell(label, 'text', { indent }), coefCell(b), seCell, cell(fit.wald[j], 'dec3'), cell(1, 'int'), pCell(fit.p[j]), cell(Math.exp(b), 'dec3')];
+      const r: Cell[] = [cell(label, 'text', { indent }), coefCell(b, 'coef', se), seCell, cell(fit.wald[j], 'dec3'), cell(1, 'int'), pCell(fit.p[j]), cell(Math.exp(b), 'dec3')];
       if (showCI) {
         const [lo, hi] = expCI(b, se, conf);
         r.push(cell(lo, 'dec3'), cell(hi, 'dec3'));
@@ -366,11 +369,17 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   // ----- Interpretation / APA -----
   const pctCorrect = classificationRate(y, fit.fitted, w, cut);
   const baseRate = Math.max(nEvents, W - nEvents) / W;
-  const depText = textName(depVar);
+  // One naming convention for every sentence: labels only if all the variables have usable labels.
+  const nm = proseNamer([depVar, ...terms.map((t) => t.variable)]);
+  const depText = nm(depVar);
   const oddsOf = `the odds of "${eventLabel}"`;
   const ip: string[] = [];
+  const modelTestable = p > 0 && Number.isFinite(modelP);
+  const NO_PRED = 'No predictor could be estimated (constant or collinear predictors are left out), so the model cannot be compared with a model with no predictors.';
   ip.push(
-    modelP < 0.05
+    !modelTestable
+      ? NO_PRED
+      : modelP < 0.05
       ? `The predictors together improve the prediction of ${depText} significantly compared with a model with no predictors (${fmtP(modelP)}). Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}; unlike R² in linear regression this is not a share of variance explained, only a rough guide to how much better the model fits than one without predictors (values between .2 and .4 are common for survey data).`
       : `The predictors together do not significantly improve the prediction of ${depText} compared with a model with no predictors (${fmtP(modelP)}).`,
   );
@@ -383,25 +392,27 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
       if (!(pv < 0.05) && !fit.unstable[j + 1] && !(sep && sep.variables.includes(j))) nonsig.push(c);
       return;
     }
-    if (c.term.kind === 'factor') sigRows.push(`compared with ${c.term.variable.name} = ${c.term.refLabel}, ${oddsOf} were ${oddsPhrase(or)} for ${c.term.levelLabels[c.level]} (${fmtP(pv)})`);
-    else sigRows.push(`each one-unit increase in ${textName(c.term.variable)} multiplied ${oddsOf} by ${num(or, 2)} (${fmtP(pv)})`);
+    if (c.term.kind === 'factor') sigRows.push(`compared with ${nm(c.term.variable)} = ${c.term.refLabel}, ${oddsOf} were ${oddsPhrase(or)} for ${c.term.levelLabels[c.level]} (${fmtP(pv)})`);
+    else sigRows.push(`each one-unit increase in ${nm(c.term.variable)} multiplied ${oddsOf} by ${num(or, 2)} (${fmtP(pv)})`);
   });
   sigRows.forEach((s, i) => ip.push(i === 0 && p > 1 ? `Holding the other predictors constant, ${s}.` : `${capitalize(s)}.`));
-  if (nonsig.length) ip.push(`Not significantly related to ${depText}${p > 1 ? ' once the other predictors were taken into account' : ''} (p ≥ .05): ${listText(describeCols(nonsig))}.`);
+  if (nonsig.length) ip.push(`Not significantly related to ${depText}${p > 1 ? ' once the other predictors were taken into account' : ''} (p ≥ .05): ${listText(describeCols(nonsig, nm))}.`);
   ip.push('An odds ratio (Exp(B)) above 1 means higher odds of the event; below 1 means lower odds.');
   blocks.push(textBlock('interpretation', ip.join(' ')));
 
   const apa: string[] = [];
   apa.push(
-    `A binary logistic regression was performed to assess the effects of ${listText(terms.map((t) => t.variable.name))} on the likelihood of ${depText} being "${eventLabel}". ` +
-      `The model was ${modelP < 0.05 ? '' : 'not '}statistically significant, χ²(${p}, N = ${dfText(W)}) = ${num(modelChi, 2)}, ${fmtP(modelP)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}, and correctly classified ${pctCorrect.toFixed(1)}% of cases.`,
+    `A binary logistic regression was performed to assess the effects of ${listText(terms.map((t) => nm(t.variable)))} on the likelihood of ${depText} being "${eventLabel}". ` +
+      (modelTestable
+        ? `The model was ${modelP < 0.05 ? '' : 'not '}statistically significant, χ²(${p}, N = ${dfText(W)}) = ${num(modelChi, 2)}, ${fmtP(modelP)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}, and correctly classified ${pctCorrect.toFixed(1)}% of cases.`
+        : `No predictor could be estimated, so the model was not tested; it correctly classified ${pctCorrect.toFixed(1)}% of cases.`),
   );
   const sigApa = cols
     .map((c, j) => ({ c, j }))
     .filter(({ j }) => fit.p[j + 1] < 0.05)
     .map(({ c, j }) => {
       const [lo, hi] = expCI(fit.coef[j + 1], fit.se[j + 1], conf);
-      return `${c.name} (B = ${num(fit.coef[j + 1], 2)}, SE = ${num(fit.se[j + 1], 2)}, Wald = ${num(fit.wald[j + 1], 2)}, ${fmtP(fit.p[j + 1])}, OR = ${num(Math.exp(fit.coef[j + 1]), 2)}, ${confPct.toFixed(0)}% CI [${num(lo, 2)}, ${num(hi, 2)}])`;
+      return `${colProse(c, nm)} (B = ${num(fit.coef[j + 1], 2)}, SE = ${num(fit.se[j + 1], 2)}, Wald = ${num(fit.wald[j + 1], 2)}, ${fmtP(fit.p[j + 1])}, OR = ${num(Math.exp(fit.coef[j + 1]), 2)}, ${levelText(confPct / 100)}% CI [${num(lo, 2)}, ${num(hi, 2)}])`;
     });
   if (sigApa.length) apa.push(`Significant predictors were ${listText(sigApa)}.`);
   blocks.push(textBlock('apa', apa.join(' ')));
@@ -438,7 +449,7 @@ export function codingsTable(factorTerms: Term[]): OutputBlock {
     levels.forEach((lv, i) => {
       const r: Cell[] = [];
       if (i === 0) r.push(cell(t.variable.name, 'text', { rowSpan: levels.length }));
-      r.push(cell(categoryLabel(t.variable, lv.value), 'text'), Number.isInteger(lv.count) ? cell(lv.count, 'int') : cell(lv.count, 'dec1'));
+      r.push(cell(labelOf(t.variable, lv.value), 'text'), Number.isInteger(lv.count) ? cell(lv.count, 'int') : cell(lv.count, 'dec1'));
       for (let k = 0; k < maxK; k++) {
         if (k >= t.cols.length) r.push(cell(null));
         else r.push(cell(t.levelValues[k] === lv.value ? 1 : 0, 'dec3'));
@@ -536,7 +547,7 @@ function buildSyntax(
   }
   const print: string[] = [];
   if (o.showHL) print.push('GOODFIT');
-  if (o.showCI) print.push(`CI(${Number(o.confPct.toFixed(1))})`);
+  if (o.showCI) print.push(`CI(${levelText(o.confPct / 100)})`);
   if (print.length) lines.push(`  /PRINT=${print.join(' ')}`);
   lines.push(`  /CRITERIA=PIN(.05) POUT(.10) ITERATE(${o.maxIter}) CUT(${noLead(o.cut, 2)}).`);
   return lines.join('\n');

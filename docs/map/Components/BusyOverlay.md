@@ -2,13 +2,13 @@
 id: "src/app/Overlays.tsx#BusyOverlay"
 type: component
 file: src/app/Overlays.tsx
-line: 62
+line: 215
 area: app
 ---
 
 # <BusyOverlay>
 
-*React component* · defined in [[Overlays.tsx]] (line 62) · area [[Areas/app|app]]
+*React component* · defined in [[Overlays.tsx]] (line 215) · area [[Areas/app|app]]
 
 - **Exported:** yes
 

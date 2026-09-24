@@ -20,12 +20,15 @@ area: platform
 - [[ai-diagnose.ts#errorOf|errorOf()]]
 - [[ai-tools.ts#readJson|readJson()]]
 - [[ai-http.ts#readJsonBody|readJsonBody()]]
+- [[ai-diagnose.ts#runConnectionCheck|runConnectionCheck()]]
 - [[ai-http.ts#streamOpenAi|streamOpenAi()]]
 - [[platform/ai.ts#wrapError|wrapError()]]
 
 ## Checked by
+- [[platform/ai.ts#aiErrorIsAppFault|aiErrorIsAppFault()]]
 - [[platform/ai.ts#aiErrorText|aiErrorText()]]
 - [[ai-http.ts#askOpenAiCompatible|askOpenAiCompatible()]]
+- [[drivers.ts#geminiTurn|geminiTurn()]]
 - [[ai-tools.ts#isToolsUnsupported|isToolsUnsupported()]]
 - [[ai-http.ts#modelLevel|modelLevel()]]
 - [[ai-http.ts#sendGemini|sendGemini()]]

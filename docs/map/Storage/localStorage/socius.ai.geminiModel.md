@@ -11,7 +11,7 @@ area: storage
 - **Backend:** localStorage
 
 ## Read by
-- [[ai-http.ts]]
+- [[ai-http.ts]] · readJsonStore
 
 ## Written by
-- [[ai-http.ts]]
+- [[ai-http.ts]] · writeJsonStore

@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/core/correlations.ts
 
-*Module* · area [[procedures]] · 360 lines
+*Module* · area [[procedures]] · 379 lines
 
 > Analyze > Correlate: Bivariate (SPSS CORRELATIONS / NONPAR CORR) and Partial (SPSS PARTIAL CORR).
 
@@ -21,6 +21,7 @@ area: procedures
 - [[core/common.ts]] · value
 
 ## Calls
+- [[procedures/text.ts#allFinite|allFinite()]]
 - [[core/common.ts#apaNum|apaNum()]]
 - [[core/common.ts#apaP|apaP()]]
 - [[core/common.ts#blank|blank()]]
@@ -39,6 +40,7 @@ area: procedures
 - [[correlation.ts#pearson|pearson()]]
 - [[core/common.ts#requireNumeric|requireNumeric()]]
 - [[core/data.ts#selectCases|selectCases()]]
+- [[core/common.ts#selMissing|selMissing()]]
 - [[core/common.ts#selN|selN()]]
 - [[correlation.ts#spearman|spearman()]]
 - [[core/common.ts#tableBlock|tableBlock()]]
@@ -55,22 +57,22 @@ area: procedures
 - [[core/index.ts]] · value
 
 ## Private helpers
-METHOD_LABEL (line 37) · compute() (line 43) · runPartial() (line 264)
+METHOD_LABEL (line 39) · compute() (line 45) · MIN_TEST_N (line 228) · runPartial() (line 273)
 
 ## Symbols
 
 ### runCorrelations
-*function* · line 54
-- Calls: [[core/common.ts#apaNum|apaNum()]], [[core/common.ts#apaP|apaP()]], [[core/common.ts#blank|blank()]], [[core/common.ts#caseNote|caseNote()]], [[core/common.ts#decFmt|decFmt()]], [[core/common.ts#fmtN|fmtN()]], [[core/common.ts#item|item()]], [[core/common.ts#labelR|labelR()]], [[core/common.ts#numericValues|numericValues()]], [[core/common.ts#optBool|optBool()]], [[core/common.ts#optStr|optStr()]], [[core/common.ts#requireNumeric|requireNumeric()]], [[core/common.ts#selN|selN()]], [[core/common.ts#tableBlock|tableBlock()]], [[core/common.ts#text|text()]], [[core/common.ts#vars|vars()]], [[core/common.ts#vlabel|vlabel()]], [[core/common.ts#vprose|vprose()]], [[core/data.ts#selectCases|selectCases()]], [[correlations.ts]], [[output.ts#cell|cell()]], [[output.ts#hcell|hcell()]], [[util.ts#moments|moments()]]
+*function* · line 56
+- Calls: [[core/common.ts#apaNum|apaNum()]], [[core/common.ts#apaP|apaP()]], [[core/common.ts#blank|blank()]], [[core/common.ts#caseNote|caseNote()]], [[core/common.ts#decFmt|decFmt()]], [[core/common.ts#fmtN|fmtN()]], [[core/common.ts#item|item()]], [[core/common.ts#labelR|labelR()]], [[core/common.ts#numericValues|numericValues()]], [[core/common.ts#optBool|optBool()]], [[core/common.ts#optStr|optStr()]], [[core/common.ts#requireNumeric|requireNumeric()]], [[core/common.ts#selMissing|selMissing()]], [[core/common.ts#selN|selN()]], [[core/common.ts#tableBlock|tableBlock()]], [[core/common.ts#text|text()]], [[core/common.ts#vars|vars()]], [[core/common.ts#vlabel|vlabel()]], [[core/common.ts#vprose|vprose()]], [[core/data.ts#selectCases|selectCases()]], [[correlations.ts]], [[output.ts#cell|cell()]], [[output.ts#hcell|hcell()]], [[util.ts#moments|moments()]]
 - Uses: [[core/common.ts#COHEN_NOTE|COHEN_NOTE]], [[correlations.ts]]
 - Output: [[Blocks/chart|chart]], [[heatmap]]
 
 ### bivariateCorrelations
-*const* · line 221 · exported
+*const* · line 230 · exported
 - Uses: [[correlations.ts#runCorrelations|runCorrelations()]]
 - Used in: [[core/index.ts]]
 
 ### partialCorrelationsProc
-*const* · line 336 · exported
+*const* · line 355 · exported
 - Uses: [[correlations.ts]]
 - Used in: [[core/index.ts]]

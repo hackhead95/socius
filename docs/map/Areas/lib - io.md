@@ -6,7 +6,7 @@ area: lib/io
 
 # Area: lib/io
 
-9 files, 3273 lines.
+9 files, 3501 lines.
 
 ## Depends on (module imports)
 - [[core]]: 11

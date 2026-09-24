@@ -97,7 +97,7 @@ export function RecodeDialog({ ds, mode, onClose }: { ds: Dataset; mode: 'same' 
     if (!rules.length) return setError('Add at least one rule with the Add button.');
     tryRun(() => {
       if (mode === 'same') {
-        applyTransform(recodeSame(ds, { varIds: vars, rules, condition: useIf ? cond : undefined }));
+        applyTransform(recodeSame(ds, { varIds: vars, rules, condition: useIf ? cond : undefined }), 'Recode into same variables');
       } else {
         const valueLabels: ValueLabel[] = labels
           .filter((l) => l.label.trim())
@@ -111,6 +111,7 @@ export function RecodeDialog({ ds, mode, onClose }: { ds: Dataset; mode: 'same' 
             valueLabels,
             condition: useIf ? cond : undefined,
           }),
+          'Recode into different variables',
         );
       }
       onClose();
@@ -186,14 +187,28 @@ export function RecodeDialog({ ds, mode, onClose }: { ds: Dataset; mode: 'same' 
               </div>
             ))}
           </div>
-          {mode === 'same' ? <div className="help">Values without a rule stay unchanged.</div> : <div className="help">Values without a rule become missing. Add "All other values" with "Copy old value" to keep them.</div>}
+          {mode === 'same' ? (
+            <div className="help">Values without a rule stay unchanged.</div>
+          ) : rules.length && !rules.some((r) => r.from.kind === 'else') ? (
+            // Easy to miss in small print: unmatched values would silently become missing data.
+            <div className="callout callout-warn" role="note">
+              Values without a rule become missing in the new variable.{' '}
+              {selected.length && selected.every((v) => (v.type === 'string') === (outType === 'string')) ? (
+                <button type="button" className="linkish" onClick={() => setRules([...rules, { from: { kind: 'else' }, to: { kind: 'copy' } }])}>
+                  Keep them: add "All other values → Copy old value"
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="help">Values without a rule become missing. Add "All other values" with "Copy old value" to keep them.</div>
+          )}
           {mode === 'different' && labels.length ? (
             <div className="stack" style={{ gap: 6 }}>
               <div className="label">Labels for the new codes (optional)</div>
               {labels.map((l, i) => (
                 <div key={l.value} className="row" style={{ flexWrap: 'nowrap' }}>
                   <span className="mono num" style={{ minWidth: 48, textAlign: 'right' }}>{l.value}</span>
-                  <input className="input input-sm" style={{ flex: 1 }} aria-label={`Label for ${l.value}`} value={l.label} placeholder="e.g. 18-29" onChange={(e) => setLabels(labels.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
+                  <input className="input input-sm" style={{ flex: 1 }} aria-label={`Label for ${l.value}`} value={l.label} placeholder="e.g. 18 to 29" onChange={(e) => setLabels(labels.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
                 </div>
               ))}
             </div>

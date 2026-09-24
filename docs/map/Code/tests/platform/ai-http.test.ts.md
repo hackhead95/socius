@@ -7,7 +7,7 @@ area: tests
 
 # tests/platform/ai-http.test.ts
 
-*Test file* · area [[tests]] · 497 lines
+*Test file* · area [[tests]] · 500 lines
 
 > Gemini (Interactions API first, generateContent as a fallback) and OpenAI-compatible adapters: request building, keys, replies (thinking, empty replies), every error shape the services send, automatic model choice with fallbacks, retries, time limits and network failures.
 
@@ -67,6 +67,7 @@ area: tests
 ## Calls
 - [[ai-http.ts#__resetGeminiState|__resetGeminiState()]]
 - [[ai-http.ts#__setHttpRetryDelay|__setHttpRetryDelay()]]
+- [[ai-http.ts#__setRateLimitSleep|__setRateLimitSleep()]]
 - [[ai-http.ts#askGemini|askGemini()]]
 - [[ai-http.ts#askOpenAiCompatible|askOpenAiCompatible()]]
 - [[ai-http.ts#buildGeminiRequest|buildGeminiRequest()]]
@@ -105,4 +106,4 @@ area: tests
 - [[ai-http.ts]] · import
 
 ## Private helpers
-AIZA (line 13) · AQ (line 14) · gem (line 15) · oa (line 16) · mockFetch() (line 29) · isList() (line 39) · isInteraction() (line 40)
+AIZA (line 13) · AQ (line 14) · gem (line 15) · oa (line 16) · mockFetch() (line 30) · isList() (line 40) · isInteraction() (line 41)

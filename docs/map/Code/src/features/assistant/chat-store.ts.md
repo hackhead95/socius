@@ -25,12 +25,14 @@ area: features/assistant
 
 ## Tested by
 - [[scenarios.test.ts]] · import
+- [[ai-latency.test.ts]] · import
 
 ## Imported by
 - [[AssistantPanel.tsx]] · value
 - [[AssistantRoot.tsx]] · value
 - [[controller.ts]] · value
 - [[scenarios.test.ts]] · value
+- [[ai-latency.test.ts]] · dynamic
 
 ## Types
 ArtifactEntry (line 8) · ChatEntry (line 15)

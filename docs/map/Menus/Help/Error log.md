@@ -20,3 +20,6 @@ area: app
 
 ## Tested by
 - [[errorlog.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
+- [[about-storage.test.tsx]] · menu label
+- [[menu-knowledge.test.ts]] · menu label

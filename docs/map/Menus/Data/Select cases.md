@@ -23,7 +23,10 @@ area: app
 - [[Data]]
 
 ## Tested by
+- [[commands-smoke-app.spec.ts]] · menu label
 - [[search.spec.ts]] · menu label
 - [[shell.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
 - [[search.test.ts]] · menu label
 - [[units.test.ts]] · menu label
+- [[data-fixes.test.ts]] · menu label

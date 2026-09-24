@@ -6,20 +6,20 @@ area: lib/transform
 
 # Area: lib/transform
 
-15 files, 4167 lines.
+15 files, 4393 lines.
 
 ## Depends on (module imports)
 - [[core]]: 22
 - [[lib - io|lib/io]]: 1
 
 ## Used by areas
+- [[features - data|features/data]]: 6
 - [[features - transform|features/transform]]: 6
-- [[features - data|features/data]]: 4
 - [[lib - assistant|lib/assistant]]: 2
 
 ## Files
 - [[aggregate.ts]]: AGGREGATE: summaries per group of break variables, added to the active file or as a new dataset.
-- [[binning.ts]]: Visual Binning: turn a scale variable into ordered groups (equal width, equal count, custom cutpoints).
+- [[binning.ts]]: Visual Binning: turn a scale variable into ordered groups (equal width, equal count, custom cutpoints). Group labels read "18 to 29" (never …
 - [[cases.ts]]: Case-level operations: Select Cases (filter or delete), Sort Cases, Weight Cases.
 - [[compute.ts]]: COMPUTE / IF: create or overwrite a variable from an expression.
 - [[derive.ts]]: Derived variables: reverse-coding, scale scores, z-scores, counts, ranks.

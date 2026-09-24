@@ -30,7 +30,7 @@ area: app
 - [[Word frequencies|Text coding > Word frequencies]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

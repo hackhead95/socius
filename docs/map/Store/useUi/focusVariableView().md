@@ -2,13 +2,13 @@
 id: "store-action:useUi.focusVariableView"
 type: store-action
 file: src/app/ui-store.ts
-line: 41
+line: 47
 area: app
 ---
 
 # useUi.focusVariableView()
 
-*Store action* · defined in [[ui-store.ts]] (line 41) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 47) · area [[Areas/app|app]]
 
 - **Store:** useUi
 
@@ -17,7 +17,7 @@ area: app
 
 ## Called by
 - [[DataViewInner|<DataViewInner>]] · selector
-- [[Sidebar|<Sidebar>]] · selector
+- [[VariableList|<VariableList>]] · selector
 - [[useEntries|useEntries()]] · getState alias
 
 ## Store

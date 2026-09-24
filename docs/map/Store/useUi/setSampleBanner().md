@@ -2,13 +2,13 @@
 id: "store-action:useUi.setSampleBanner"
 type: store-action
 file: src/app/ui-store.ts
-line: 32
+line: 38
 area: app
 ---
 
 # useUi.setSampleBanner()
 
-*Store action* · defined in [[ui-store.ts]] (line 32) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 38) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

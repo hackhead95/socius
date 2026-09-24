@@ -2,13 +2,13 @@
 id: "store-action:useStore.mutateDataset"
 type: store-action
 file: src/core/store.ts
-line: 102
+line: 104
 area: core
 ---
 
 # useStore.mutateDataset()
 
-*Store action* · defined in [[store.ts]] (line 102) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 104) · area [[core]]
 
 > Apply a change; `fn` returns the new dataset (build it immutably). Records undo history. `label` names the change for Edit > Undo / Redo ("Recode", "Rename age"); optional.
 
@@ -24,12 +24,13 @@ area: core
 - [[past|useStore.past]]
 
 ## Called by
-- [[CopyPropertiesDialog|<CopyPropertiesDialog>]] · selector
 - [[DatasetName|<DatasetName>]] · selector
 - [[DataViewInner|<DataViewInner>]] · selector
 - [[DefinePropertiesDialog|<DefinePropertiesDialog>]] · alias
 - [[ExportToDatasetDialog|<ExportToDatasetDialog>]] · selector
+- [[MissingDialog|<MissingDialog>]] · selector
 - [[TypeDialog|<TypeDialog>]] · selector
+- [[ValueLabelsDialog|<ValueLabelsDialog>]] · selector
 - [[VariableViewInner|<VariableViewInner>]] · selector
 - [[transform/common.tsx#applyTransform|applyTransform()]] · alias
 - [[shell-fixes.test.ts]] · getState
@@ -43,8 +44,6 @@ area: core
 - [[insertCases()|useStore.insertCases()]]
 - [[moveVariable()|useStore.moveVariable()]]
 - [[setCell()|useStore.setCell()]]
-- [[setFilter()|useStore.setFilter()]]
-- [[setWeight()|useStore.setWeight()]]
 - [[updateVariable()|useStore.updateVariable()]]
 
 ## Store

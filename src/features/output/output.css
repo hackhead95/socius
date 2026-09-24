@@ -106,7 +106,11 @@
 }
 .ob-warning svg { color: var(--warn); flex: none; margin-top: 2px; }
 .ob-note { font-size: var(--fs-sm); color: var(--muted); }
-.ob-chart { margin-top: var(--space-2); max-width: 780px; }
+.ob-chart { margin-top: var(--space-2); max-width: 780px; margin-inline: 0; margin-bottom: 0; }
+/* APA figure caption, matching the tables' "Table N" + italic title (.ot-apa .ot-number / .ot-title). */
+.ob-fig-caption { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; font-family: var(--font-report); }
+.ob-fig-number { font-weight: 700; font-size: 15px; }
+.ob-fig-title { font-style: italic; font-size: 15px; }
 .ob-data { margin-top: var(--space-2); max-height: 320px; overflow: auto; border: 1px solid var(--border); border-radius: var(--r-md); }
 .ob-data .table { font-size: var(--fs-xs); }
 .ob-data .table td, .ob-data .table th { padding: 4px 10px; white-space: nowrap; }

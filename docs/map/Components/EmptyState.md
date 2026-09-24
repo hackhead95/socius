@@ -2,13 +2,13 @@
 id: "src/features/output/OutputViewer.tsx#EmptyState"
 type: component
 file: src/features/output/OutputViewer.tsx
-line: 320
+line: 314
 area: features/output
 ---
 
 # <EmptyState>
 
-*React component* · defined in [[OutputViewer.tsx]] (line 320) · area [[features - output|features/output]]
+*React component* · defined in [[OutputViewer.tsx]] (line 314) · area [[features - output|features/output]]
 
 ## Calls
 - [[procedures/index.ts#getProcedure|getProcedure()]]

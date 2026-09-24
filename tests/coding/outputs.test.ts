@@ -40,3 +40,37 @@ describe('output items', () => {
     expect(rel.text).toMatch(/A and B were compared on 3 sources/);
   });
 });
+
+describe('UI-019: code frequencies of themes', () => {
+  const tree: CodeDef[] = [
+    { id: 't', name: 'Infrastructure', description: '', color: '#000', parentId: null, createdAt: 0 },
+    { id: 'w', name: 'Water', description: '', color: '#111', parentId: 't', createdAt: 1 },
+    { id: 'r', name: 'Roads', description: '', color: '#222', parentId: 't', createdAt: 2 },
+    { id: 'x', name: 'Safety', description: '', color: '#333', parentId: null, createdAt: 3 },
+  ];
+  const s = (d: number, k: string): CodedSegment => ({ id: `${d}${k}`, docId: `d${d}`, codeId: k, start: 0, end: 1, coder: 'A', origin: 'manual', createdAt: 0 });
+  const segs = [s(0, 'w'), s(1, 'w'), s(1, 'r'), s(2, 'r'), s(3, 't'), s(4, 'x')];
+
+  it('counts segments and sources of a theme with its sub-codes', () => {
+    const f = codeFrequencies(tree, docs, segs);
+    const t = f.rows.find((r) => r.codeId === 't')!;
+    expect(t).toMatchObject({ hasChildren: true, segments: 1, docs: 1, segmentsInclSub: 5, docsInclSub: 4 });
+    expect(f.rows.find((r) => r.codeId === 'w')).toMatchObject({ hasChildren: false, segmentsInclSub: 2, docsInclSub: 2 });
+  });
+
+  it('shows the theme total in the main columns, marked and explained, instead of its own 0 / 0.0%', () => {
+    const f = codeFrequencies(tree, docs, segs);
+    const it = frequenciesOutput(tree, f.rows, f.nDocs, f.nCodedDocs, { unitLabel: 'responses', depthOf: (id) => (tree.find((c) => c.id === id)!.parentId ? 1 : 0), scopeNote: '6 responses' });
+    const table = it.blocks.find((b) => b.kind === 'table')!;
+    if (table.kind !== 'table') throw new Error('no table');
+    expect(table.table.header[0].map((c) => c.v)).toEqual(['Code', 'Segments', 'Responses', '% of responses']);
+    const theme = table.table.rows[0];
+    expect(theme[0]).toMatchObject({ v: 'Infrastructure', bold: true, mark: 'a' });
+    expect(theme.slice(1).map((c) => c.v)).toEqual([5, 4, (100 * 4) / 6]);
+    expect(table.table.rows[3][0]).toMatchObject({ v: 'Safety' });
+    expect(table.table.rows[3][0].mark).toBeUndefined();
+    const notes = table.table.footnotes!.join(' ');
+    expect(notes).toMatch(/^.*a\. Theme: the total of the theme and all its sub-codes/);
+    expect(notes).toContain('Infrastructure: coded with the theme itself in 1 response (16.7%), included in its total.');
+  });
+});

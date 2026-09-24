@@ -202,8 +202,9 @@ export function checkWeightReplication(c: CaseSpec): string | null {
   const b = runChecked(c.def, rep, c.slots, c.opts);
   if (a.kind !== b.kind) return `weighted run ${a.kind}${a.kind === 'threw' ? ` (${(a.error as Error)?.message?.slice(0, 80)})` : a.kind === 'blocked' ? ` (${a.problems[0]})` : ''} but replicated run ${b.kind}${b.kind === 'threw' ? ` (${(b.error as Error)?.message?.slice(0, 80)})` : b.kind === 'blocked' ? ` (${b.problems[0]})` : ''}`;
   if (a.kind !== 'ok') return null;
-  // Tables that say they show unweighted counts, or whose method changes under weights by design.
-  const special = (t: { footnotes?: string[]; header: unknown; title: string }) => /unweighted|Tukey's hinges|HAVERAGE/i.test(JSON.stringify([t.footnotes ?? [], t.header, t.title]));
+  // Tables that say they show unweighted counts, whose method changes under weights by design, or that
+  // list individual cases (Casewise Diagnostics: one row per case, so replicated cases add rows).
+  const special = (t: { footnotes?: string[]; header: unknown; title: string }) => /unweighted|Tukey's hinges|HAVERAGE|Casewise Diagnostics/i.test(JSON.stringify([t.footnotes ?? [], t.header, t.title]));
   const skipTitles = new Set([a.item!, b.item!].flatMap((it) => it.blocks.filter((bl) => bl.kind === 'table' && special(bl.table)).map((bl) => (bl as { table: { title: string } }).table.title)));
   return compareTables(a.item!, b.item!, 1e-4, (t) => skipTitles.has(t.title), true);
 }

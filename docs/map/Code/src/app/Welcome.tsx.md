@@ -7,13 +7,14 @@ area: app
 
 # src/app/Welcome.tsx
 
-*Module* · area [[Areas/app|app]] · 121 lines
+*Module* · area [[Areas/app|app]] · 124 lines
 
 > Welcome screen (no dataset open) and the sample-data banner.
 
 ## Imports
 - [[react]] · value
 - [[ui-store.ts]] · value
+- [[format-date.ts]] · value
 - [[store.ts]] · value
 - [[fileActions.ts]] · value
 - [[persistence.ts]] · value
@@ -28,21 +29,21 @@ area: app
 - [[shell-fixes.test.ts]] · value
 
 ## Private helpers
-TAB_NAMES (line 10)
+TAB_NAMES (line 11)
 
 ## Symbols
 
 ### backTarget
-*function* · line 13 · exported
+*function* · line 14 · exported
 > What "Back" returns to from the start screen, or null when nothing is open.
 - Uses: [[Welcome.tsx]]
 - Used in: [[shell-fixes.test.ts]]
 
 ### Welcome
-*component* · line 24 · exported · note: [[Welcome (app-Welcome)|<Welcome>]]
+*component* · line 25 · exported · note: [[Welcome (app-Welcome)|<Welcome>]]
 > The start screen: shown when nothing is open, and over open work when the Socius logo (Home) is clicked, with a way back.
 - Renders: [[Icon|<Icon>]]
-- Calls: [[Welcome.tsx#backTarget|backTarget()]], [[fileActions.ts#loadSample|loadSample()]], [[fileActions.ts#newDataset|newDataset()]], [[fileActions.ts#openDataFile|openDataFile()]], [[fileActions.ts#openProjectFile|openProjectFile()]], [[fileActions.ts#openRecentProject|openRecentProject()]], [[persistence.ts#listRecent|listRecent()]], [[useStore]], [[useUi]]
+- Calls: [[Welcome.tsx#backTarget|backTarget()]], [[fileActions.ts#loadSample|loadSample()]], [[fileActions.ts#newDataset|newDataset()]], [[fileActions.ts#openDataFile|openDataFile()]], [[fileActions.ts#openProjectFile|openProjectFile()]], [[fileActions.ts#openRecentProject|openRecentProject()]], [[format-date.ts#formatDate|formatDate()]], [[persistence.ts#listRecent|listRecent()]], [[useStore]], [[useUi]]
 - Uses: [[samples/index.ts#samples|samples]], [[useUi]]
 - Reads: [[dataset|useStore.dataset]], [[home (store-key)|useUi.home]]
 - Store actions: [[openDialog()|useStore.openDialog()]], [[setHome()|useUi.setHome()]]
@@ -50,7 +51,7 @@ TAB_NAMES (line 10)
 - Rendered by: [[Components/App|<App>]]
 
 ### SampleBanner
-*component* · line 106 · exported · note: [[Components/SampleBanner|<SampleBanner>]]
+*component* · line 107 · exported · note: [[Components/SampleBanner|<SampleBanner>]]
 - Renders: [[Icon|<Icon>]]
 - Calls: [[fileActions.ts#openDataFile|openDataFile()]], [[useStore]], [[useUi]]
 - Reads: [[dataset|useStore.dataset]], [[useUi/sampleBanner|useUi.sampleBanner]]

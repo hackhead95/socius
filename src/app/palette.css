@@ -43,6 +43,13 @@
 .palette-secondary { display: inline-flex; gap: 4px; flex: none; }
 .palette-sec-btn { height: 24px; padding: 0 8px; font-size: var(--fs-xs); background: var(--surface); }
 .palette-item:not(.on) .palette-secondary { opacity: 0.55; }
+.palette-blocked {
+  display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--warn-soft); color: var(--text); font-size: var(--fs-sm);
+}
+.palette-blocked > svg { color: var(--warn); margin-top: 2px; flex: none; }
+.palette-blocked-text { flex: 1 1 260px; min-width: 0; }
+.palette-blocked-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .palette-empty { padding: 18px 12px; color: var(--muted); font-size: var(--fs-sm); }
 .palette-foot {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 7px 14px; border-top: 1px solid var(--border);

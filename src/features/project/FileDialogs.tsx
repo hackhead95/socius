@@ -2,12 +2,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dataset } from '../../core/types';
 import { formatCell } from '../../core/data';
-import { importFile, type ImportOptions } from '../../lib/io';
+import { importFile, type ImportColumnInfo, type ImportOptions } from '../../lib/io';
 import { Modal } from '../../ui/Modal';
 import { Icon } from '../../ui/Icon';
 import { VarMeasureIcon } from '../../ui/MeasureIcon';
 import { confirmReplace, importBytes, openRecentProject } from './fileActions';
 import { listRecent, removeRecent, type RecentEntry } from './persistence';
+import { formatDateTime } from '../../core/format-date';
 
 const PREVIEW_BYTES = 96 * 1024;
 
@@ -55,17 +56,22 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
   const [header, setHeader] = useState(true);
   const [encoding, setEncoding] = useState(kind === 'sav' ? (/Windows-1252/.test(note) ? 'windows-1252' : 'utf-8') : 'auto');
   const [sheet, setSheet] = useState(0);
-  const [preview, setPreview] = useState<{ ds?: Dataset; warnings?: string[]; error?: string } | null>(null);
+  const [preview, setPreview] = useState<{ ds?: Dataset; warnings?: string[]; columns?: ImportColumnInfo[]; error?: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Columns (0-based) to keep as text exactly as written ("Keep as text"). */
+  const [textCols, setTextCols] = useState<number[]>([]);
+  // Another separator, sheet or header row gives other columns: start the choice again.
+  useEffect(() => setTextCols([]), [delimiter, header, sheet, encoding]);
+  const toggleText = (j: number, on: boolean) => setTextCols((cur) => (on ? [...cur.filter((x) => x !== j), j].sort((a, b) => a - b) : cur.filter((x) => x !== j)));
 
   const opts: ImportOptions = useMemo(
     () =>
       kind === 'xlsx'
-        ? { header, sheet }
+        ? { header, sheet, ...(textCols.length ? { textColumns: textCols } : {}) }
         : kind === 'sav'
           ? { encoding }
-          : { header, ...(delimiter !== 'auto' ? { delimiter } : {}), ...(encoding !== 'auto' ? { encoding } : {}) },
-    [kind, header, sheet, delimiter, encoding],
+          : { header, ...(delimiter !== 'auto' ? { delimiter } : {}), ...(encoding !== 'auto' ? { encoding } : {}), ...(textCols.length ? { textColumns: textCols } : {}) },
+    [kind, header, sheet, delimiter, encoding, textCols],
   );
 
   const rawLines = useMemo(() => {
@@ -90,7 +96,7 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
       }
       try {
         const res = await importFile(name, sample, opts);
-        if (alive) setPreview({ ds: res.dataset, warnings: res.warnings });
+        if (alive) setPreview({ ds: res.dataset, warnings: res.warnings, columns: res.columns });
       } catch (e) {
         if (alive) setPreview({ error: e instanceof Error ? e.message : 'This file could not be read with these settings.' });
       }
@@ -153,6 +159,17 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
     );
   }
   const nRows = ds ? Math.min(ds.nCases, 8) : 0;
+  const infoOf = (j: number) => preview?.columns?.find((c) => c.index === j);
+  /** A column the user can keep as text: read as numbers or dates, or already kept. */
+  const canKeep = (c?: ImportColumnInfo) => !!c && (c.readAs !== 'text' || c.keptAsText);
+  const keepBox = (c: ImportColumnInfo, withName: boolean) => (
+    <label className="check keep-text" title={`Keep ${c.name} exactly as written in the file (as text), instead of reading it as ${c.readAs === 'number' ? 'numbers' : c.readAs === 'time' ? 'times' : 'dates'}.`} style={{ fontWeight: 'normal', fontSize: 12, gap: 4, whiteSpace: 'nowrap' }}>
+      <input type="checkbox" checked={textCols.includes(c.index)} onChange={(e) => toggleText(c.index, e.target.checked)} aria-label={`Keep ${c.name} as text`} />
+      {withName ? <span><span className="mono">{c.name}</span>: keep as text</span> : 'Keep as text'}
+    </label>
+  );
+  // Columns whose text changed when read as numbers but are not in the preview table.
+  const hiddenChanged = (preview?.columns ?? []).filter((c) => c.index >= cols.length && (c.keptAsText || (c.readAs === 'number' && (c.missingWords.length || c.leadingZeros))));
 
   return (
     <Modal
@@ -219,9 +236,10 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
               <table className="table">
                 <thead>
                   <tr>
-                    {cols.map((v) => (
-                      <th key={v.id} title={v.label}>
+                    {cols.map((v, j) => (
+                      <th key={v.id} title={v.label} style={{ verticalAlign: 'top' }}>
                         <span className="row" style={{ gap: 4, flexWrap: 'nowrap' }}><VarMeasureIcon v={v} /> <span className="mono">{v.name}</span></span>
+                        {canKeep(infoOf(j)) ? keepBox(infoOf(j)!, false) : null}
                       </th>
                     ))}
                     {ds.variables.length > cols.length ? <th className="muted">+{ds.variables.length - cols.length} more</th> : null}
@@ -241,6 +259,7 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
             </div>
           ) : null}
         </div>
+        {hiddenChanged.length ? <div className="row" style={{ gap: 12 }}>{hiddenChanged.map((c) => <span key={c.index}>{keepBox(c, true)}</span>)}</div> : null}
         {preview?.warnings?.length ? (
           <div className="callout callout-warn">
             {preview.warnings.slice(0, 4).map((w) => <div key={w}>{w}</div>)}
@@ -274,7 +293,7 @@ export function RecentProjectsDialog({ onClose }: { onClose: () => void }) {
               >
                 <Icon name="file" size={16} />
                 <span className="recent-name">{it.name}</span>
-                <span className="help num">{it.nCases.toLocaleString('en-US')} cases · {it.nVars} variables · {new Date(it.savedAt).toLocaleString()}</span>
+                <span className="help num">{it.nCases.toLocaleString('en-US')} cases · {it.nVars} variables · {formatDateTime(it.savedAt)}</span>
               </button>
               <button
                 type="button"

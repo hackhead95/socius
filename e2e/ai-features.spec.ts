@@ -81,10 +81,12 @@ test('set up Gemini, "AI is ready. Try it", run Crosstabs, Explain with AI (stre
   const settings = page.getByRole('dialog', { name: 'AI assistant' });
   await settings.getByRole('radio', { name: /Google Gemini/ }).check();
   await settings.locator('#ai-gemini-key').fill('AIza-e2e');
-  await expect(page.locator('.ai-chip')).toHaveAttribute('data-ready', 'yes');
-  await expect(page.locator('.ai-chip')).toContainText('Gemini');
+  // A typed key is "set up, not tested", not "ready" (UI-003).
+  await expect(page.locator('.ai-chip')).toHaveAttribute('data-ready', 'untested');
+  await expect(page.locator('.ai-chip')).toContainText('Gemini, not tested');
   await expect(settings.locator('.ai-ready')).toHaveCount(0);
   await settings.getByRole('button', { name: 'Test connection' }).click();
+  await expect(page.locator('.ai-chip')).toHaveAttribute('data-ready', 'yes');
   const ready = settings.locator('.ai-ready');
   await expect(ready).toContainText('AI is ready. Try it:');
   await expect(ready.getByRole('button')).toHaveText(['Ask the Socius assistant', 'Explain a result', 'Suggest a codebook', 'Suggest codes for open-ended answers', 'Summarise a code']);

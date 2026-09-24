@@ -49,7 +49,8 @@ export async function copyItem(item: OutputItem, opts: ReportOptions): Promise<v
     for (let i = 0; i < item.blocks.length; i++) {
       const b = item.blocks[i];
       if (b.kind === 'chart') {
-        const { url, width, height } = await chartToPngDataUrl(b.chart);
+        // APA: the copy prints "Figure N" and the italic title above the image, so the image leaves it out.
+        const { url, width, height } = await chartToPngDataUrl(b.chart, undefined, { showTitle: opts.style !== 'apa' });
         images.set(i, `<img src="${url}" width="${Math.round(width * 0.85)}" height="${Math.round(height * 0.85)}" alt="${b.chart.title.replace(/"/g, '&quot;')}">`);
       }
     }
@@ -120,7 +121,8 @@ export async function exportReport(items: OutputItem[], format: ReportFormat, op
       const { buildDocx } = await import('./exportDocx');
       data = await buildDocx(items, { ...opts, style: 'apa' }, async (spec) => {
         try {
-          const p = await chartToPng(spec);
+          // Word is always APA: "Figure N" and the italic title are paragraphs above the image.
+          const p = await chartToPng(spec, undefined, 2, { showTitle: false });
           return { bytes: p.bytes, width: p.width, height: p.height };
         } catch {
           return null;
@@ -129,7 +131,7 @@ export async function exportReport(items: OutputItem[], format: ReportFormat, op
     } else if (format === 'html') {
       data = reportToHtmlDocument(items, opts, (b) => {
         try {
-          const { svg } = chartToSvg(b.chart);
+          const { svg } = chartToSvg(b.chart, undefined, { showTitle: opts.style !== 'apa' });
           return svg.replace(/^<\?xml[^>]*>\s*/, '');
         } catch {
           return null;

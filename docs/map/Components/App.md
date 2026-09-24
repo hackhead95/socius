@@ -2,19 +2,20 @@
 id: "src/app/App.tsx#App"
 type: component
 file: src/app/App.tsx
-line: 102
+line: 139
 area: app
 ---
 
 # <App>
 
-*React component* · defined in [[App.tsx]] (line 102) · area [[Areas/app|app]]
+*React component* · defined in [[App.tsx]] (line 139) · area [[Areas/app|app]]
 
 - **Exported:** yes
 
 ## Calls
 - [[ui-store.ts#applyTheme|applyTheme()]]
 - [[useAutosave|useAutosave()]]
+- [[useShellMetrics|useShellMetrics()]]
 - [[useStartup|useStartup()]]
 - [[useStore]]
 - [[useUi]]
@@ -37,6 +38,7 @@ area: app
 - [[Sidebar|<Sidebar>]]
 - [[Components/Toasts|<Toasts>]]
 - [[TopBar|<TopBar>]]
+- [[UpdateBanner|<UpdateBanner>]]
 - [[VariableView|<VariableView>]]
 - [[Welcome (app-Welcome)|<Welcome>]]
 

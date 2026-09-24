@@ -13,9 +13,11 @@ area: core
 
 ## Tested by
 - [[features.test.ts]] · import
+- [[menu-knowledge.test.ts]] · import
 - [[navigation-audit.test.tsx]] · import
 - [[palette.test.tsx]] · import
 - [[shell-fixes.test.ts]] · import
+- [[shortcut-precedence.test.tsx]] · import
 - [[scenarios.test.ts]] · import
 - [[units.test.ts]] · import
 - [[actions.test.ts]] · import
@@ -28,6 +30,7 @@ area: core
 - [[reliability.test.ts]] · import
 - [[rules.test.ts]] · import
 - [[segments.test.ts]] · import
+- [[ui-fixes.test.tsx]] · import
 - [[project.test.ts]] · import
 
 ## Imported by
@@ -62,9 +65,11 @@ area: core
 - [[toDataset.ts]] · type-only
 - [[tree.ts]] · type-only
 - [[features.test.ts]] · value
+- [[menu-knowledge.test.ts]] · value
 - [[navigation-audit.test.tsx]] · value
 - [[palette.test.tsx]] · value
 - [[shell-fixes.test.ts]] · value
+- [[shortcut-precedence.test.tsx]] · value
 - [[scenarios.test.ts]] · value
 - [[units.test.ts]] · value
 - [[actions.test.ts]] · value
@@ -77,6 +82,7 @@ area: core
 - [[reliability.test.ts]] · type-only
 - [[rules.test.ts]] · type-only
 - [[segments.test.ts]] · type-only
+- [[ui-fixes.test.tsx]] · value
 - [[project.test.ts]] · value
 
 ## Types
@@ -86,4 +92,4 @@ CodeDef (line 3) · TextDoc (line 20) · CodedSegment (line 34) · Memo (line 49
 
 ### emptyCodingProject
 *function* · line 69 · exported
-- Used in: [[store.ts]], [[fileActions.ts]], [[projectFile.ts]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[shell-fixes.test.ts]], [[scenarios.test.ts]], [[units.test.ts]], [[actions.test.ts]], [[project.test.ts]]
+- Used in: [[store.ts]], [[fileActions.ts]], [[projectFile.ts]], [[features.test.ts]], [[menu-knowledge.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[shell-fixes.test.ts]], [[shortcut-precedence.test.tsx]], [[scenarios.test.ts]], [[units.test.ts]], [[actions.test.ts]], [[ui-fixes.test.tsx]], [[project.test.ts]]

@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/core/oneway.ts
 
-*Module* · area [[procedures]] · 455 lines
+*Module* · area [[procedures]] · 468 lines
 
 > Analyze > Compare Means: Means (SPSS MEANS) and One-Way ANOVA (SPSS ONEWAY).
 
@@ -19,8 +19,10 @@ area: procedures
 - [[anova.ts]] · value
 - [[util.ts]] · value
 - [[core/common.ts]] · value
+- [[procedures/text.ts]] · value
 
 ## Calls
+- [[procedures/text.ts#allFinite|allFinite()]]
 - [[core/common.ts#apaNum|apaNum()]]
 - [[core/common.ts#apaP|apaP()]]
 - [[core/common.ts#blank|blank()]]
@@ -42,6 +44,7 @@ area: procedures
 - [[core/common.ts#requireNumeric|requireNumeric()]]
 - [[core/common.ts#sameValue|sameValue()]]
 - [[core/data.ts#selectCases|selectCases()]]
+- [[core/common.ts#selMissing|selMissing()]]
 - [[core/common.ts#selN|selN()]]
 - [[core/common.ts#tableBlock|tableBlock()]]
 - [[core/common.ts#text|text()]]
@@ -57,22 +60,23 @@ area: procedures
 - [[core/index.ts]] · value
 
 ## Private helpers
-groupBy() (line 48) · MEANS_STATS (line 68) · statValues() (line 80) · runMeans() (line 87) · MAX_GROUPS (line 205) · POST_HOC (line 207)
+groupBy() (line 50) · MEANS_STATS (line 70) · statValues() (line 82) · runMeans() (line 89) · MAX_GROUPS (line 214) · POST_HOC (line 216)
 
 ## Symbols
 
 ### means
-*const* · line 182 · exported
+*const* · line 191 · exported
 - Uses: [[oneway.ts]]
 - Used in: [[core/index.ts]]
 
 ### runOneway
-*function* · line 214
-- Calls: [[anova.ts#linearTrend|linearTrend()]], [[anova.ts#oneWayAnova|oneWayAnova()]], [[anova.ts#postHoc|postHoc()]], [[anova.ts#tukeySubsets|tukeySubsets()]], [[core/common.ts#apaNum|apaNum()]], [[core/common.ts#apaP|apaP()]], [[core/common.ts#blank|blank()]], [[core/common.ts#caseNote|caseNote()]], [[core/common.ts#decFmt|decFmt()]], [[core/common.ts#fmtDf|fmtDf()]], [[core/common.ts#heading|heading()]], [[core/common.ts#item|item()]], [[core/common.ts#labelEta2|labelEta2()]], [[core/common.ts#listProse|listProse()]], [[core/common.ts#one|one()]], [[core/common.ts#optBool|optBool()]], [[core/common.ts#optNum|optNum()]], [[core/common.ts#pcell|pcell()]], [[core/common.ts#requireNumeric|requireNumeric()]], [[core/common.ts#selN|selN()]], [[core/common.ts#tableBlock|tableBlock()]], [[core/common.ts#text|text()]], [[core/common.ts#vars|vars()]], [[core/common.ts#vlabel|vlabel()]], [[core/common.ts#vprose|vprose()]] … +4
+*function* · line 223
+- Calls: [[anova.ts#linearTrend|linearTrend()]], [[anova.ts#oneWayAnova|oneWayAnova()]], [[anova.ts#postHoc|postHoc()]], [[anova.ts#tukeySubsets|tukeySubsets()]], [[core/common.ts#apaNum|apaNum()]], [[core/common.ts#apaP|apaP()]], [[core/common.ts#blank|blank()]], [[core/common.ts#caseNote|caseNote()]], [[core/common.ts#decFmt|decFmt()]], [[core/common.ts#fmtDf|fmtDf()]], [[core/common.ts#heading|heading()]], [[core/common.ts#item|item()]], [[core/common.ts#labelEta2|labelEta2()]], [[core/common.ts#listProse|listProse()]], [[core/common.ts#one|one()]], [[core/common.ts#optBool|optBool()]], [[core/common.ts#pcell|pcell()]], [[core/common.ts#requireNumeric|requireNumeric()]], [[core/common.ts#selMissing|selMissing()]], [[core/common.ts#selN|selN()]], [[core/common.ts#tableBlock|tableBlock()]], [[core/common.ts#text|text()]], [[core/common.ts#vars|vars()]], [[core/common.ts#vlabel|vlabel()]], [[core/common.ts#vprose|vprose()]] … +6
 - Uses: [[core/common.ts#COHEN_NOTE|COHEN_NOTE]], [[oneway.ts]]
 - Output: [[Blocks/chart|chart]], [[line]]
 
 ### onewayAnova
-*const* · line 426 · exported
+*const* · line 439 · exported
+- Calls: [[procedures/text.ts#ciOption|ciOption()]]
 - Uses: [[oneway.ts#runOneway|runOneway()]]
 - Used in: [[core/index.ts]]

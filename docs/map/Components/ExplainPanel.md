@@ -24,6 +24,7 @@ area: features/ai
 - [[useExplain]]
 
 ## Renders
+- [[AiActivityLine|<AiActivityLine>]]
 - [[AiErrorDetails|<AiErrorDetails>]]
 - [[AiLoadProgress|<AiLoadProgress>]]
 - [[AiProviderNote|<AiProviderNote>]]

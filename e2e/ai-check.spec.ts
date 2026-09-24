@@ -182,3 +182,24 @@ test('Assistant: a daily limit error says when it resets, with a Details report 
   expect(report).toContain('code rate_limited');
   expect(report).not.toContain(AQ_KEY);
 });
+
+test('a failed test: the AI chip says "not connected" with the reason, and the Help menu gets no error dot (a warning is logged)', async ({ page }) => {
+  await page.route(GEMINI, (route) => route.fulfill(googleErrorReply(400, 'INVALID_ARGUMENT', 'API key not valid. Please pass a valid API key.', [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }])));
+  await openWithSample(page);
+  const dlg = await geminiWithKey(page, 'AIzaFAKE-crawler-key-000000000000000');
+  const chip = page.locator('.ai-chip');
+  await expect(chip).toHaveAttribute('data-ready', 'untested');
+  await dlg.getByRole('button', { name: 'Test connection' }).click();
+  await expect(dlg.locator('.ai-test-result .text-bad')).toContainText('Not connected');
+  await expect(chip).toHaveAttribute('data-ready', 'failed');
+  await expect(chip).toHaveAttribute('aria-label', /not connected/);
+  await dlg.getByRole('button', { name: 'Done' }).click();
+  await chip.click();
+  await expect(page.getByRole('dialog', { name: 'AI help' })).toContainText('Not connected');
+  await expect(page.getByRole('dialog', { name: 'AI help' })).toContainText('did not accept the key');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.menubar .menu-dot')).toHaveCount(0);
+  const log = JSON.parse(await page.evaluate(() => localStorage.getItem('socius.errorlog') ?? '{"entries":[]}')).entries;
+  expect(log.filter((e: any) => e.area === 'ai' && e.level === 'error')).toHaveLength(0);
+  expect(log.some((e: any) => e.area === 'ai' && e.level === 'warn' && e.context?.op === 'test-connection')).toBe(true);
+});

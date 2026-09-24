@@ -983,7 +983,7 @@ function readData(d: Dictionary, bytes: Uint8Array, logical: LogicalVar[], decod
   const nNum = numOffsets.length;
   const nStr = strVars.length;
   const strSegs = strVars.map((l) => l.segments);
-  const scratch = new Uint8Array(Math.max(8, ...strVars.map((l) => l.totalWidth + 8)));
+  const scratch = new Uint8Array(strVars.reduce((m, l) => Math.max(m, l.totalWidth + 8), 8));
   const caches = strVars.map(() => new StringCache(decoder));
 
   const extractStrings = (buf: Uint8Array, base: number) => {

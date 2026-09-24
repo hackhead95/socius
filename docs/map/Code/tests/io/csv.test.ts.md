@@ -7,7 +7,7 @@ area: tests
 
 # tests/io/csv.test.ts
 
-*Test file* · area [[tests]] · 250 lines
+*Test file* · area [[tests]] · 252 lines
 
 > Delimited text import/export. pandas is the oracle for parsing where Python is available.
 

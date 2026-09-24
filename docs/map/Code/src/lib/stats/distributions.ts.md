@@ -7,7 +7,7 @@ area: lib/stats
 
 # src/lib/stats/distributions.ts
 
-*Module* · area [[lib - stats|lib/stats]] · 989 lines
+*Module* · area [[lib - stats|lib/stats]] · 1163 lines
 
 > Probability distributions for Socius statistics. Pure functions, no dependencies. Accuracy target is about 1e-12 relative in the body of each distribution and full relative accuracy in the tails down to ~1e-300 where the value is representable. Algorithms: - log-gamma: Lanczos (Godfrey g = 607/128) for small arguments, Stirling series otherwise. - densities: Loader's saddle-point method (stirle...
 
@@ -33,7 +33,7 @@ area: lib/stats
 - [[lib.test.ts]] · value
 
 ## Private helpers
-LN_SQRT_2PI (line 16) · LN_2PI (line 17) · SQRT_2PI (line 18) · INV_SQRT_2PI (line 19) · DBL_EPS (line 20) · DBL_MIN (line 21) · FPMIN (line 22) · LANCZOS_G (line 28) · LANCZOS_C (line 29) · STIRLING (line 38) · bd0() (line 97) · logDbinomRaw() (line 118) · logDpoisRaw() (line 133) · incGamma() (line 153) · betacf() (line 208) · bd0d() (line 244) · logBetaKernel() (line 268) · logIbetaSeries() (line 279) · logIbetaCF() (line 293) · incBeta() (line 307) · CODY_A (line 347) · CODY_B (line 348) · CODY_C (line 349) · CODY_D (line 354) · CODY_P (line 358) · CODY_Q (line 359) · normalBoth() (line 362) · ACK_A (line 425) · ACK_B (line 426) · ACK_C (line 427) · ACK_D (line 428) · normalPpfLower() (line 431) · tBoth() (line 468) · fBoth() (line 530) · solvePositive() (line 565) · gaussLegendre() (line 679) · GL (line 707) · compositeRule() (line 710) · makeRangeRule() (line 737) · RANGE_FULL (line 749) · RANGE_FAST (line 750) · rangeProbs() (line 753) · studentizedRangeBoth() (line 787)
+LN_SQRT_2PI (line 16) · LN_2PI (line 17) · SQRT_2PI (line 18) · INV_SQRT_2PI (line 19) · DBL_EPS (line 20) · DBL_MIN (line 21) · FPMIN (line 22) · LANCZOS_G (line 28) · LANCZOS_C (line 29) · STIRLING (line 38) · bd0() (line 97) · logDbinomRaw() (line 118) · logDpoisRaw() (line 133) · incGamma() (line 153) · betacf() (line 208) · bd0d() (line 244) · logBetaKernel() (line 268) · logIbetaSeries() (line 279) · logIbetaCF() (line 293) · incBeta() (line 307) · CODY_A (line 347) · CODY_B (line 348) · CODY_C (line 349) · CODY_D (line 354) · CODY_P (line 358) · CODY_Q (line 359) · normalBoth() (line 362) · ACK_A (line 425) · ACK_B (line 426) · ACK_C (line 427) · ACK_D (line 428) · normalPpfLower() (line 431) · tBoth() (line 468) · fBoth() (line 530) · solvePositive() (line 565) · gaussLegendre() (line 679) · GL (line 707) · compositeRule() (line 710) · makeRangeRule() (line 737) · RANGE_FULL (line 749) · RANGE_FAST (line 750) · rangeProbs() (line 753) · CHEB_N (line 811) · RANGE_W_MAX (line 812) · PRE_RULE (line 813) · GL8 (line 814) · rangeLowerLogScaled() (line 817) · rangeUpperLog() (line 837) · chebFit() (line 858) · chebEval() (line 872) · chebPieces() (line 887) · findPiece() (line 902) · RANGE_TABLES (line 913) · rangeTable() (line 915) · rangeProbsTab() (line 943) · tableFor() (line 955) · studentizedRangeBoth() (line 957)
 
 ## Symbols
 
@@ -157,61 +157,61 @@ LN_SQRT_2PI (line 16) · LN_2PI (line 17) · SQRT_2PI (line 18) · INV_SQRT_2PI 
 - Used in: [[anova.ts]], [[distributions.test.ts]]
 
 ### studentizedRangeCdf
-*function* · line 839 · exported
+*function* · line 1011 · exported
 > CDF of the studentized range distribution (k means, df error degrees of freedom; df may be Infinity).
 - Calls: [[distributions.ts]]
 - Used in: [[distributions.test.ts]]
 
 ### studentizedRangeSf
-*function* · line 844 · exported
+*function* · line 1016 · exported
 > Upper tail of the studentized range distribution (Tukey HSD / Games-Howell p-values).
 - Calls: [[distributions.ts]]
 - Used in: [[anova.ts]], [[distributions.test.ts]]
 
 ### studentizedRangePpf
-*function* · line 849 · exported
+*function* · line 1021 · exported
 > Quantile of the studentized range (Tukey HSD and Games-Howell confidence intervals).
 - Calls: [[distributions.ts]]
 - Uses: [[distributions.ts]]
 - Used in: [[anova.ts]], [[distributions.test.ts]], [[lib.test.ts]]
 
 ### binomialPmf
-*function* · line 909 · exported
+*function* · line 1083 · exported
 > --------------------------------------------------------------------------------------------- Discrete distributions ---------------------------------------------------------------------------------------------
 - Calls: [[distributions.ts]]
 - Used in: [[distributions.test.ts]]
 
 ### binomialLogPmf
-*function* · line 916 · exported
+*function* · line 1090 · exported
 > log P(X = k) for X ~ Binomial(n, p).
 - Calls: [[distributions.ts]]
 - Used in: [[stats/nonparametric.ts]]
 
 ### binomialCdf
-*function* · line 922 · exported
+*function* · line 1096 · exported
 > P(X <= k) for X ~ Binomial(n, p).
 - Calls: [[distributions.ts]]
 - Used in: [[stats/crosstabs.ts]], [[stats/nonparametric.ts]], [[distributions.test.ts]]
 
 ### binomialSfInclusive
-*function* · line 934 · exported
+*function* · line 1108 · exported
 > P(X >= k) for X ~ Binomial(n, p), accurate in the upper tail.
 - Calls: [[distributions.ts]]
 - Used in: [[stats/nonparametric.ts]]
 
 ### hypergeomPmf
-*function* · line 948 · exported
+*function* · line 1122 · exported
 > Hypergeometric pmf: probability of k successes in n draws without replacement from a population of N containing K successes.
 - Calls: [[distributions.ts#hypergeomLogPmf|hypergeomLogPmf()]]
 - Used in: [[distributions.test.ts]]
 
 ### hypergeomLogPmf
-*function* · line 952 · exported
+*function* · line 1126 · exported
 - Calls: [[distributions.ts]]
 - Used in: [[stats/crosstabs.ts]]
 
 ### twoSidedP
-*function* · line 968 · exported
+*function* · line 1142 · exported
 > Two-sided p-value for a z or t statistic.
 - Calls: [[distributions.ts#normalSf|normalSf()]], [[distributions.ts]]
 - Used in: [[anova.ts]], [[correlation.ts]], [[stats/crosstabs.ts]], [[ttest.ts]], [[distributions.test.ts]]

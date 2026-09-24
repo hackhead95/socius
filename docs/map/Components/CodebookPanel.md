@@ -2,13 +2,13 @@
 id: "src/features/coding/CodebookPanel.tsx#CodebookPanel"
 type: component
 file: src/features/coding/CodebookPanel.tsx
-line: 15
+line: 16
 area: features/coding
 ---
 
 # <CodebookPanel>
 
-*React component* · defined in [[CodebookPanel.tsx]] (line 15) · area [[features - coding|features/coding]]
+*React component* · defined in [[CodebookPanel.tsx]] (line 16) · area [[features - coding|features/coding]]
 
 - **Exported:** yes
 
@@ -20,6 +20,7 @@ area: features/coding
 - [[coding/actions.ts#createMemo|createMemo()]]
 - [[coding/actions.ts#deleteCode|deleteCode()]]
 - [[tree.ts#descendantIds|descendantIds()]]
+- [[example.ts#describeCodebookSize|describeCodebookSize()]]
 - [[coding/actions.ts#moveCode|moveCode()]]
 - [[uiStore.ts#openLocalDialog|openLocalDialog()]]
 - [[coding/hooks.ts#plural|plural()]]
@@ -33,7 +34,7 @@ area: features/coding
 ## Renders
 - [[ConfirmDialog|<ConfirmDialog>]]
 - [[Floating|<Floating>]]
-- [[MenuButton (features-coding-ui)|<MenuButton>]]
+- [[MenuButton|<MenuButton>]]
 
 ## Uses
 - [[palette.ts#CODE_PALETTE|CODE_PALETTE]]

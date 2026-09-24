@@ -7,7 +7,7 @@ area: lib/io
 
 # src/lib/io/csv.ts
 
-*Module* · area [[lib - io|lib/io]] · 232 lines
+*Module* · area [[lib - io|lib/io]] · 235 lines
 
 > Delimited text (CSV, TSV, semicolon, pipe): RFC 4180 parsing with delimiter detection, and export.
 
@@ -26,10 +26,10 @@ area: lib/io
 - [[csv.test.ts]] · value
 
 ## Types
-ParseResult (line 8) · CsvImportOptions (line 118) · CsvExportOptions (line 209)
+ParseResult (line 8) · CsvImportOptions (line 118) · CsvExportOptions (line 212)
 
 ## Private helpers
-CANDIDATES (line 14) · pad2() (line 154) · secondsPart() (line 156) · needsQuote() (line 191)
+CANDIDATES (line 14) · pad2() (line 157) · secondsPart() (line 159) · needsQuote() (line 194)
 
 ## Symbols
 
@@ -46,21 +46,21 @@ CANDIDATES (line 14) · pad2() (line 154) · secondsPart() (line 156) · needsQu
 - Used in: [[csv.test.ts]]
 
 ### readDelimited
-*function* · line 124 · exported
+*function* · line 126 · exported
 - Calls: [[csv.ts#detectDelimiter|detectDelimiter()]], [[csv.ts#parseDelimited|parseDelimited()]], [[encoding.ts#decodeText|decodeText()]], [[infer.ts#tableToDataset|tableToDataset()]]
 - Used in: [[io/index.ts]]
 
 ### isoForFormat
-*function* · line 163 · exported
+*function* · line 166 · exported
 > ISO text for SPSS date/time values; null when the format is not a calendar/clock format.
 - Calls: [[csv.ts]]
 - Used in: [[xlsx.ts]]
 
 ### cellForExport
-*function* · line 197 · exported
+*function* · line 200 · exported
 - Calls: [[core/data.ts#formatCell|formatCell()]], [[core/data.ts#valueLabelFor|valueLabelFor()]], [[csv.ts#isoForFormat|isoForFormat()]]
 
 ### writeDelimited
-*function* · line 216 · exported
+*function* · line 219 · exported
 - Calls: [[csv.ts#cellForExport|cellForExport()]], [[csv.ts]]
 - Used in: [[io/index.ts]]

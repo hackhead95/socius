@@ -7,7 +7,7 @@ area: features/charts
 
 # src/features/charts/Chart.tsx
 
-*Module* · area [[features - charts|features/charts]] · 56 lines
+*Module* · area [[features - charts|features/charts]] · 63 lines
 
 > Hand-built responsive SVG charts for every ChartSpec type. Colours come from the --viz-* tokens, so both themes work; each chart has an accessible name/description and a hover/focus tooltip.
 
@@ -27,11 +27,13 @@ area: features/charts
 
 ## Tested by
 - [[invariants.ts]] · import
+- [[figures.test.tsx]] · import
 
 ## Imported by
 - [[export.ts]] · value
 - [[OutputViewer.tsx]] · value
 - [[invariants.ts]] · value
+- [[figures.test.tsx]] · dynamic
 
 ## Types
 ChartProps (line 16)
@@ -39,13 +41,14 @@ ChartProps (line 16)
 ## Symbols
 
 ### Chart
-*component* · line 22 · exported · note: [[Components/Chart|<Chart>]]
+*component* · line 27 · exported · note: [[Components/Chart|<Chart>]]
 - Renders: [[ChartBody|<ChartBody>]], [[Tooltip|<Tooltip>]]
 - Calls: [[useChartWidth|useChartWidth()]]
+- Uses: [[charts/common.tsx#ChartTitleShown|ChartTitleShown]]
 - Rendered by: [[ChartBlock|<ChartBlock>]]
 - Used in: [[export.ts]], [[invariants.ts]]
 
 ### ChartBody
-*component* · line 34 · note: [[ChartBody|<ChartBody>]]
+*component* · line 41 · note: [[ChartBody|<ChartBody>]]
 - Renders: [[BarChart|<BarChart>]], [[BoxChart|<BoxChart>]], [[HeatmapChart|<HeatmapChart>]], [[HistogramChart|<HistogramChart>]], [[LineChart|<LineChart>]], [[PieChart|<PieChart>]], [[PyramidChart|<PyramidChart>]], [[ScatterChart|<ScatterChart>]]
 - Output: [[Charts/bar|bar]], [[Charts/histogram|histogram]], [[box]], [[heatmap]], [[line]], [[pie]], [[pyramid]], [[scatter]]

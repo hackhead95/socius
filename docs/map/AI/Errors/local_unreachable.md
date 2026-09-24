@@ -11,7 +11,7 @@ area: platform
 - **Has a user message:** yes
 
 ## Produced by
-- [[platform/ai.ts#askAI|askAI()]]
+- [[platform/ai.ts#askProvider|askProvider()]]
 
 ## Explained by
 - [[platform/ai.ts#aiErrorMessage|aiErrorMessage()]]

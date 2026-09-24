@@ -11,11 +11,11 @@ area: platform
 - **Has a user message:** yes
 
 ## Produced by
-- [[platform/ai.ts#askAI|askAI()]]
 - [[ai-http.ts#askGemini|askGemini()]]
 - [[ai-tools.ts#askGeminiTools|askGeminiTools()]]
 - [[ai-http.ts#askOpenAiCompatible|askOpenAiCompatible()]]
 - [[ai-tools.ts#askOpenAiTools|askOpenAiTools()]]
+- [[platform/ai.ts#askProvider|askProvider()]]
 - [[ai-http.ts#geminiRun|geminiRun()]]
 - [[ai-http.ts#listGeminiModels|listGeminiModels()]]
 - [[ai-diagnose.ts#runConnectionCheck|runConnectionCheck()]]

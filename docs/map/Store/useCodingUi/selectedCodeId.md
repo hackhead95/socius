@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.selectedCodeId"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 31
+line: 36
 area: features/coding
 ---
 
 # useCodingUi.selectedCodeId
 
-*Store state key* · defined in [[uiStore.ts]] (line 31) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 36) · area [[features - coding|features/coding]]
 
 - **Store:** useCodingUi
 

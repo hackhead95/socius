@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/core/nonparametric.ts
 
-*Module* · area [[procedures]] · 536 lines
+*Module* · area [[procedures]] · 537 lines
 
 > Analyze > Nonparametric Tests (SPSS NPAR TESTS): chi-square goodness of fit, binomial, Mann-Whitney U, Wilcoxon signed-rank, Kruskal-Wallis H and Friedman.
 
@@ -49,6 +49,7 @@ area: procedures
 - [[core/common.ts#requireNumeric|requireNumeric()]]
 - [[core/common.ts#sameValue|sameValue()]]
 - [[core/data.ts#selectCases|selectCases()]]
+- [[core/common.ts#selMissing|selMissing()]]
 - [[core/common.ts#selN|selN()]]
 - [[core/common.ts#tableBlock|tableBlock()]]
 - [[core/common.ts#text|text()]]
@@ -68,37 +69,37 @@ area: procedures
 - [[core/index.ts]] · value
 
 ## Private helpers
-runGof() (line 49) · runBinomial() (line 136) · runMannWhitney() (line 231) · runWilcoxon() (line 314) · runKruskal() (line 393) · runFriedman() (line 486)
+runGof() (line 50) · runBinomial() (line 137) · runMannWhitney() (line 232) · runWilcoxon() (line 315) · runKruskal() (line 394) · runFriedman() (line 487)
 
 ## Symbols
 
 ### chiSquareGofProc
-*const* · line 98 · exported
+*const* · line 99 · exported
 - Calls: [[core/common.ts#parseNumberList|parseNumberList()]]
 - Uses: [[core/nonparametric.ts]]
 - Used in: [[core/index.ts]]
 
 ### binomialProc
-*const* · line 203 · exported
+*const* · line 204 · exported
 - Uses: [[core/nonparametric.ts]]
 - Used in: [[core/index.ts]]
 
 ### mannWhitneyProc
-*const* · line 293 · exported
+*const* · line 294 · exported
 - Uses: [[core/nonparametric.ts]]
 - Used in: [[core/index.ts]]
 
 ### wilcoxonProc
-*const* · line 374 · exported
+*const* · line 375 · exported
 - Uses: [[core/nonparametric.ts]]
 - Used in: [[core/index.ts]]
 
 ### kruskalProc
-*const* · line 469 · exported
+*const* · line 470 · exported
 - Uses: [[core/nonparametric.ts]]
 - Used in: [[core/index.ts]]
 
 ### friedmanProc
-*const* · line 526 · exported
+*const* · line 527 · exported
 - Uses: [[core/nonparametric.ts]]
 - Used in: [[core/index.ts]]

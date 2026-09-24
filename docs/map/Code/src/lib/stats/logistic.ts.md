@@ -7,7 +7,7 @@ area: lib/stats
 
 # src/lib/stats/logistic.ts
 
-*Module* · area [[lib - stats|lib/stats]] · 632 lines
+*Module* · area [[lib - stats|lib/stats]] · 669 lines
 
 > Binary and multinomial logistic regression by Newton-Raphson with step halving, as in SPSS LOGISTIC REGRESSION and NOMREG. Frequency weights multiply each case's log-likelihood contribution (SPSS WEIGHT BY semantics). Also: separation diagnostics, Hosmer-Lemeshow test, score tests for variables not in the equation.
 
@@ -20,6 +20,7 @@ area: lib/stats
 - [[models-util.ts#log1pExp|log1pExp()]]
 
 ## Tested by
+- [[fuzz-fixes.test.ts]] · import
 - [[logistic.test.ts]] · import
 - [[separation.test.ts]] · import
 
@@ -28,6 +29,7 @@ area: lib/stats
 - [[binary.ts]] · value
 - [[nomreg.ts]] · value
 - [[plum.ts]] · value
+- [[fuzz-fixes.test.ts]] · value
 - [[logistic.test.ts]] · value
 - [[separation.test.ts]] · value
 
@@ -112,18 +114,23 @@ linearPredictor() (line 132) · binaryLogLik() (line 138) · multinomialLogLik()
 - Used in: [[binary.ts]], [[logistic.test.ts]]
 
 ### fitMultinomial
-*function* · line 497 · exported
+*function* · line 498 · exported
 > Multinomial (baseline-category) logit. yIdx holds category indices 0..J-1; `ref` is the reference category.
-- Calls: [[logistic.ts#columnScales|columnScales()]], [[logistic.ts#divergenceTracker|divergenceTracker()]], [[logistic.ts#unstableParams|unstableParams()]], [[logistic.ts]], [[matrix.ts#spdInverseRobust|spdInverseRobust()]], [[matrix.ts#spdSolveRobust|spdSolveRobust()]], [[matrix.ts#zeros|zeros()]]
+- Calls: [[logistic.ts#collapsePatterns|collapsePatterns()]], [[logistic.ts#columnScales|columnScales()]], [[logistic.ts#divergenceTracker|divergenceTracker()]], [[logistic.ts#unstableParams|unstableParams()]], [[logistic.ts]], [[matrix.ts#spdInverseRobust|spdInverseRobust()]], [[matrix.ts#spdSolveRobust|spdSolveRobust()]], [[matrix.ts#zeros|zeros()]]
 - Uses: [[logistic.ts#DEFAULT_MAX_ITER|DEFAULT_MAX_ITER]]
-- Used in: [[nomreg.ts]], [[logistic.test.ts]], [[separation.test.ts]]
+- Used in: [[nomreg.ts]], [[fuzz-fixes.test.ts]], [[logistic.test.ts]], [[separation.test.ts]]
+
+### collapsePatterns
+*function* · line 625 · exported
+> Merge rows with the same outcome and covariate values (first-occurrence order), summing weights and dropping zero weights. The likelihood is unchanged, and integer-weighted data and the same cases replicated become identical inputs, so t...
+- Used in: [[ordinal.ts]]
 
 ### multinomialNullLogLik
-*function* · line 614 · exported
+*function* · line 651 · exported
 > Log-likelihood of the intercept-only multinomial model (closed form).
 - Used in: [[binary.ts]], [[nomreg.ts]], [[logistic.test.ts]]
 
 ### pseudoR2
-*function* · line 627 · exported
+*function* · line 664 · exported
 > Cox & Snell, Nagelkerke and McFadden pseudo R² from null and model log-likelihoods.
 - Used in: [[binary.ts]], [[nomreg.ts]], [[plum.ts]], [[logistic.test.ts]]

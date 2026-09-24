@@ -2,13 +2,13 @@
 id: "src/features/transform/common.tsx#VarSelect"
 type: component
 file: src/features/transform/common.tsx
-line: 316
+line: 340
 area: features/transform
 ---
 
 # <VarSelect>
 
-*React component* · defined in [[transform/common.tsx]] (line 316) · area [[features - transform|features/transform]]
+*React component* · defined in [[transform/common.tsx]] (line 340) · area [[features - transform|features/transform]]
 
 > Compact variable select (for a single choice inside rows).
 

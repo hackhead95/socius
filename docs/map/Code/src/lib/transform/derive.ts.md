@@ -36,7 +36,7 @@ findVar() (line 12)
 ### detectScaleRange
 *function* · line 27 · exported
 > Scale end points: from value labels (ignoring user-missing codes) when there are at least 2, else from the data.
-- Calls: [[core/data.ts#isMissingValue|isMissingValue()]], [[core/data.ts#isUserMissing|isUserMissing()]]
+- Calls: [[core/data.ts#isMissingValue|isMissingValue()]], [[core/data.ts#isUserMissing|isUserMissing()]], [[dsops.ts#maxOf|maxOf()]], [[dsops.ts#minOf|minOf()]]
 - Used in: [[DeriveDialogs.tsx]], [[transforms.test.ts]]
 
 ### reverseCode

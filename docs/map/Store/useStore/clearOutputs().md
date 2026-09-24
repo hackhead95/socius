@@ -2,13 +2,13 @@
 id: "store-action:useStore.clearOutputs"
 type: store-action
 file: src/core/store.ts
-line: 121
+line: 124
 area: core
 ---
 
 # useStore.clearOutputs()
 
-*Store action* · defined in [[store.ts]] (line 121) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 124) · area [[core]]
 
 - **Store:** useStore
 

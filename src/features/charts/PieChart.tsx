@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { arcPath, formatValue, pieAngles } from './scale';
-import { ChartHeader, ChartSvg, FS_LEGEND, FS_TICK, TipRow, fit, headerLayout, measureText, seriesColor, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_LEGEND, FS_TICK, TipRow, fit, useHeaderLayout, measureText, seriesColor, type SetTip } from './common';
 
 type PieSpec = Extract<ChartSpec, { type: 'pie' }>;
 
@@ -13,7 +13,7 @@ export function pieDesc(spec: PieSpec): string {
 
 export function PieChart({ spec, width, setTip }: { spec: PieSpec; width: number; setTip: SetTip }) {
   const [hover, setHover] = useState(-1);
-  const head = headerLayout(spec.title, [], width);
+  const head = useHeaderLayout(spec.title, [], width);
   const angles = pieAngles(spec.slices.map((s) => s.value));
   const total = spec.slices.reduce((a, s) => a + (s.value > 0 ? s.value : 0), 0);
   const side = width >= 460;

@@ -784,11 +784,183 @@ function rangeProbs(w: number, k: number, rule: RangeRule): [number, number] {
   return [1 - R, R];
 }
 
+// ---- Interpolation tables for W(w) (one per k, built on first use and cached) ----------------
+// Evaluating W(w) by quadrature costs a few hundred normal CDFs, and the outer integral needs it at
+// about 200 points, so a single P-value cost ~10 ms and a quantile ~100 ms (Games-Howell needs one
+// quantile per pair, with fractional df). W depends only on k and w, so for each k we tabulate it
+// once as piecewise Chebyshev series (degree 24, pieces split until the tail coefficients are below
+// 1e-15): log(W(w) / w^(k-1)) below the median of the range, log(1 - W(w)) above it. Both are smooth,
+// and working in logs keeps full relative accuracy in either tail. A lookup is then ~0.1 us.
+
+interface ChebPiece {
+  a: number;
+  b: number;
+  c: Float64Array;
+}
+
+interface RangeTable {
+  k: number;
+  /** w with W(w) = 1/2: below it the lower pieces are used, above it the upper pieces */
+  wHalf: number;
+  lower: ChebPiece[];
+  upper: ChebPiece[];
+  /** beyond wMax, 1 - W(w) < 1e-250 and is treated as 0 */
+  wMax: number;
+}
+
+const CHEB_N = 24;
+const RANGE_W_MAX = 48;
+const PRE_RULE = compositeRule(-10, 10, 24);
+const GL8 = gaussLegendre(8);
+
+/** log(k * integral phi(z) (d(z, w) / w)^(k-1) dz), d = Phi(z) - Phi(z - w), without cancellation. */
+function rangeLowerLogScaled(w: number, k: number): number {
+  const { z, w: wt } = PRE_RULE;
+  let s = 0;
+  for (let i = 0; i < z.length; i++) {
+    const zi = z[i];
+    let d: number;
+    if (w < 1) {
+      // d / w = mean of phi over [z - w, z] (8-point Gauss-Legendre; phi is entire, so this is exact to rounding)
+      let m = 0;
+      for (let j = 0; j < GL8.x.length; j++) m += GL8.w[j] * normalPdf(zi - 0.5 * w + 0.5 * w * GL8.x[j]);
+      d = 0.5 * m;
+    } else {
+      d = (zi - w > 0 ? normalSf(zi - w) - normalSf(zi) : normalCdf(zi) - normalCdf(zi - w)) / w;
+    }
+    if (d > 0) s += wt[i] * normalPdf(zi) * Math.pow(d, k - 1);
+  }
+  return Math.log(k * s);
+}
+
+/** log(1 - W(w)) by the cancellation-free upper-tail integral, on a grid centred at w/2. */
+function rangeUpperLog(w: number, k: number): number {
+  const { z, w: wt } = PRE_RULE;
+  const km1 = k - 1;
+  let R = 0;
+  for (let i = 0; i < z.length; i++) {
+    const zz = z[i] + w / 2;
+    const a = normalCdf(zz);
+    const c = normalCdf(zz - w);
+    const b = Math.max(0, a - c);
+    let sum = 0;
+    let term = Math.pow(a, km1 - 1);
+    const ratio = a > 0 ? b / a : 0;
+    for (let j = 0; j < km1; j++) {
+      sum += term;
+      term *= ratio;
+    }
+    R += wt[i] * normalPdf(zz) * c * sum;
+  }
+  return Math.log(k * R);
+}
+
+function chebFit(f: (x: number) => number, a: number, b: number, n = CHEB_N): Float64Array {
+  const fx = new Float64Array(n);
+  const mid = 0.5 * (a + b);
+  const half = 0.5 * (b - a);
+  for (let j = 0; j < n; j++) fx[j] = f(mid + half * Math.cos((Math.PI * (j + 0.5)) / n));
+  const c = new Float64Array(n);
+  for (let m = 0; m < n; m++) {
+    let s = 0;
+    for (let j = 0; j < n; j++) s += fx[j] * Math.cos((Math.PI * m * (j + 0.5)) / n);
+    c[m] = (2 / n) * s;
+  }
+  return c;
+}
+
+function chebEval(p: ChebPiece, x: number): number {
+  const u = (2 * x - p.a - p.b) / (p.b - p.a);
+  const u2 = 2 * u;
+  const c = p.c;
+  let b1 = 0;
+  let b2 = 0;
+  for (let m = c.length - 1; m >= 1; m--) {
+    const t = u2 * b1 - b2 + c[m];
+    b2 = b1;
+    b1 = t;
+  }
+  return u * b1 - b2 + 0.5 * c[0];
+}
+
+/** Chebyshev pieces covering [a, b], halving each piece until its last coefficients are negligible. */
+function chebPieces(f: (x: number) => number, a: number, b: number, out: ChebPiece[] = [], depth = 0): ChebPiece[] {
+  const c = chebFit(f, a, b);
+  // The tabulated values are accurate to a few units of rounding relative to their size, so the
+  // series has converged once its last coefficients are at that level.
+  const scale = Math.max(1, Math.abs(c[0]) / 2 + Math.abs(c[1]));
+  const tail = Math.max(Math.abs(c[CHEB_N - 1]), Math.abs(c[CHEB_N - 2]), Math.abs(c[CHEB_N - 3]));
+  if (tail <= 1e-14 * scale || depth >= 6) out.push({ a, b, c });
+  else {
+    const m = 0.5 * (a + b);
+    chebPieces(f, a, m, out, depth + 1);
+    chebPieces(f, m, b, out, depth + 1);
+  }
+  return out;
+}
+
+function findPiece(ps: ChebPiece[], x: number): ChebPiece {
+  let lo = 0;
+  let hi = ps.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (x > ps[mid].b) lo = mid + 1;
+    else hi = mid;
+  }
+  return ps[lo];
+}
+
+const RANGE_TABLES = new Map<number, RangeTable>();
+
+function rangeTable(k: number): RangeTable {
+  let t = RANGE_TABLES.get(k);
+  if (t) return t;
+  // Median of the range: W(w) = 1/2, by bisection on the lower integral.
+  let lo = 0;
+  let hi = 2;
+  while (Math.exp(rangeLowerLogScaled(hi, k) + (k - 1) * Math.log(hi)) < 0.5) hi *= 2;
+  for (let it = 0; it < 60; it++) {
+    const m = 0.5 * (lo + hi);
+    if (Math.exp(rangeLowerLogScaled(m, k) + (k - 1) * Math.log(m)) < 0.5) lo = m;
+    else hi = m;
+  }
+  const wHalf = 0.5 * (lo + hi);
+  // Initial split points keep each piece short enough for the log-tails to be polynomial-like.
+  const lower: ChebPiece[] = [];
+  const lcuts = [0, wHalf / 4, wHalf / 2, wHalf];
+  for (let i = 0; i + 1 < lcuts.length; i++) chebPieces((w) => rangeLowerLogScaled(w, k), lcuts[i], lcuts[i + 1], lower);
+  const upper: ChebPiece[] = [];
+  const ucuts = [wHalf];
+  for (let w = Math.ceil(wHalf + 0.5); w < RANGE_W_MAX; w += 4) ucuts.push(w);
+  ucuts.push(RANGE_W_MAX);
+  for (let i = 0; i + 1 < ucuts.length; i++) chebPieces((w) => rangeUpperLog(w, k), ucuts[i], ucuts[i + 1], upper);
+  t = { k, wHalf, lower, upper, wMax: RANGE_W_MAX };
+  RANGE_TABLES.set(k, t);
+  return t;
+}
+
+/** [W(w), 1 - W(w)] from the table. */
+function rangeProbsTab(w: number, t: RangeTable): [number, number] {
+  if (!(w > 0)) return [0, 1];
+  if (w >= t.wMax) return [1, 0];
+  if (w <= t.wHalf) {
+    const W = Math.exp(chebEval(findPiece(t.lower, w), w) + (t.k - 1) * Math.log(w));
+    return [W, 1 - W];
+  }
+  const R = Math.exp(chebEval(findPiece(t.upper, w), w));
+  return [1 - R, R];
+}
+
+/** Tables are used for whole k up to 100 (larger k falls back to direct quadrature). */
+const tableFor = (k: number): RangeTable | null => (Number.isInteger(k) && k >= 2 && k <= 100 ? rangeTable(k) : null);
+
 function studentizedRangeBoth(q: number, k: number, df: number, rule: RangeRule = RANGE_FULL): [number, number] {
   if (Number.isNaN(q) || Number.isNaN(k) || Number.isNaN(df) || k < 2 || !(df > 0)) return [NaN, NaN];
   if (q <= 0) return [0, 1];
   if (q === Infinity) return [1, 0];
-  if (df === Infinity || df > 1e7) return rangeProbs(q, k, rule);
+  const tab = rule === RANGE_FULL ? tableFor(k) : null;
+  const inner = (w: number): [number, number] => (tab ? rangeProbsTab(w, tab) : rangeProbs(w, k, rule));
+  if (df === Infinity || df > 1e7) return inner(q);
   // Outer integral over t = log(s): weight exp(nu * (t - expm1(2t)/2)) (peak 1 at t = 0).
   const logw = (t: number) => df * (t - Math.expm1(2 * t) / 2);
   const T = 200;
@@ -826,7 +998,7 @@ function studentizedRangeBoth(q: number, k: number, df: number, rule: RangeRule 
       const t = mid + half * GL.x[i];
       const wt = GL.w[i] * half * Math.exp(logw(t));
       if (wt === 0) continue;
-      const [lo, up] = rangeProbs(q * Math.exp(t), k, rule);
+      const [lo, up] = inner(q * Math.exp(t));
       norm += wt;
       lowSum += wt * lo;
       upSum += wt * up;
@@ -896,6 +1068,8 @@ export function studentizedRangePpf(p: number, k: number, df: number): number {
     }
     return c;
   };
+  // With a table the full-accuracy CDF is cheap, so solve with it directly.
+  if (tableFor(k)) return solve(RANGE_FULL, 1, 4, 1e-14);
   const rough = solve(RANGE_FAST, 1, 4, 1e-9);
   if (!Number.isFinite(rough)) return rough;
   // Stage 2: polish with the full rule inside a tight bracket.

@@ -12,7 +12,7 @@
 import { chi2Sf, normalPpf } from './distributions';
 import { spdInverseRobust, spdSolveRobust, zeros, type Matrix } from './matrix';
 import { logistic, logisticDensity } from './models-util';
-import { columnScales, divergenceTracker, unstableParams } from './logistic';
+import { collapsePatterns, columnScales, divergenceTracker, unstableParams } from './logistic';
 
 export interface CumulativeFit {
   J: number;
@@ -91,6 +91,11 @@ export function fitCumulativeLogit(
   const general = opts.general ?? false;
   const q = X.length;
   const P = nParams(J, q, general);
+  // Iterate on distinct (outcome, covariate) patterns (same likelihood; see collapsePatterns), and
+  // compute the fitted probabilities for every original row at the end.
+  const Xall = X;
+  const nAll = y.length;
+  ({ yIdx: y, X, w } = collapsePatterns(y, X, w));
   const n = y.length;
   const maxIter = opts.maxIter ?? 100;
   let params = new Float64Array(P);
@@ -202,11 +207,11 @@ export function fitCumulativeLogit(
   const scales = new Float64Array(P);
   for (let e = 0; e < (general ? J - 1 : 1); e++) for (let j = 0; j < q; j++) scales[betaIdx(e, j)] = xs[j];
   const unstable = unstableParams(params, se, inv.nullLoading, scales);
-  const probs = new Float64Array(n * J);
-  for (let i = 0; i < n; i++) {
+  const probs = new Float64Array(nAll * J);
+  for (let i = 0; i < nAll; i++) {
     let prev = 0;
     for (let e = 0; e < J; e++) {
-      const cum = e < J - 1 ? F(eqArg(params, X, i, e, J, q, general)) : 1;
+      const cum = e < J - 1 ? F(eqArg(params, Xall, i, e, J, q, general)) : 1;
       probs[i * J + e] = cum - prev;
       prev = cum;
     }

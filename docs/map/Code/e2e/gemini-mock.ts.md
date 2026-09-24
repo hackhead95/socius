@@ -17,6 +17,7 @@ area: e2e
 ## Imported by
 - [[ai-check.spec.ts]] · value
 - [[ai-features.spec.ts]] · value
+- [[ai-speed.spec.ts]] · value
 - [[ai.spec.ts]] · value
 - [[assistant.spec.ts]] · value
 
@@ -30,11 +31,11 @@ seq (line 58)
 
 ### GEMINI
 *const* · line 8 · exported
-- Used in: [[ai-check.spec.ts]], [[ai-features.spec.ts]], [[ai.spec.ts]], [[assistant.spec.ts]]
+- Used in: [[ai-check.spec.ts]], [[ai-features.spec.ts]], [[ai-speed.spec.ts]], [[ai.spec.ts]], [[assistant.spec.ts]]
 
 ### cors
 *const* · line 9 · exported
-- Used in: [[ai-check.spec.ts]]
+- Used in: [[ai-check.spec.ts]], [[ai-speed.spec.ts]]
 
 ### isInteractions
 *function* · line 13 · exported
@@ -43,12 +44,12 @@ seq (line 58)
 *function* · line 16 · exported
 > Model list reply for GET /v1beta/models.
 - Uses: [[gemini-mock.ts#cors|cors]]
-- Used in: [[ai-check.spec.ts]], [[ai-features.spec.ts]], [[ai.spec.ts]], [[assistant.spec.ts]]
+- Used in: [[ai-check.spec.ts]], [[ai-features.spec.ts]], [[ai-speed.spec.ts]], [[ai.spec.ts]], [[assistant.spec.ts]]
 
 ### promptOf
 *function* · line 21 · exported
 > The last user text of an Interactions request (a prompt string, or the last user_input step).
-- Used in: [[ai-features.spec.ts]], [[ai.spec.ts]]
+- Used in: [[ai-features.spec.ts]], [[ai-speed.spec.ts]], [[ai.spec.ts]]
 
 ### legacyBody
 *function* · line 29 · exported
@@ -65,7 +66,7 @@ seq (line 58)
 > Reply to an Interactions request with these parts: JSON, or SSE events when the request streams.
 - Calls: [[gemini-mock.ts#partsToSteps|partsToSteps()]]
 - Uses: [[gemini-mock.ts#cors|cors]], [[gemini-mock.ts]]
-- Used in: [[ai-check.spec.ts]], [[ai-features.spec.ts]], [[ai.spec.ts]], [[assistant.spec.ts]]
+- Used in: [[ai-check.spec.ts]], [[ai-features.spec.ts]], [[ai-speed.spec.ts]], [[ai.spec.ts]], [[assistant.spec.ts]]
 
 ### googleErrorReply
 *function* · line 100 · exported
@@ -75,4 +76,4 @@ seq (line 58)
 
 ### fulfil
 *function* · line 104 · exported
-- Used in: [[assistant.spec.ts]]
+- Used in: [[ai-speed.spec.ts]], [[assistant.spec.ts]]

@@ -21,3 +21,8 @@ area: app
 
 ## Part of
 - [[Data]]
+
+## Tested by
+- [[transform-dialogs.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
+- [[dialog-transforms.test.ts]] · menu label

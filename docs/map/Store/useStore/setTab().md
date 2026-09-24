@@ -2,13 +2,13 @@
 id: "store-action:useStore.setTab"
 type: store-action
 file: src/core/store.ts
-line: 133
+line: 135
 area: core
 ---
 
 # useStore.setTab()
 
-*Store action* · defined in [[store.ts]] (line 133) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 135) · area [[core]]
 
 > ui
 
@@ -22,13 +22,15 @@ area: core
 - [[Components/App|<App>]] · selector
 - [[CommandPalette|<CommandPalette>]] · getState
 - [[DataViewInner|<DataViewInner>]] · selector
-- [[Sidebar|<Sidebar>]] · selector
+- [[VariableList|<VariableList>]] · selector
 - [[VariableViewInner|<VariableViewInner>]] · selector
 - [[fileActions.ts#activateDataset|activateDataset()]] · alias
 - [[Explain a result|AI > Explain a result...]] · runAiFeature
 - [[Suggest a codebook|AI > Suggest a codebook...]] · runAiFeature
 - [[Suggest codes for open-ended answers|AI > Suggest codes for open-ended answers...]] · runAiFeature
 - [[Summarise a code|AI > Summarise a code...]] · runAiFeature
+- [[transform/common.tsx#applyTransform|applyTransform()]] · getState
+- [[menus.ts#buildMenus|buildMenus()]] · getState alias
 - [[AiFeatureDialogs.tsx#doAction|doAction()]] · alias
 - [[Find in data|Edit > Find in data...]]
 - [[Go to case|Edit > Go to case...]]
@@ -60,10 +62,10 @@ area: core
 - [[Retrieve coded segments|Text coding > Retrieve coded segments]]
 - [[Word frequencies|Text coding > Word frequencies]]
 - [[useEntries|useEntries()]] · getState alias
-- [[useMenus|useMenus()]] · getState alias
 - [[Data View|View > Data View]]
 - [[Output|View > Output]]
 - [[View/Text coding|View > Text coding]]
+- [[Variable list|View > Variable list]]
 - [[Variable View|View > Variable View]]
 - [[CodingDialog.tsx#ViewSwitch|ViewSwitch()]] · getState
 

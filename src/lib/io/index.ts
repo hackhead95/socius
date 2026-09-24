@@ -2,6 +2,7 @@
 // Nothing here touches DOM-only globals at import time; everything runs in the browser and in node.
 import { unzipSync } from 'fflate';
 import type { Dataset } from '../../core/types';
+import type { ImportColumnInfo } from './infer';
 import { codebookRows as buildCodebookRows } from './codebook';
 import { readDelimited, writeDelimited } from './csv';
 import { readSav } from './sav-reader';
@@ -12,7 +13,11 @@ export interface ImportResult {
   dataset: Dataset;
   /** Non-fatal issues to show the user (e.g. "3 value labels truncated", "encoding guessed as windows-1252"). */
   warnings: string[];
+  /** CSV/XLSX: how each column was read (numbers, dates, text), for the import preview. */
+  columns?: ImportColumnInfo[];
 }
+
+export type { ImportColumnInfo } from './infer';
 
 export type ImportOptions = {
   /** CSV/TSV: delimiter override; auto-detected otherwise. "\t" or "tab" for tab. */
@@ -23,6 +28,12 @@ export type ImportOptions = {
   encoding?: string;
   /** XLSX: sheet name, or 0-based sheet index (default: the first sheet). */
   sheet?: string | number;
+  /**
+   * CSV/XLSX: 0-based columns to keep as text exactly as written ("Keep as text" in the import
+   * preview). Other columns that look like numbers or dates are converted, with a warning that
+   * lists what changed ("NA" became system-missing, leading zeros dropped).
+   */
+  textColumns?: number[];
 };
 
 type Kind = 'sav' | 'xlsx' | 'delimited' | 'zip';
@@ -164,8 +175,8 @@ export async function importFile(name: string, bytes: Uint8Array, opts: ImportOp
     return importFile(inner.name, inner.bytes, opts);
   }
   if (kind === 'sav') return readSav(bytes, { fileName: name, encoding: opts.encoding });
-  if (kind === 'xlsx') return readXlsx(name, bytes, { sheet: opts.sheet, header: opts.header });
-  return readDelimited(name, bytes, { delimiter: opts.delimiter, header: opts.header, encoding: opts.encoding });
+  if (kind === 'xlsx') return readXlsx(name, bytes, { sheet: opts.sheet, header: opts.header, textColumns: opts.textColumns });
+  return readDelimited(name, bytes, { delimiter: opts.delimiter, header: opts.header, encoding: opts.encoding, textColumns: opts.textColumns });
 }
 
 /** Write an SPSS .sav file (bytecode-compressed by default; `zsav` for zlib-compressed). */

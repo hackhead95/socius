@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.kwicQuery"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 48
+line: 53
 area: features/coding
 ---
 
 # useCodingUi.kwicQuery
 
-*Store state key* · defined in [[uiStore.ts]] (line 48) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 53) · area [[features - coding|features/coding]]
 
 > Keyword-in-context search term.
 

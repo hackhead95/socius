@@ -2,13 +2,15 @@
 id: "store-action:useStore.setCoding"
 type: store-action
 file: src/core/store.ts
-line: 130
+line: 132
 area: core
 ---
 
 # useStore.setCoding()
 
-*Store action* · defined in [[store.ts]] (line 130) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 132) · area [[core]]
+
+> coding (changes go through src/features/coding/actions.ts, which records coding undo)
 
 - **Store:** useStore
 
@@ -24,6 +26,7 @@ area: core
 - [[coding/actions.ts#setActiveCoder|setActiveCoder()]] · getState
 - [[fileActions.ts#startFresh|startFresh()]] · getState
 - [[actions.test.ts]] · getState
+- [[ui-fixes.test.tsx]] · getState
 - [[coding/actions.ts#undoCoding|undoCoding()]] · getState
 
 ## Store

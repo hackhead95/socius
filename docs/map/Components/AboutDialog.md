@@ -2,13 +2,13 @@
 id: "src/app/HelpDialogs.tsx#AboutDialog"
 type: component
 file: src/app/HelpDialogs.tsx
-line: 128
+line: 178
 area: app
 ---
 
 # <AboutDialog>
 
-*React component* · defined in [[HelpDialogs.tsx]] (line 128) · area [[Areas/app|app]]
+*React component* · defined in [[HelpDialogs.tsx]] (line 178) · area [[Areas/app|app]]
 
 - **Exported:** yes
 
@@ -16,7 +16,9 @@ area: app
 - [[errorlog/actions.ts#openFeedback|openFeedback()]]
 
 ## Renders
+- [[BrowserStorageNote|<BrowserStorageNote>]]
 - [[Modal|<Modal>]]
+- [[StorageManager|<StorageManager>]]
 
 ## Uses
 - [[buildInfo.ts#BUILD_INFO|BUILD_INFO]]
@@ -27,6 +29,7 @@ area: app
 
 ## Rendered by
 - [[DialogHost|<DialogHost>]]
+- [[about-storage.test.tsx]]
 
 ## Renders
 - [[about|custom: about]]

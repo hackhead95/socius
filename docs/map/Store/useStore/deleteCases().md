@@ -2,13 +2,13 @@
 id: "store-action:useStore.deleteCases"
 type: store-action
 file: src/core/store.ts
-line: 110
+line: 112
 area: core
 ---
 
 # useStore.deleteCases()
 
-*Store action* · defined in [[store.ts]] (line 110) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 112) · area [[core]]
 
 - **Store:** useStore
 

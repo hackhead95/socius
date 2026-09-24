@@ -14,11 +14,11 @@ area: lib/coding
 ## Imports
 - [[coding-types.ts]] · type-only
 - [[segments.ts]] · type-only, value
-- [[text.ts]] · value
+- [[coding/text.ts]] · value
 
 ## Calls
-- [[text.ts#splitParagraphs|splitParagraphs()]]
-- [[text.ts#splitSentences|splitSentences()]]
+- [[coding/text.ts#splitParagraphs|splitParagraphs()]]
+- [[coding/text.ts#splitSentences|splitSentences()]]
 - [[segments.ts#trimRange|trimRange()]]
 
 ## Tested by
@@ -42,7 +42,7 @@ unitsFor() (line 64)
 
 ### parseRule
 *function* · line 22 · exported
-- Calls: [[text.ts#searchRegex|searchRegex()]]
+- Calls: [[coding/text.ts#searchRegex|searchRegex()]]
 - Used in: [[rules.test.ts]]
 
 ### parseRules

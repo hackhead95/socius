@@ -193,13 +193,13 @@ describe('binning', () => {
     expect(binOf(100, [29, 44])).toBe(3);
   });
   it('labels integer groups the way people write them', () => {
-    expect(binLabels([29, 44, 64], 18, true)).toEqual(['18-29', '30-44', '45-64', '65+']);
-    expect(binLabels([2.5, 5], 0.1, false)).toEqual(['<= 2.5', '2.5-5', '> 5']);
+    expect(binLabels([29, 44, 64], 18, true)).toEqual(['18 to 29', '30 to 44', '45 to 64', '65+']);
+    expect(binLabels([2.5, 5], 0.1, false)).toEqual(['<= 2.5', '2.5 to 5', '> 5']);
   });
   it('custom cutpoints with counts', () => {
     const p = previewBins(d, { sourceId: d.variables[0].id, method: { kind: 'custom', cuts: [44, 29, 64] } });
     expect(p.cuts).toEqual([29, 44, 64]);
-    expect(p.bins.map((b) => [b.label, b.count])).toEqual([['18-29', 3], ['30-44', 2], ['45-64', 2], ['65+', 2]]);
+    expect(p.bins.map((b) => [b.label, b.count])).toEqual([['18 to 29', 3], ['30 to 44', 2], ['45 to 64', 2], ['65+', 2]]);
     const r = visualBin(d, { sourceId: d.variables[0].id, name: 'agegrp', method: { kind: 'custom', cuts: [29, 44, 64] } });
     expect(nn(col(r.dataset, 'agegrp'))).toEqual([1, 1, 1, 2, 2, 3, 3, 4, 4, null]);
     expect(r.dataset.variables[1].valueLabels[3]).toEqual({ value: 4, label: '65+' });

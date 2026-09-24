@@ -16,7 +16,6 @@ area: features/charts
 - [[scale.ts#extent|extent()]]
 - [[scale.ts#formatTick|formatTick()]]
 - [[scale.ts#formatValue|formatValue()]]
-- [[charts/common.tsx#headerLayout|headerLayout()]]
 - [[scale.ts#linear|linear()]]
 - [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]]
 - [[charts/common.tsx#measureText|measureText()]]
@@ -24,6 +23,7 @@ area: features/charts
 - [[scale.ts#PointIndex|PointIndex]]
 - [[ScatterChart.tsx#scatterDesc|scatterDesc()]]
 - [[charts/common.tsx#seriesColor|seriesColor()]]
+- [[useHeaderLayout|useHeaderLayout()]]
 - [[useThemeVersion|useThemeVersion()]]
 
 ## Renders

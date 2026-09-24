@@ -2,17 +2,17 @@
 id: "src/features/coding/AnalyseView.tsx#Kwic"
 type: component
 file: src/features/coding/AnalyseView.tsx
-line: 409
+line: 433
 area: features/coding
 ---
 
 # <Kwic>
 
-*React component* · defined in [[AnalyseView.tsx]] (line 409) · area [[features - coding|features/coding]]
+*React component* · defined in [[AnalyseView.tsx]] (line 433) · area [[features - coding|features/coding]]
 
 ## Calls
 - [[uiStore.ts#jumpTo|jumpTo()]]
-- [[text.ts#kwic|kwic()]]
+- [[coding/text.ts#kwic|kwic()]]
 - [[outputs.ts#kwicOutput|kwicOutput()]]
 - [[coding/hooks.ts#plural|plural()]]
 - [[coding/hooks.ts#saveCsv|saveCsv()]]

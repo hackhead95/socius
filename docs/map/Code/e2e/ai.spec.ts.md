@@ -7,7 +7,7 @@ area: e2e
 
 # e2e/ai.spec.ts
 
-*End-to-end spec* · area [[e2e]] · 261 lines
+*End-to-end spec* · area [[e2e]] · 268 lines
 
 > AI assistant on the independent site: settings dialog, Gemini with a mocked network, AI coding end to end against the mocked Gemini API, and the Help menu / feedback links. (The on-device model needs WebGPU and a model download, neither of which exists in this headless browser: only its "not supported" path is exercised here.)
 
@@ -41,8 +41,9 @@ area: e2e
 - [[Send feedback or report a problem|Help > Send feedback or report a problem]] · menu label
 - [[User guide|Help > User guide]] · menu label
 - [[socius.ai]] · storage key
+- [[socius.ai.keys]] · storage key
 - [[Import open-ended answers from dataset|Text coding > Import open-ended answers from dataset...]] · menu label
 - [[View/Text coding|View > Text coding]] · menu label
 
 ## Private helpers
-ready() (line 9) · openSettingsFromAiMenu() (line 14) · noWebGpu() (line 24) · importChallenge() (line 118)
+ready() (line 9) · openSettingsFromAiMenu() (line 14) · noWebGpu() (line 24) · importChallenge() (line 125)

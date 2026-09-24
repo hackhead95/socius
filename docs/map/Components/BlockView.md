@@ -2,13 +2,13 @@
 id: "src/features/output/OutputViewer.tsx#BlockView"
 type: component
 file: src/features/output/OutputViewer.tsx
-line: 415
+line: 409
 area: features/output
 ---
 
 # <BlockView>
 
-*React component* · defined in [[OutputViewer.tsx]] (line 415) · area [[features - output|features/output]]
+*React component* · defined in [[OutputViewer.tsx]] (line 409) · area [[features - output|features/output]]
 
 ## Calls
 - [[output/actions.ts#copyTable|copyTable()]]

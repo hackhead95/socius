@@ -7,7 +7,7 @@ area: features/output
 
 # src/features/output/tableRender.ts
 
-*Module* · area [[features - output|features/output]] · 161 lines
+*Module* · area [[features - output|features/output]] · 146 lines
 
 > Output table -> HTML string (inline styles, for Word/Google Docs paste and the HTML report) and -> plain text. Pure: no DOM, so exporters and tests share it.
 
@@ -49,8 +49,3 @@ INK (line 19) · GRID (line 20) · HEAD_BG (line 21) · cellAlign() (line 23)
 > Plain-text table with aligned columns (spans flattened into their first column).
 - Calls: [[output/format.ts#formatCell|formatCell()]], [[output/format.ts#layoutRows|layoutRows()]], [[output/format.ts#percentColumns|percentColumns()]], [[output/format.ts#stubCount|stubCount()]]
 - Used in: [[output/actions.ts]], [[exportText.ts]], [[assistant/format.ts]], [[export.test.ts]]
-
-### tableToMatrix
-*function* · line 147 · exported
-> Cell matrix with spans, formatted as text; used by the Excel exporter.
-- Calls: [[output/format.ts#formatCell|formatCell()]], [[output/format.ts#layoutRows|layoutRows()]], [[output/format.ts#percentColumns|percentColumns()]], [[output/format.ts#stubCount|stubCount()]]

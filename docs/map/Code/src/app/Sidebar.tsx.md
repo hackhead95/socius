@@ -7,7 +7,7 @@ area: app
 
 # src/app/Sidebar.tsx
 
-*Module* · area [[Areas/app|app]] · 83 lines
+*Module* · area [[Areas/app|app]] · 147 lines
 
 > Collapsible variable list: search, measure icons, click to select in the grid, double-click to open in Variable View.
 
@@ -15,6 +15,7 @@ area: app
 - [[react]] · value
 - [[ui-store.ts]] · value
 - [[store.ts]] · value
+- [[core/types.ts]] · type-only
 - [[Icon.tsx]] · value
 - [[MeasureIcon.tsx]] · value
 
@@ -24,9 +25,25 @@ area: app
 ## Symbols
 
 ### Sidebar
-*component* · line 9 · exported · note: [[Sidebar|<Sidebar>]]
+*component* · line 10 · exported · note: [[Sidebar|<Sidebar>]]
+- Renders: [[Icon|<Icon>]], [[VariableDrawer|<VariableDrawer>]], [[VariableList|<VariableList>]]
+- Calls: [[useNarrow|useNarrow()]], [[useStore]], [[useUi]]
+- Reads: [[dataset|useStore.dataset]], [[drawerOpen|useUi.drawerOpen]], [[sidebarOpen|useUi.sidebarOpen]]
+- Store actions: [[setDrawerOpen()|useUi.setDrawerOpen()]], [[setSidebarOpen()|useUi.setSidebarOpen()]]
+- Rendered by: [[Components/App|<App>]]
+
+### VariableDrawer
+*component* · line 44 · note: [[VariableDrawer|<VariableDrawer>]]
+> The narrow-window variable list: a drawer over the data. Escape, a click outside or choosing a variable closes it.
+- Renders: [[VariableList|<VariableList>]]
+- Calls: [[useStore]]
+- Uses: [[useUi]]
+- Reads: [[dataset|useStore.dataset]]
+- Store actions: [[setDrawerOpen()|useUi.setDrawerOpen()]]
+
+### VariableList
+*component* · line 91 · note: [[VariableList|<VariableList>]]
 - Renders: [[Icon|<Icon>]], [[VarMeasureIcon|<VarMeasureIcon>]]
 - Calls: [[useStore]], [[useUi]]
-- Reads: [[currentVarId|useUi.currentVarId]], [[dataset|useStore.dataset]], [[sidebarOpen|useUi.sidebarOpen]], [[useStore/tab|useStore.tab]]
-- Store actions: [[focusGrid()|useUi.focusGrid()]], [[focusVariableView()|useUi.focusVariableView()]], [[setSidebarOpen()|useUi.setSidebarOpen()]], [[setTab()|useStore.setTab()]]
-- Rendered by: [[Components/App|<App>]]
+- Reads: [[currentVarId|useUi.currentVarId]], [[dataset|useStore.dataset]], [[useStore/tab|useStore.tab]]
+- Store actions: [[focusGrid()|useUi.focusGrid()]], [[focusVariableView()|useUi.focusVariableView()]], [[setTab()|useStore.setTab()]]

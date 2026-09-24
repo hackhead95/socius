@@ -45,10 +45,27 @@ test('messy CSV: NA words become missing and comma numbers are explained', async
   await ready(page);
   await drop(page, 'messy.csv', Buffer.from('id,income,age\n1,"1,234",34\n2,NA,n/a\n3,"12,345.50",.\n'));
   await expect(page.locator('.modal h2')).toHaveText('Open messy.csv');
+  await expect(page.locator('.modal .callout-warn')).toContainText('Read as numbers: age ("n/a", "." became system-missing in 2 cases)');
   await page.getByRole('button', { name: 'Open', exact: true }).click();
   await expect(page.locator('.dataset-size')).toHaveText('3 cases · 3 variables');
-  await expect(toasts(page).filter({ hasText: 'were read as missing values in age' })).toBeVisible();
+  await expect(toasts(page).filter({ hasText: 'Read as numbers: age' })).toBeVisible();
   await expect(toasts(page).filter({ hasText: 'income holds numbers written with thousands separators' })).toBeVisible();
+});
+
+test('CSV import preview: Keep as text keeps a column exactly as written (FZ-18)', async ({ page }) => {
+  await ready(page);
+  await drop(page, 'codes.csv', Buffer.from('id,zip,code\n1,02134,1\n2,00501,NA\n3,10001,2\n'));
+  const modal = page.locator('.modal');
+  await expect(modal.locator('.callout-warn')).toContainText('zip (leading zeros were dropped in 2 cases ("02134" became 2134))');
+  await expect(modal.locator('.import-preview td').nth(1)).toHaveText('2134');
+  await modal.getByLabel('Keep zip as text').check();
+  await modal.getByLabel('Keep code as text').check();
+  await expect(modal.locator('.import-preview td').nth(1)).toHaveText('02134');
+  await expect(modal.locator('.import-preview td').nth(5)).toHaveText('NA');
+  await expect(modal.locator('.callout-warn')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  await expect(page.locator('.dataset-size')).toHaveText('3 cases · 3 variables');
+  await expect(page.locator('.grid-scroll [role="gridcell"][data-r="0"][data-c="1"]')).toHaveText('02134');
 });
 
 test('opens a .sav inside a zip (how the Artifact viewer saves SPSS files)', async ({ page }) => {

@@ -7,7 +7,7 @@ area: ui
 
 # src/ui/Menu.tsx
 
-*Module* · area [[ui]] · 387 lines
+*Module* · area [[ui]] · 332 lines
 
 > Keyboard-accessible menus: used by the menubar dropdowns, the narrow-screen menu sheet and right-click context menus.
 
@@ -16,15 +16,18 @@ area: ui
 - [[Icon.tsx]] · value
 
 ## Tested by
+- [[menu-knowledge.test.ts]] · import
 - [[navigation-audit.test.tsx]] · import
 - [[shell-fixes.test.ts]] · import
 
 ## Imported by
 - [[MenuBar.tsx]] · value
+- [[menuKnowledge.ts]] · type-only
 - [[menus.ts]] · type-only
 - [[search.ts]] · type-only
 - [[DataView.tsx]] · value
 - [[VariableView.tsx]] · value
+- [[menu-knowledge.test.ts]] · type-only
 - [[navigation-audit.test.tsx]] · type-only
 - [[shell-fixes.test.ts]] · value
 
@@ -54,12 +57,7 @@ MenuItem (line 6) · Point (line 40)
 - Rendered by: [[MenuBar|<MenuBar>]]
 
 ### ContextMenu
-*component* · line 295 · exported · note: [[ContextMenu|<ContextMenu>]]
+*component* · line 299 · exported · note: [[ContextMenu|<ContextMenu>]]
 > Context menu at a viewport position; closes on outside click, scroll or Escape.
 - Renders: [[MenuList|<MenuList>]]
 - Rendered by: [[DataViewInner|<DataViewInner>]], [[VariableViewInner|<VariableViewInner>]]
-
-### MenuButton
-*component* · line 330 · exported · note: [[MenuButton (ui-Menu)|<MenuButton>]]
-> A button that opens a dropdown menu below it.
-- Renders: [[MenuList|<MenuList>]]

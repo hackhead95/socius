@@ -7,7 +7,7 @@ area: e2e
 
 # e2e/ai-features.spec.ts
 
-*End-to-end spec* · area [[e2e]] · 177 lines
+*End-to-end spec* · area [[e2e]] · 179 lines
 
 > App-wide AI features against a mocked Gemini API: the AI menu and the AI chip, set-up help that names the feature, the "AI is ready. Try it" panel, "do this first" dialogs, and Explain with AI on an Output item (preview of what will be sent, streamed answer, Add to output).
 

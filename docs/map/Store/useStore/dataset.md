@@ -2,13 +2,13 @@
 id: "store-key:useStore.dataset"
 type: store-key
 file: src/core/store.ts
-line: 77
+line: 79
 area: core
 ---
 
 # useStore.dataset
 
-*Store state key* · defined in [[store.ts]] (line 77) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 79) · area [[core]]
 
 - **Store:** useStore
 
@@ -18,6 +18,7 @@ area: core
 - [[ByAttribute|<ByAttribute>]] · selector
 - [[CodingWorkspace|<CodingWorkspace>]] · selector
 - [[Composer|<Composer>]] · selector
+- [[CopyPropertiesDialog|<CopyPropertiesDialog>]] · getState
 - [[DataView|<DataView>]] · selector
 - [[DefinePropertiesDialog|<DefinePropertiesDialog>]] · alias
 - [[DialogBody|<DialogBody>]] · getState
@@ -34,10 +35,13 @@ area: core
 - [[SurveyTab|<SurveyTab>]] · selector
 - [[TopBar|<TopBar>]] · selector
 - [[TransformDialog|<TransformDialog>]] · selector
+- [[VariableDrawer|<VariableDrawer>]] · selector
+- [[VariableList|<VariableList>]] · selector
 - [[VariableView|<VariableView>]] · selector
 - [[Welcome (app-Welcome)|<Welcome>]] · selector
 - [[transform/common.tsx#applyTransform|applyTransform()]] · alias
 - [[controller.ts#appSnapshot|appSnapshot()]] · alias
+- [[menus.ts#buildMenus|buildMenus()]] · getState alias
 - [[fileActions.ts#confirmReplace|confirmReplace()]] · getState
 - [[features.ts#currentAiContext|currentAiContext()]] · alias
 - [[fileActions.ts#currentProjectState|currentProjectState()]] · alias
@@ -82,7 +86,10 @@ area: core
 - [[palette.test.tsx]] · setState
 - [[search.test.ts]] · setState
 - [[shell-fixes.test.ts]] · setState
+- [[shortcut-precedence.test.tsx]] · setState
+- [[ui-fixes.test.tsx]] · setState
 - [[dialog-ui.test.tsx]] · setState
+- [[data-fixes.test.ts]] · setState
 - [[mutateDataset()|useStore.mutateDataset()]]
 - [[redo()|useStore.redo()]]
 - [[setDataset()|useStore.setDataset()]]

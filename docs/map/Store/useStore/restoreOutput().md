@@ -2,13 +2,13 @@
 id: "store-action:useStore.restoreOutput"
 type: store-action
 file: src/core/store.ts
-line: 123
+line: 126
 area: core
 ---
 
 # useStore.restoreOutput()
 
-*Store action* · defined in [[store.ts]] (line 123) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 126) · area [[core]]
 
 > Bring back the last deleted result. Returns false when there is none.
 
@@ -26,6 +26,7 @@ area: core
 - [[outputUndo|useStore.outputUndo]]
 
 ## Called by
+- [[OutputViewer|<OutputViewer>]] · getState
 - [[Undo|Edit > Undo]] · runUndo
 - [[undo.ts#runUndo|runUndo()]] · alias
 - [[shell-fixes.test.ts]] · getState

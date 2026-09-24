@@ -22,8 +22,15 @@
 //   become clear errors.
 // - Requests time out (45 s for checks, 90 s otherwise), a busy service (500/503) is retried once, and
 //   every request is recorded (without keys) for the connection check's "Copy details" report.
+// - Speed (see docs/research and tests/perf/ai-latency.test.ts): the key's model list is cached for a
+//   day per key hash; the lowest useful thinking level is asked for ("minimal" on Flash-Lite); per-minute
+//   limits are learned from 429 replies and later requests are spaced to fit (ai-pace.ts); a 429 with a
+//   short "retry in N s" is waited out with a visible countdown instead of failing; every stage is timed
+//   (ai-timing.ts).
 
 import { AiUnavailableError } from './claude';
+import { __resetPace, clearBlock, learnLimit, noteRequest, paceWaitMs, parseRateLimit } from './ai-pace';
+import type { AiTiming } from './ai-timing';
 
 export interface HttpAskOptions {
   onText?: (text: string) => void;
@@ -40,7 +47,14 @@ export interface HttpAskOptions {
   trace?: AiAttempt[];
   /** Gemini automatic model choice: Flash-Lite (default, more free requests) or Flash. */
   prefer?: GeminiPreference;
+  /** Records where the time goes and drives the progress line (see ai-timing.ts). */
+  timing?: AiTiming;
+  /** How much the model may think: 'minimal' (fastest), 'low', or 'auto' (minimal on Flash-Lite, low otherwise; the default). */
+  effort?: ThinkingEffort;
 }
+
+/** Thinking effort asked of Gemini 3 and newer (see thinkingLevelFor). */
+export type ThinkingEffort = 'minimal' | 'low' | 'auto';
 
 /** What "automatic" favours: Flash-Lite (more free requests per day) or Flash (better answers). */
 export type GeminiPreference = 'lite' | 'flash';
@@ -106,6 +120,10 @@ export interface AiErrorInfo {
   perMinute?: boolean;
   /** The service's free allowance for this model is 0 (not a temporary limit). */
   zeroQuota?: boolean;
+  /** Requests per minute allowed for the model, when a 429 said so ("limit: 5 requests per minute"). */
+  limitPerMinute?: number;
+  /** Socius already waited out a rate limit once for this request (callers should not wait again). */
+  waited?: boolean;
   /** Gemini key format ('aq', 'aiza', 'other'), for advice about Google's key changes. */
   keyKind?: GeminiKeyKind;
   trace?: AiAttempt[];
@@ -204,6 +222,8 @@ export interface ServiceError {
   /** "limit: 0" or a quota value of 0: this model has no free allowance at all. */
   zeroQuota: boolean;
   quotaIds: string[];
+  /** Requests per minute, when the reply names the limit. */
+  limitPerMinute?: number;
 }
 
 export function parseServiceError(httpStatus: number, body: unknown, retryAfterHeader?: string | null): ServiceError {
@@ -228,6 +248,7 @@ export function parseServiceError(httpStatus: number, body: unknown, retryAfterH
   const apiStatus = typeof e?.status === 'string' ? e.status : typeof e?.type === 'string' ? e.type : undefined;
   const reasons: string[] = [];
   const quotaIds: string[] = [];
+  const violations: Array<{ quotaId?: string; quotaMetric?: string; quotaValue?: unknown }> = [];
   let retryAfterMs: number | undefined;
   let zero = false;
   for (const d of Array.isArray(e?.details) ? e.details : []) {
@@ -237,6 +258,7 @@ export function parseServiceError(httpStatus: number, body: unknown, retryAfterH
       const id = `${v?.quotaId ?? ''}`.trim() || `${v?.quotaMetric ?? ''}`.trim();
       if (id) quotaIds.push(id);
       if (v?.quotaValue !== undefined && String(v.quotaValue) === '0') zero = true;
+      if (v && typeof v === 'object') violations.push({ quotaId: v.quotaId, quotaMetric: v.quotaMetric, quotaValue: v.quotaValue });
     }
   }
   if (typeof e?.code === 'string' && !/^\d+$/.test(e.code)) reasons.push(e.code);
@@ -248,6 +270,7 @@ export function parseServiceError(httpStatus: number, body: unknown, retryAfterH
   }
   if (/\blimit:\s*0(?![\d.])/i.test(message)) zero = true;
   const all = `${quotaIds.join(' ')} ${message}`;
+  const limit = httpStatus === 429 || apiStatus === 'RESOURCE_EXHAUSTED' ? parseRateLimit(message, violations) : {};
   return {
     httpStatus,
     message: message.slice(0, 600),
@@ -258,6 +281,7 @@ export function parseServiceError(httpStatus: number, body: unknown, retryAfterH
     perMinute: /per ?minute|\bRPM\b|\bTPM\b/i.test(all),
     zeroQuota: zero,
     quotaIds,
+    limitPerMinute: limit.perMinute,
   };
 }
 
@@ -312,8 +336,9 @@ export function errorFromService(s: ServiceError, where: ErrorPlace, info: AiErr
     reason: s.reasons[0],
     retryAfterMs: s.retryAfterMs,
     daily: code === 'rate_limited' ? s.daily : undefined,
-    perMinute: code === 'rate_limited' ? s.perMinute : undefined,
+    perMinute: code === 'rate_limited' ? s.perMinute || !!s.limitPerMinute : undefined,
     zeroQuota: s.zeroQuota || undefined,
+    limitPerMinute: code === 'rate_limited' ? s.limitPerMinute : undefined,
   });
 }
 
@@ -427,6 +452,9 @@ interface SendContext {
   where: ErrorPlace;
   model?: string;
   api?: GeminiApi;
+  timing?: AiTiming;
+  /** The response will be read as a stream (headers arrive before the answer). */
+  stream?: boolean;
 }
 
 /** Send one request. Rejects an AiHttpError for no answer, a timeout, or an HTTP error status. */
@@ -435,8 +463,13 @@ async function httpSend(req: { url: string; init: RequestInit & { method?: strin
   const started = Date.now();
   const host = hostOf(req.url);
   const info: AiErrorInfo = { host, model: c.model, api: c.api };
-  const record = (a: Partial<AiAttempt>) =>
+  const record = (a: Partial<AiAttempt>) => {
     c.trace?.push({ at: new Date(started).toISOString(), method: req.init.method ?? 'GET', url: displayUrl(req.url), model: c.model, api: c.api, httpStatus: 0, ms: Date.now() - started, ok: false, ...a });
+    c.timing?.mark('headers', { model: c.model, api: c.api, status: a.httpStatus || undefined, ms: Date.now() - started, note: a.note });
+  };
+  const isList = (req.init.method ?? 'GET') === 'GET';
+  c.timing?.mark(isList ? 'list' : 'request', { model: c.model, api: c.api });
+  if (!isList) c.timing?.setStage('waiting');
   const t = timed(c.signal, c.timeoutMs);
   let res: Response;
   try {
@@ -475,6 +508,8 @@ async function httpSend(req: { url: string; init: RequestInit & { method?: strin
     throw err;
   }
   record({ httpStatus: res.status, ok: true });
+  // Streamed answers: the service has the request and is thinking until the first words arrive.
+  if (!isList && c.stream) c.timing?.setStage('thinking');
   return res;
 }
 
@@ -625,36 +660,28 @@ export function geminiPreference(model: string): GeminiPreference {
   return /^auto-flash$/i.test(String(model ?? '').trim()) ? 'flash' : 'lite';
 }
 
-const listCache = new Map<string, GeminiModelInfo[]>();
+// Per key (stored as a hash, never the key), in localStorage for a day: the key's model list, so a page
+// load does not ask Google again before the first answer; the model and API that last answered; models
+// that refused a thinking level. Models that failed (retired, not allowed, no free allowance) are
+// remembered for this visit only.
+const MODELS_KEY = 'socius.ai.geminiModels';
+const MODELS_MAX_AGE_MS = 24 * 3600_000;
+const MEMORY_KEY = 'socius.ai.geminiModel';
 
-/** The models this key may use (GET /v1beta/models), cached per key for this visit. */
-export async function listGeminiModels(apiKey: string, opts: { signal?: AbortSignal; trace?: AiAttempt[]; timeoutMs?: number; force?: boolean } = {}): Promise<GeminiModelInfo[]> {
-  const key = sanitizeApiKey(apiKey);
-  if (!key) throw new AiUnavailableError('not_configured', 'No Gemini key.');
-  if (!opts.force && listCache.has(key)) return listCache.get(key)!;
-  let res: Response;
-  try {
-    res = await httpSend(
-      { url: `${GEMINI_BASE}/models?pageSize=1000`, init: { method: 'GET', headers: { 'x-goog-api-key': key } } },
-      { signal: opts.signal, timeoutMs: opts.timeoutMs ?? CHECK_TIMEOUT_MS, trace: opts.trace, where: 'list' },
-    );
-  } catch (e) {
-    throw decorate(e, { keyKind: geminiKeyKind(key) });
-  }
-  const data = await readJsonBody(res, opts.signal);
-  const models: GeminiModelInfo[] = Array.isArray(data?.models) ? data.models.filter((m: any) => typeof m?.name === 'string') : [];
-  listCache.set(key, models);
-  return models;
+interface ModelListRecord {
+  at: number;
+  models: Array<{ name: string; m?: string[] }>;
+  /** Models that refused `thinking_level: minimal` (use low), or any thinking level (send none). */
+  noMinimal?: string[];
+  noThinking?: string[];
 }
 
-// Per key (stored as a hash, never the key): the model and API that last answered, and models that
-// failed this visit (retired, not allowed, no free allowance).
-const MEMORY_KEY = 'socius.ai.geminiModel';
+const listCache = new Map<string, GeminiModelInfo[]>();
 const badModels = new Map<string, Set<string>>();
-const noThinking = new Set<string>();
+let modelStore: Record<string, ModelListRecord> | null = null;
 let memory: Record<string, { model: string; api: GeminiApi }> | null = null;
 
-function keyHash(key: string): string {
+export function keyHash(key: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < key.length; i++) {
     h ^= key.charCodeAt(i);
@@ -663,12 +690,118 @@ function keyHash(key: string): string {
   return h.toString(36);
 }
 
+function readJsonStore<T>(k: string): T | null {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(k) : null;
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJsonStore(k: string, v: unknown): void {
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch {
+    /* kept for this visit */
+  }
+}
+
+function readModelStore(): Record<string, ModelListRecord> {
+  if (modelStore) return modelStore;
+  modelStore = {};
+  const o = readJsonStore<Record<string, any>>(MODELS_KEY);
+  const now = Date.now();
+  if (o && typeof o === 'object')
+    for (const [k, v] of Object.entries(o))
+      if (v && typeof v.at === 'number' && Array.isArray(v.models) && now - v.at < MODELS_MAX_AGE_MS)
+        modelStore[k] = {
+          at: v.at,
+          models: v.models.filter((x: any) => typeof x?.name === 'string').map((x: any) => ({ name: x.name, m: Array.isArray(x.m) ? x.m.filter((y: unknown) => typeof y === 'string') : undefined })),
+          noMinimal: Array.isArray(v.noMinimal) ? v.noMinimal.filter((y: unknown) => typeof y === 'string') : undefined,
+          noThinking: Array.isArray(v.noThinking) ? v.noThinking.filter((y: unknown) => typeof y === 'string') : undefined,
+        };
+  return modelStore;
+}
+
+function modelRecord(key: string): ModelListRecord | undefined {
+  return readModelStore()[keyHash(key)];
+}
+
+function saveModelRecord(key: string, rec: ModelListRecord): void {
+  const store = readModelStore();
+  store[keyHash(key)] = rec;
+  // Keep a few keys at most.
+  const entries = Object.entries(store).sort((a, b) => b[1].at - a[1].at).slice(0, 4);
+  modelStore = Object.fromEntries(entries);
+  writeJsonStore(MODELS_KEY, modelStore);
+}
+
+/** Remember that a model refused a thinking level (for a day, per key). */
+function noteThinkingRefused(key: string, model: string, which: 'minimal' | 'any'): void {
+  const rec = modelRecord(key) ?? { at: Date.now(), models: [] };
+  const field = which === 'minimal' ? 'noMinimal' : 'noThinking';
+  const list = new Set(rec[field] ?? []);
+  if (list.has(model)) return;
+  list.add(model);
+  rec[field] = [...list];
+  if (!rec.models.length) {
+    // No cached list for this key: keep only the thinking facts (at stays old enough not to count as a list).
+    rec.at = rec.at || Date.now();
+  }
+  saveModelRecord(key, rec);
+}
+
+function thinkingRefused(key: string, model: string): 'minimal' | 'any' | null {
+  const rec = modelRecord(key);
+  if (rec?.noThinking?.includes(model)) return 'any';
+  if (rec?.noMinimal?.includes(model)) return 'minimal';
+  return null;
+}
+
+/**
+ * The models this key may use (GET /v1beta/models). Cached per key in memory and, for a day, in
+ * localStorage (as a hash of the key). `force` asks Google again (Test connection).
+ */
+export async function listGeminiModels(apiKey: string, opts: { signal?: AbortSignal; trace?: AiAttempt[]; timeoutMs?: number; force?: boolean; timing?: AiTiming } = {}): Promise<GeminiModelInfo[]> {
+  const key = sanitizeApiKey(apiKey);
+  if (!key) throw new AiUnavailableError('not_configured', 'No Gemini key.');
+  if (!opts.force) {
+    const mem = listCache.get(key);
+    if (mem) return mem;
+    const rec = modelRecord(key);
+    if (rec?.models.length) {
+      const models = rec.models.map((x) => ({ name: x.name, supportedGenerationMethods: x.m }));
+      listCache.set(key, models);
+      opts.timing?.mark('list-cached', { note: `${models.length} models, listed ${Math.round((Date.now() - rec.at) / 60_000)} min ago` });
+      return models;
+    }
+  }
+  opts.timing?.setStage('choosing');
+  let res: Response;
+  try {
+    res = await httpSend(
+      { url: `${GEMINI_BASE}/models?pageSize=1000`, init: { method: 'GET', headers: { 'x-goog-api-key': key } } },
+      { signal: opts.signal, timeoutMs: opts.timeoutMs ?? CHECK_TIMEOUT_MS, trace: opts.trace, where: 'list', timing: opts.timing },
+    );
+  } catch (e) {
+    throw decorate(e, { keyKind: geminiKeyKind(key) });
+  }
+  const data = await readJsonBody(res, opts.signal);
+  const models: GeminiModelInfo[] = Array.isArray(data?.models) ? data.models.filter((m: any) => typeof m?.name === 'string') : [];
+  listCache.set(key, models);
+  const old = modelRecord(key);
+  // Only text models matter; keep the stored list small.
+  const keep = models.filter((m) => /gemini/i.test(m.name)).map((m) => ({ name: m.name, m: Array.isArray(m.supportedGenerationMethods) ? m.supportedGenerationMethods.filter((x) => /generate|interaction/i.test(x)) : undefined }));
+  if (keep.length) saveModelRecord(key, { at: Date.now(), models: keep, noMinimal: old?.noMinimal, noThinking: old?.noThinking });
+  return models;
+}
+
 function readMemory(): Record<string, { model: string; api: GeminiApi }> {
   if (memory) return memory;
   memory = {};
   try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(MEMORY_KEY) : null;
-    const o = raw ? JSON.parse(raw) : null;
+    const o = readJsonStore<Record<string, any>>(MEMORY_KEY);
     if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (typeof (v as any)?.model === 'string') memory[k] = { model: (v as any).model, api: (v as any).api === 'generateContent' ? 'generateContent' : 'interactions' };
   } catch {
     /* storage unavailable */
@@ -679,32 +812,47 @@ function readMemory(): Record<string, { model: string; api: GeminiApi }> {
 function remember(key: string, prefer: GeminiPreference, model: string, api: GeminiApi) {
   const m = readMemory();
   const h = `${keyHash(key)}:${prefer}`;
-  if (m[h]?.model === model && m[h]?.api === api) return;
+  const a = `${keyHash(key)}:api`;
+  if (m[h]?.model === model && m[h]?.api === api && m[a]?.api === api) return;
   m[h] = { model, api };
-  try {
-    localStorage.setItem(MEMORY_KEY, JSON.stringify(m));
-  } catch {
-    /* kept for this visit */
-  }
+  // Which API works for this key, whatever the model (so a key that needs generateContent never pays for a failed Interactions request first).
+  m[a] = { model: '', api };
+  writeJsonStore(MEMORY_KEY, m);
 }
 
 function remembered(key: string, prefer: GeminiPreference): { model: string; api: GeminiApi } | undefined {
-  return readMemory()[`${keyHash(key)}:${prefer}`];
+  const r = readMemory()[`${keyHash(key)}:${prefer}`];
+  return r?.model ? r : undefined;
 }
 
-/** Test hook: forget model lists, remembered models and failures. */
-export function __resetGeminiState(): void {
+function rememberedApi(key: string): GeminiApi | undefined {
+  const m = readMemory();
+  return m[`${keyHash(key)}:api`]?.api ?? m[`${keyHash(key)}:lite`]?.api ?? m[`${keyHash(key)}:flash`]?.api;
+}
+
+/**
+ * Test hook: forget model lists, remembered models and failures. `reload: true` acts like a new page
+ * load instead (what is in localStorage is read again).
+ */
+export function __resetGeminiState(opts: { reload?: boolean } = {}): void {
   listCache.clear();
   badModels.clear();
-  noThinking.clear();
-  memory = {};
+  memory = opts.reload ? null : {};
+  modelStore = opts.reload ? null : {};
+  if (!opts.reload) __resetPace();
+}
+
+let limitSleep: ((ms: number, signal?: AbortSignal) => Promise<void>) | null = null;
+/** Test hook: how geminiRun waits for a rate limit (null: really wait). */
+export function __setRateLimitSleep(fn: ((ms: number, signal?: AbortSignal) => Promise<void>) | null): void {
+  limitSleep = fn;
 }
 
 /** Listing errors that settle the matter (the key or the connection is the problem, not the model). */
 const LIST_FATAL = new Set(['invalid_key', 'key_not_accepted', 'referrer_blocked', 'key_restricted', 'api_disabled', 'key_suspended', 'region', 'bad_key_format', 'network', 'offline', 'timeout', 'cancelled', 'rate_limited', 'not_configured']);
 
 /** Candidate models for this key, best first: the one that answered last time, then the ranked list. */
-export async function geminiCandidates(apiKey: string, opts: { signal?: AbortSignal; trace?: AiAttempt[]; timeoutMs?: number; force?: boolean; prefer?: GeminiPreference } = {}): Promise<string[]> {
+export async function geminiCandidates(apiKey: string, opts: { signal?: AbortSignal; trace?: AiAttempt[]; timeoutMs?: number; force?: boolean; prefer?: GeminiPreference; timing?: AiTiming } = {}): Promise<string[]> {
   const key = sanitizeApiKey(apiKey);
   const prefer = opts.prefer ?? 'lite';
   let ranked: string[] = [];
@@ -719,7 +867,10 @@ export async function geminiCandidates(apiKey: string, opts: { signal?: AbortSig
   const good = ranked.filter((m) => !bad.has(m));
   const list = good.length ? good : ranked;
   const last = remembered(key, prefer)?.model;
-  return last && list.includes(last) ? [last, ...list.filter((m) => m !== last)] : list;
+  // The model that answered last time, if it is still of the preferred family (a Flash answer
+  // remembered from before does not keep Flash-Lite users on Flash).
+  const sameFamily = (m: string) => (prefer === 'lite') === /flash-lite/i.test(m);
+  return last && list.includes(last) && sameFamily(last) ? [last, ...list.filter((m) => m !== last)] : list;
 }
 
 /** The model to use for this key: the user's explicit choice, else the best candidate. */
@@ -729,36 +880,58 @@ export async function resolveGeminiModel(cfg: GeminiConfig, signal?: AbortSignal
   return (await geminiCandidates(cfg.apiKey, { signal, force: forceRefresh, prefer: geminiPreference(cfg.model) }))[0];
 }
 
+/** Can a Flash request go out now without waiting for its learned per-minute limit? */
+export function geminiFlashHasRoom(apiKey: string): boolean {
+  const key = sanitizeApiKey(apiKey);
+  const model = lastResolvedGeminiModel(key, 'flash');
+  return !model || paceWaitMs(keyHash(key), model) === 0;
+}
+
 /** The model that last answered for this key, or the best one listed (for display); '' if unknown. */
 export function lastResolvedGeminiModel(apiKey: string, prefer: GeminiPreference = 'lite'): string {
   const key = sanitizeApiKey(apiKey);
   if (!key) return '';
   const r = remembered(key, prefer)?.model;
   if (r) return r;
-  const listed = listCache.get(key);
-  return listed ? rankGeminiModels(listed, prefer)[0] ?? '' : '';
+  const listed = listCache.get(key) ?? modelRecord(key)?.models.map((x) => ({ name: x.name, supportedGenerationMethods: x.m }));
+  return listed?.length ? rankGeminiModels(listed, prefer)[0] ?? '' : '';
 }
 
 // ---------- Gemini: request building ----------
 
-/** Thinking level for the Interactions API: 'low' for Gemini 3 and newer and for aliases; none for 2.x. */
-export function interactionThinkingLevel(model: string): string | undefined {
+/** A thinking level Socius asks for: none (2.x models), 'minimal' or 'low'. */
+export type ThinkingLevel = 'minimal' | 'low' | undefined;
+
+/**
+ * Thinking level for a model and effort: none for Gemini 2.x; for Gemini 3 and newer (and aliases)
+ * 'minimal' when asked, or with 'auto' on Flash-Lite (fastest; these tasks need little reasoning), else 'low'.
+ */
+export function thinkingLevelFor(model: string, effort: ThinkingEffort = 'auto'): ThinkingLevel {
   const v = geminiModelVersion(model);
-  return v === 0 || v >= 3 ? 'low' : undefined;
+  if (!(v === 0 || v >= 3)) return undefined;
+  if (effort === 'minimal') return 'minimal';
+  if (effort === 'auto' && /flash-lite/i.test(model)) return 'minimal';
+  return 'low';
+}
+
+/** Thinking level for the Interactions API: 'low' for Gemini 3 and newer and for aliases; none for 2.x. */
+export function interactionThinkingLevel(model: string): ThinkingLevel {
+  return thinkingLevelFor(model, 'low');
 }
 
 /** generateContent `thinkingConfig`: Gemini 3 takes a level, 2.5 Flash a zero budget, 2.5 Pro its minimum. */
-export function geminiThinkingConfig(model: string): Record<string, unknown> | undefined {
+export function geminiThinkingConfig(model: string, level: ThinkingLevel = 'low'): Record<string, unknown> | undefined {
   const v = geminiModelVersion(model);
-  if (v >= 3) return { thinkingLevel: 'low' };
+  if (v >= 3) return { thinkingLevel: level ?? 'low' };
   if (v >= 2.5) return /pro/i.test(model) ? { thinkingBudget: 128 } : { thinkingBudget: 0 };
   return undefined;
 }
 
 /** Output tokens to add so that thinking cannot use up a small output limit. */
-function thinkingRoom(model: string, thinkingOff: boolean): number {
+function thinkingRoom(model: string, thinkingOff: boolean, level: ThinkingLevel = 'low'): number {
   const v = geminiModelVersion(model);
   if (thinkingOff) return 0;
+  if (level === 'minimal') return 256;
   return v === 0 || v >= 2.5 ? 1024 : 0;
 }
 
@@ -768,6 +941,8 @@ export interface InteractionOptions {
   maxTokens?: number;
   /** false: send no thinking level (after a model refused it). */
   thinking?: boolean;
+  /** The thinking effort to ask for (default: 'low' where supported). */
+  effort?: ThinkingEffort;
   /** false: omit `store: false` (after the service refused the field). */
   noStore?: boolean;
   system?: string;
@@ -781,9 +956,9 @@ export function buildInteractionRequest(cfg: GeminiConfig, input: unknown, o: In
   const body: Record<string, unknown> = { model, input };
   if (o.system) body.system_instruction = o.system;
   const gc: Record<string, unknown> = {};
-  const level = o.thinking === false ? undefined : interactionThinkingLevel(model);
+  const level = o.thinking === false ? undefined : o.effort ? thinkingLevelFor(model, o.effort) : interactionThinkingLevel(model);
   if (level) gc.thinking_level = level;
-  if (o.maxTokens) gc.max_output_tokens = o.maxTokens + thinkingRoom(model, false);
+  if (o.maxTokens) gc.max_output_tokens = o.maxTokens + thinkingRoom(model, !level, level);
   if (o.tools?.length) {
     body.tools = o.tools;
     if (o.toolChoice === 'none') gc.tool_choice = 'none';
@@ -804,16 +979,17 @@ export function buildInteractionRequest(cfg: GeminiConfig, input: unknown, o: In
 }
 
 /** The older generateContent endpoint (still used for "AIza" keys when Interactions is not usable). */
-export function buildGeminiRequest(cfg: GeminiConfig, prompt: string, opts: { stream: boolean; json?: boolean; maxTokens?: number; thinking?: boolean }): BuiltRequest {
+export function buildGeminiRequest(cfg: GeminiConfig, prompt: string, opts: { stream: boolean; json?: boolean; maxTokens?: number; thinking?: boolean; effort?: ThinkingEffort }): BuiltRequest {
   const name = geminiModelName(cfg.model);
   const model = encodeURIComponent(name);
   const url = `${GEMINI_BASE}/models/${model}:${opts.stream ? 'streamGenerateContent?alt=sse' : 'generateContent'}`;
   // Gemini 3 and newer: Google advises leaving temperature at its default.
   const generationConfig: Record<string, unknown> = geminiModelVersion(name) >= 3 ? {} : { temperature: 0.4 };
   if (opts.json) generationConfig.responseMimeType = 'application/json';
-  const thinking = opts.thinking === false ? undefined : geminiThinkingConfig(name);
+  const level: ThinkingLevel = opts.effort ? thinkingLevelFor(name, opts.effort) : 'low';
+  const thinking = opts.thinking === false ? undefined : geminiThinkingConfig(name, level);
   if (thinking) generationConfig.thinkingConfig = thinking;
-  if (opts.maxTokens) generationConfig.maxOutputTokens = opts.maxTokens + thinkingRoom(name, thinking?.thinkingBudget === 0);
+  if (opts.maxTokens) generationConfig.maxOutputTokens = opts.maxTokens + thinkingRoom(name, !thinking || thinking.thinkingBudget === 0, level);
   return {
     url,
     init: {
@@ -826,10 +1002,18 @@ export function buildGeminiRequest(cfg: GeminiConfig, prompt: string, opts: { st
 
 // ---------- Gemini: sending with fallbacks ----------
 
+/** How the request is built for a model: whether to send a thinking level, which one, and `store: false`. */
+export interface GeminiBuildOptions {
+  thinking: boolean;
+  noStore: boolean;
+  /** The thinking effort to ask for (resolve with thinkingLevelFor). */
+  effort: ThinkingEffort;
+}
+
 export interface GeminiCallSpec {
   stream: boolean;
-  interactions: (model: string, o: { thinking: boolean; noStore: boolean }) => BuiltRequest;
-  generateContent: (model: string, o: { thinking: boolean }) => BuiltRequest;
+  interactions: (model: string, o: GeminiBuildOptions) => BuiltRequest;
+  generateContent: (model: string, o: GeminiBuildOptions) => BuiltRequest;
 }
 
 export interface GeminiRunOptions {
@@ -838,6 +1022,10 @@ export interface GeminiRunOptions {
   timeoutMs?: number;
   trace?: AiAttempt[];
   onModelFallback?: (model: string, reason?: string) => void;
+  timing?: AiTiming;
+  effort?: ThinkingEffort;
+  /** Test hook / callers with their own clock: how to wait for a rate limit. */
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
 }
 
 export interface GeminiRunResult {
@@ -860,19 +1048,32 @@ function apiLevel(e: AiHttpError, api: GeminiApi): boolean {
   return api === 'interactions' && e.code === 'bad_model';
 }
 
-async function sendGemini(spec: GeminiCallSpec, api: GeminiApi, model: string, c: SendContext): Promise<Response> {
-  let thinking = !noThinking.has(model);
+/** Longest wait for a per-minute limit before a request (longer waits are not free-tier minute limits). */
+export const MAX_LIMIT_WAIT_MS = 65_000;
+
+async function sendGemini(spec: GeminiCallSpec, api: GeminiApi, model: string, c: SendContext & { key: string; effort: ThinkingEffort }): Promise<Response> {
+  const refused = thinkingRefused(c.key, model);
+  let thinking = refused !== 'any';
+  let effort: ThinkingEffort = refused === 'minimal' && c.effort !== 'low' ? 'low' : c.effort;
   let noStore = true;
   let retried = false;
   for (;;) {
-    const req = api === 'interactions' ? spec.interactions(model, { thinking, noStore }) : spec.generateContent(model, { thinking });
+    const req = api === 'interactions' ? spec.interactions(model, { thinking, noStore, effort }) : spec.generateContent(model, { thinking, noStore, effort });
     try {
+      noteRequest(keyHash(c.key), model);
       return await httpSend(req, { ...c, model, api });
     } catch (e) {
       const err = e as AiHttpError;
       if (err.code === 'thinking_unsupported' && thinking) {
-        thinking = false;
-        noThinking.add(model);
+        // 'minimal' refused: try 'low' before sending no level at all (which means the slower default).
+        if (thinkingLevelFor(model, effort) === 'minimal') {
+          effort = 'low';
+          noteThinkingRefused(c.key, model, 'minimal');
+        } else {
+          thinking = false;
+          noteThinkingRefused(c.key, model, 'any');
+        }
+        c.timing?.mark('retry', { model, note: 'thinking level refused' });
         continue;
       }
       if (err.code === 'field_unsupported' && api === 'interactions' && noStore && /store/i.test(err.detail ?? '')) {
@@ -881,7 +1082,10 @@ async function sendGemini(spec: GeminiCallSpec, api: GeminiApi, model: string, c
       }
       if ((err.code === 'overloaded' || (err.code === 'unavailable' && (err.httpStatus ?? 0) >= 500)) && !retried) {
         retried = true;
-        await sleep(Math.min(8000, Math.max(retryBaseMs, err.retryAfterMs ?? 0)), c.signal);
+        const wait = Math.min(8000, Math.max(retryBaseMs, err.retryAfterMs ?? 0));
+        c.timing?.mark('retry', { model, status: err.httpStatus, ms: wait, note: err.code });
+        c.timing?.setStage('retry');
+        await sleep(wait, c.signal);
         continue;
       }
       if (api === 'interactions' && ((err.httpStatus === 404 && !/model/i.test(err.detail ?? '')) || err.httpStatus === 405 || err.httpStatus === 501)) err.code = 'endpoint_missing';
@@ -915,43 +1119,79 @@ function summarise(failures: AiHttpError[], tried: string[], trace: AiAttempt[])
     apiStatus: last.apiStatus,
     reason: last.reason,
     daily: code === 'rate_limited' ? failures.every((f) => f.daily) : undefined,
+    perMinute: code === 'rate_limited' ? failures.some((f) => f.perMinute) : undefined,
     retryAfterMs: code === 'rate_limited' ? last.retryAfterMs : undefined,
+    limitPerMinute: code === 'rate_limited' ? last.limitPerMinute : undefined,
+    waited: failures.some((f) => f.waited) || undefined,
     zeroQuota: code === 'no_free_quota' || undefined,
   });
 }
 
 /**
+ * A per-minute limit (not a daily one, not "no free allowance") where the service said how long to
+ * wait or that it is a per-minute limit: waiting helps. (A bare 429 fails at once.)
+ */
+function minuteLimit(e: AiHttpError): boolean {
+  return e.code === 'rate_limited' && !e.daily && !e.zeroQuota && (e.retryAfterMs !== undefined || !!e.perMinute || !!e.limitPerMinute);
+}
+
+/**
  * Send a Gemini request, choosing the model and API: the typed model (or the best listed one), then up
  * to MAX_MODEL_TRIES models in all; Interactions first, generateContent as a fallback for keys it accepts.
- * Resolves with the successful response (not yet read).
+ * Requests are spaced to each model's learned per-minute limit, and a 429 that asks to retry within a
+ * minute is waited out once (with a countdown on `timing`). Resolves with the successful response (not yet read).
  */
 export async function geminiRun(cfg: GeminiConfig, spec: GeminiCallSpec, opts: GeminiRunOptions = {}): Promise<GeminiRunResult> {
   const key = sanitizeApiKey(cfg.apiKey);
   if (!key) throw new AiUnavailableError('not_configured', 'No Gemini key.');
   const trace = opts.trace ?? [];
-  const ctx: SendContext = { signal: opts.signal, timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, trace, where: 'generate' };
+  const timing = opts.timing;
+  const ctx = { signal: opts.signal, timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, trace, where: 'generate' as ErrorPlace, timing, stream: spec.stream, key, effort: opts.effort ?? 'auto' };
   const explicit = geminiModelName(cfg.model);
   const keyKind = geminiKeyKind(key);
   const prefer = opts.prefer ?? geminiPreference(cfg.model);
-  const queue: string[] = explicit ? [explicit] : await geminiCandidates(key, { signal: opts.signal, trace, prefer });
+  const scope = keyHash(key);
+  const sleeper = opts.sleep ?? limitSleep ?? undefined;
+  const wait = (ms: number, note: string) => (timing ? timing.waitFor(ms, note, opts.signal, sleeper) : (sleeper ?? sleep)(ms, opts.signal));
+  if (!explicit) timing?.setStage('choosing');
+  const queue: string[] = explicit ? [explicit] : await geminiCandidates(key, { signal: opts.signal, trace, prefer, timing });
   let listed = !explicit;
   const tried: string[] = [];
   const failures: AiHttpError[] = [];
+  let limitWaits = 0;
   while (tried.length < MAX_MODEL_TRIES) {
     if (!queue.length) {
       if (listed) break;
       listed = true;
       try {
-        queue.push(...(await geminiCandidates(key, { signal: opts.signal, trace, prefer })).filter((m) => !tried.includes(m)));
+        queue.push(...(await geminiCandidates(key, { signal: opts.signal, trace, prefer, timing })).filter((m) => !tried.includes(m)));
       } catch (e) {
         throw decorate(e, { tried, trace, keyKind });
       }
       if (!queue.length) break;
     }
-    const model = queue.shift()!;
-    tried.push(model);
-    // Interactions first, unless generateContent is the one that answered for this key last time.
-    const apis: GeminiApi[] = remembered(key, prefer)?.api === 'generateContent' ? ['generateContent', 'interactions'] : ['interactions', 'generateContent'];
+    let model = queue[0];
+    // Pacing: this model's learned per-minute limit is used up for now. With automatic choice, a
+    // long wait is avoided by using the next candidate if it can answer at once.
+    let pause = paceWaitMs(scope, model);
+    if (pause > 20_000 && !explicit) {
+      const alt = queue.slice(1).find((m) => paceWaitMs(scope, m) === 0 && !tried.includes(m));
+      if (alt) {
+        timing?.mark('fallback', { model: alt, note: `${model} is at its per-minute limit` });
+        queue.splice(queue.indexOf(alt), 1);
+        queue.unshift(alt);
+        model = alt;
+        pause = 0;
+      }
+    }
+    if (pause > 0 && pause <= MAX_LIMIT_WAIT_MS) {
+      await wait(pause, `${model} per-minute limit`);
+      clearBlock(scope, model);
+    }
+    queue.shift();
+    if (!tried.includes(model)) tried.push(model);
+    // Interactions first, unless generateContent is the one that answered for this key before.
+    const apis: GeminiApi[] = rememberedApi(key) === 'generateContent' ? ['generateContent', 'interactions'] : ['interactions', 'generateContent'];
     let modelErr: AiHttpError | null = null;
     for (const api of apis) {
       try {
@@ -968,6 +1208,29 @@ export async function geminiRun(cfg: GeminiConfig, spec: GeminiCallSpec, opts: G
       }
     }
     const err = modelErr!;
+    if (minuteLimit(err)) {
+      learnLimit(scope, model, { perMinute: err.limitPerMinute, retryAfterMs: err.retryAfterMs });
+      const ms = err.retryAfterMs ?? 20_000;
+      const alt = !explicit ? queue.find((m) => paceWaitMs(scope, m) === 0) : undefined;
+      if (alt && ms > 20_000) {
+        // Automatic choice: another model with room answers sooner than waiting a long time.
+        failures.push(err);
+        timing?.mark('fallback', { model: alt, note: `${model} answered 429 (retry in ${Math.ceil(ms / 1000)} s)` });
+        queue.splice(queue.indexOf(alt), 1);
+        queue.unshift(alt);
+        continue;
+      }
+      if (limitWaits < 2 && ms <= MAX_LIMIT_WAIT_MS) {
+        limitWaits++;
+        err.waited = true;
+        await wait(ms + 300, `${model} answered 429`);
+        clearBlock(scope, model);
+        queue.unshift(model);
+        tried.splice(tried.indexOf(model), 1);
+        continue;
+      }
+      throw decorate(err, { tried, trace, keyKind, waited: limitWaits > 0 || undefined });
+    }
     if (!modelLevel(err)) throw decorate(err, { tried, trace, keyKind });
     let bad = badModels.get(key);
     if (!bad) badModels.set(key, (bad = new Set()));
@@ -1228,10 +1491,10 @@ export async function askGemini(cfg: GeminiConfig, prompt: string, opts: HttpAsk
     { apiKey: key, model: cfg.model },
     {
       stream,
-      interactions: (model, o) => buildInteractionRequest({ apiKey: key, model }, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens, thinking: o.thinking, noStore: o.noStore }),
-      generateContent: (model, o) => buildGeminiRequest({ apiKey: key, model }, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens, thinking: o.thinking }),
+      interactions: (model, o) => buildInteractionRequest({ apiKey: key, model }, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens, thinking: o.thinking, noStore: o.noStore, effort: o.effort }),
+      generateContent: (model, o) => buildGeminiRequest({ apiKey: key, model }, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens, thinking: o.thinking, effort: o.effort }),
     },
-    { signal: opts.signal, timeoutMs: opts.timeoutMs, trace, onModelFallback: opts.onModelFallback, prefer: opts.prefer },
+    { signal: opts.signal, timeoutMs: opts.timeoutMs, trace, onModelFallback: opts.onModelFallback, prefer: opts.prefer, timing: opts.timing, effort: opts.effort },
   );
   opts.onModel?.(run.model);
   const info: AiErrorInfo = { model: run.model, api: run.api, tried: run.tried, trace, host: 'generativelanguage.googleapis.com' };
@@ -1325,7 +1588,7 @@ export async function askOpenAiCompatible(cfg: OpenAiConfig, prompt: string, opt
   const stream = !!opts.onText;
   const req = buildOpenAiRequest(cfg, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens });
   // A program on this computer may take minutes to load a model before its first byte: no time limit.
-  const ctx: SendContext = { signal: opts.signal, timeoutMs: opts.timeoutMs ?? (isLocalUrl(cfg.baseUrl) ? 0 : DEFAULT_TIMEOUT_MS), trace: opts.trace, where: 'chat', model: cfg.model.trim() };
+  const ctx: SendContext = { signal: opts.signal, timeoutMs: opts.timeoutMs ?? (isLocalUrl(cfg.baseUrl) ? 0 : DEFAULT_TIMEOUT_MS), trace: opts.trace, where: 'chat', model: cfg.model.trim(), timing: opts.timing, stream };
   const info: AiErrorInfo = { model: cfg.model.trim(), host: hostOf(req.url), trace: opts.trace };
   let res: Response;
   try {

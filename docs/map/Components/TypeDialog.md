@@ -2,13 +2,13 @@
 id: "src/features/data/VarDialogs.tsx#TypeDialog"
 type: component
 file: src/features/data/VarDialogs.tsx
-line: 57
+line: 59
 area: features/data
 ---
 
 # <TypeDialog>
 
-*React component* · defined in [[VarDialogs.tsx]] (line 57) · area [[features - data|features/data]]
+*React component* · defined in [[VarDialogs.tsx]] (line 59) · area [[features - data|features/data]]
 
 - **Exported:** yes
 

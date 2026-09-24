@@ -19,4 +19,5 @@ area: platform
 ## Checked by
 - [[platform/ai.ts#aiErrorText|aiErrorText()]]
 - [[ai-http.ts#apiLevel|apiLevel()]]
+- [[drivers.ts#geminiTurn|geminiTurn()]]
 - [[ai-http.ts#sendGemini|sendGemini()]]

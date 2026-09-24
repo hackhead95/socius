@@ -1,7 +1,7 @@
 // Case-level operations: Select Cases (filter or delete), Sort Cases, Weight Cases.
 
 import type { Dataset, Variable } from '../../core/types';
-import { isUserMissing } from '../../core/data';
+import { isUserMissing, uniqueVarName } from '../../core/data';
 import { compileExpression } from './evaluate';
 import { ExprError } from './expr';
 import { addVariable, bump, fmtN, newNumericVar, plural, replaceVariable, takeRows, type TransformResult } from './dsops';
@@ -209,23 +209,28 @@ export function selectCasesTransform(ds: Dataset, method: SelectMethod, output: 
   };
   let next: Dataset;
   let varId: string;
+  let fname: string;
   if (existing && existing.type === 'numeric') {
     next = replaceVariable(ds, { ...existing, ...def, id: existing.id, name: existing.name, type: 'numeric' }, sel);
     varId = existing.id;
+    fname = existing.name;
   } else {
-    const nv = newNumericVar(existing ? `${FILTER_VAR_NAME}1` : FILTER_VAR_NAME, def);
+    // filter_$ is taken by a string variable: use the next free name (never a duplicate).
+    fname = existing ? uniqueVarName(ds, FILTER_VAR_NAME) : FILTER_VAR_NAME;
+    const nv = newNumericVar(fname, def);
     next = addVariable(ds, nv, sel);
     varId = nv.id;
   }
   next = { ...next, filterVarId: varId };
+  const rename = (line: string) => line.split(FILTER_VAR_NAME).join(fname);
   const syntax = lines(
     'USE ALL.',
     ...d.syntaxPrefix,
-    ...(exactSyntax ?? [`COMPUTE filter_$=${d.filterExpr.startsWith('(') ? d.filterExpr : `(${d.filterExpr})`}.`]),
-    `VARIABLE LABELS filter_$ ${q(label)}.`,
-    "VALUE LABELS filter_$ 0 'Not selected' 1 'Selected'.",
-    'FORMATS filter_$ (F1.0).',
-    'FILTER BY filter_$.',
+    ...(exactSyntax ? exactSyntax.map(rename) : [`COMPUTE ${fname}=${d.filterExpr.startsWith('(') ? d.filterExpr : `(${d.filterExpr})`}.`]),
+    `VARIABLE LABELS ${fname} ${q(label)}.`,
+    `VALUE LABELS ${fname} 0 'Not selected' 1 'Selected'.`,
+    `FORMATS ${fname} (F1.0).`,
+    `FILTER BY ${fname}.`,
     'EXECUTE.',
   );
   return {

@@ -23,4 +23,5 @@ area: app
 - [[Graphs]]
 
 ## Tested by
+- [[coding-output-fixes.spec.ts]] · menu label
 - [[search.test.ts]] · menu label

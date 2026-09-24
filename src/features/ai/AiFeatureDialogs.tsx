@@ -194,19 +194,42 @@ export function AiChip() {
   }, [open]);
   const name = shortProviderName(st);
   const chosenNotReady = st.provider && st.ready === 'no';
-  const statusText = st.ready === 'yes' ? `AI help: ready (${st.label})` : st.ready === 'unknown' ? 'AI help: checking' : chosenNotReady ? `AI help: ${st.label} is not ready` : 'AI help: not set up';
+  // "Ready" only once a Test connection or an AI request worked with this set-up (UI-003); a complete
+  // set-up that was never tried is "not tested", one whose last try failed is "not connected".
+  const conn = st.ready === 'yes' ? st.connection : null;
+  const chipState = st.ready !== 'yes' ? st.ready : conn === 'ok' ? 'yes' : conn === 'failed' ? 'failed' : 'untested';
+  const statusText =
+    chipState === 'yes'
+      ? `AI help: ready (${st.label})`
+      : chipState === 'failed'
+        ? `AI help: not connected (${st.label})`
+        : chipState === 'untested'
+          ? `AI help: set up, not tested yet (${st.label})`
+          : st.ready === 'unknown'
+            ? 'AI help: checking'
+            : chosenNotReady
+              ? `AI help: ${st.label} is not ready`
+              : 'AI help: not set up';
   return (
     <div className="ai-chip-wrap" ref={ref}>
-      <button ref={btnRef} type="button" className="ai-chip" data-ready={st.ready} aria-haspopup="dialog" aria-expanded={open} aria-label={statusText} title={statusText} onClick={() => setOpen((o) => !o)}>
+      <button ref={btnRef} type="button" className="ai-chip" data-ready={chipState} aria-haspopup="dialog" aria-expanded={open} aria-label={statusText} title={statusText} onClick={() => setOpen((o) => !o)}>
         <span className="ai-chip-dot" aria-hidden="true" />
         AI
-        <span className="ai-chip-provider">{st.ready === 'yes' ? name : st.ready === 'unknown' ? '' : 'not set up'}</span>
+        <span className="ai-chip-provider">{chipState === 'yes' ? name : chipState === 'failed' ? `${name}, not connected` : chipState === 'untested' ? `${name}, not tested` : st.ready === 'unknown' ? '' : 'not set up'}</span>
       </button>
       {open ? (
         <div className="ai-pop" role="dialog" aria-label="AI help">
           <p className="ai-pop-status">
-            {st.ready === 'yes' ? (
+            {chipState === 'yes' ? (
               <>Ready: <b>{st.label}</b>. Nothing is sent until you click a button that asks the AI.</>
+            ) : chipState === 'failed' ? (
+              <>
+                <b>Not connected:</b> the last connection test or request with <b>{st.label}</b> failed. {st.connectionError} Open settings and click Test connection after fixing it.
+              </>
+            ) : chipState === 'untested' ? (
+              <>
+                <b>{st.label}</b> is set up but not tested yet. Click Test connection in settings to check it (or just try a feature).
+              </>
             ) : chosenNotReady ? (
               <>The AI option you chose (<b>{st.label}</b>) is not ready yet. Finish its set-up in settings.</>
             ) : (
@@ -217,7 +240,7 @@ export function AiChip() {
           <div className="ai-pop-foot">
             <button
               type="button"
-              className={`btn btn-sm ${st.ready === 'yes' ? '' : 'btn-primary'}`}
+              className={`btn btn-sm ${chipState === 'yes' ? '' : 'btn-primary'}`}
               onClick={() => {
                 setOpen(false);
                 openAiSettings();

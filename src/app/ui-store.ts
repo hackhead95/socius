@@ -1,5 +1,6 @@
 // App-shell UI state that is not part of the saved project: theme, sidebar, cross-view
 // navigation requests, the global confirm dialog, and "modified since saved" tracking.
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import type { Dataset } from '../core/types';
 import { readPref, writePref } from '../features/project/persistence';
@@ -27,6 +28,11 @@ interface UiState {
   setTheme: (t: ThemePref) => void;
   sidebarOpen: boolean;
   setSidebarOpen: (b: boolean) => void;
+  /** Narrow windows (below NARROW_PX): the variable list is an overlay drawer, closed until asked for. */
+  drawerOpen: boolean;
+  setDrawerOpen: (b: boolean) => void;
+  /** View > Variable list: the side panel on wide windows, the drawer on narrow ones. */
+  toggleVariableList: () => void;
   /** "You are exploring sample data" banner. */
   sampleBanner: boolean;
   setSampleBanner: (b: boolean) => void;
@@ -85,6 +91,12 @@ export const useUi = create<UiState>((set, get) => ({
     writePref('sidebar', b ? null : 'closed');
     set({ sidebarOpen: b });
   },
+  drawerOpen: false,
+  setDrawerOpen: (b) => (get().drawerOpen === b ? undefined : set({ drawerOpen: b })),
+  toggleVariableList: () => {
+    if (isNarrow()) get().setDrawerOpen(!get().drawerOpen);
+    else get().setSidebarOpen(!get().sidebarOpen);
+  },
   sampleBanner: false,
   setSampleBanner: (b) => set({ sampleBanner: b }),
   cleanDataset: null,
@@ -131,4 +143,32 @@ export function applyTheme(t: ThemePref) {
   } catch {
     /* no DOM */
   }
+}
+
+/** Below this width the variable list does not fit beside the data: it opens as a drawer. */
+export const NARROW_PX = 900;
+const NARROW_QUERY = `(max-width: ${NARROW_PX}px)`;
+
+export function isNarrow(): boolean {
+  try {
+    return typeof window !== 'undefined' && !!window.matchMedia?.(NARROW_QUERY).matches;
+  } catch {
+    return false;
+  }
+}
+
+function subscribeNarrow(fn: () => void): () => void {
+  try {
+    const mq = window.matchMedia?.(NARROW_QUERY);
+    if (!mq) return () => undefined;
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  } catch {
+    return () => undefined;
+  }
+}
+
+/** True while the window is narrower than NARROW_PX (re-renders when that changes). */
+export function useNarrow(): boolean {
+  return useSyncExternalStore(subscribeNarrow, isNarrow, () => false);
 }

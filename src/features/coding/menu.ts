@@ -33,3 +33,13 @@ export const codingMenuItems: CodingMenuItem[] = [
   { id: 'export-report', label: 'Qualitative report...' },
   { id: 'export-codebook', label: 'Codebook export and import...' },
 ];
+
+/** The Text coding menu's label for a command id (the toolbar menus reuse these words). */
+export function codingMenuLabel(id: string): string {
+  const it = codingMenuItems.find((c) => c.id === id);
+  if (!it) throw new Error(`No Text coding menu item "${id}"`);
+  return it.label;
+}
+
+/** Top-level menubar name of the menu above (src/app/menus.ts). */
+export const CODING_MENU_NAME = 'Text coding';

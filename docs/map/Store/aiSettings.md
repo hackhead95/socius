@@ -12,9 +12,11 @@ area: platform
 ## Keys and who touches them
 | key | written by | read by |
 |---|---|---|
-| [[aiSettings/gemini\|gemini]] | 7 ([[features.test.ts]], [[ai-diagnose.test.ts]], [[ai.test.ts]], [[GeminiSection\|<GeminiSection>]], …) | 9 |
-| [[aiSettings/openai\|openai]] | 6 ([[ai-diagnose.test.ts]], [[ai.test.ts]], [[AiSettingsDialog\|<AiSettingsDialog>]], [[OpenAiSection\|<OpenAiSection>]], …) | 11 |
-| [[provider]] | 5 ([[features.test.ts]], [[ai-diagnose.test.ts]], [[ai.test.ts]], [[webllm.test.ts]], …) | 1 |
+| [[aiSettings/gemini\|gemini]] | 8 ([[features.test.ts]], [[ai-diagnose.test.ts]], [[ai-keys.test.ts]], [[ai.test.ts]], …) | 10 |
+| [[notice]] | 2 ([[GeminiSection\|<GeminiSection>]], [[platform/ai.ts#dismissAiNotice\|dismissAiNotice()]]) | 2 |
+| [[aiSettings/openai\|openai]] | 7 ([[ai-diagnose.test.ts]], [[ai.test.ts]], [[AiSettingsDialog\|<AiSettingsDialog>]], [[OpenAiSection\|<OpenAiSection>]], …) | 12 |
+| [[provider]] | 7 ([[features.test.ts]], [[ai-diagnose.test.ts]], [[ai-keys.test.ts]], [[ai.test.ts]], …) | 2 |
+| [[remember]] | 3 ([[ai-keys.test.ts]], [[ai.test.ts]], [[platform/ai.ts#setRememberKey\|setRememberKey()]]) | 4 |
 | [[aiSettings/webllm\|webllm]] | 1 ([[WebLlmSetup\|<WebLlmSetup>]]) | 3 |
 
 ## Actions
@@ -23,8 +25,10 @@ area: platform
 
 ## State keys
 - [[aiSettings/gemini|aiSettings.gemini]]
+- [[notice|aiSettings.notice]]
 - [[aiSettings/openai|aiSettings.openai]]
 - [[provider|aiSettings.provider]]
+- [[remember|aiSettings.remember]]
 - [[aiSettings/webllm|aiSettings.webllm]]
 
 ## Used by

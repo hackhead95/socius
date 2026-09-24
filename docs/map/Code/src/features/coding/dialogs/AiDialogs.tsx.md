@@ -23,7 +23,7 @@ area: features/coding
 - [[ui.tsx]] · value
 - [[coding/ai.ts]] · value
 - [[palette.ts]] · value
-- [[text.ts]] · value
+- [[coding/text.ts]] · value
 - [[platform/ai.ts]] · value
 - [[Modal.tsx]] · value
 
@@ -38,7 +38,7 @@ toggle() (line 334)
 ### AiCodebookDialog
 *component* · line 21 · exported · note: [[AiCodebookDialog|<AiCodebookDialog>]]
 - Renders: [[AiLoadProgress|<AiLoadProgress>]], [[AiProviderNote|<AiProviderNote>]], [[Modal|<Modal>]]
-- Calls: [[coding/actions.ts#replaceCodebook|replaceCodebook()]], [[coding/ai.ts#buildCodebookPrompt|buildCodebookPrompt()]], [[coding/ai.ts#parseCodebookSuggestions|parseCodebookSuggestions()]], [[coding/ai.ts#spreadSample|spreadSample()]], [[coding/hooks.ts#plural|plural()]], [[coding/hooks.ts#toast|toast()]], [[core/types.ts#newId|newId()]], [[palette.ts#nextCodeColor|nextCodeColor()]], [[platform/ai.ts#aiErrorMessage|aiErrorMessage()]], [[platform/ai.ts#aiErrorText|aiErrorText()]], [[platform/ai.ts#aiPromptBudget|aiPromptBudget()]], [[platform/ai.ts#askAIJson|askAIJson()]], [[text.ts#splitParagraphs|splitParagraphs()]], [[useAiStatus|useAiStatus()]], [[useStore]]
+- Calls: [[coding/actions.ts#replaceCodebook|replaceCodebook()]], [[coding/ai.ts#buildCodebookPrompt|buildCodebookPrompt()]], [[coding/ai.ts#parseCodebookSuggestions|parseCodebookSuggestions()]], [[coding/ai.ts#spreadSample|spreadSample()]], [[coding/hooks.ts#plural|plural()]], [[coding/hooks.ts#toast|toast()]], [[coding/text.ts#splitParagraphs|splitParagraphs()]], [[core/types.ts#newId|newId()]], [[palette.ts#nextCodeColor|nextCodeColor()]], [[platform/ai.ts#aiErrorMessage|aiErrorMessage()]], [[platform/ai.ts#aiErrorText|aiErrorText()]], [[platform/ai.ts#aiPromptBudget|aiPromptBudget()]], [[platform/ai.ts#askAIJson|askAIJson()]], [[useAiStatus|useAiStatus()]], [[useStore]]
 - Reads: [[useStore/coding|useStore.coding]]
 - Rendered by: [[CodingDialog|<CodingDialog>]]
 

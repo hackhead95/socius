@@ -2,10 +2,12 @@
 // SPSS parameterisation: logit P(Y <= j) = threshold_j - (location), so a positive location
 // estimate means higher outcome categories become more likely.
 
+import { ciOption, confLevel, labelOf, levelText } from '../text';
 import type { Dataset, Variable } from '../../core/types';
 import type { OptionValues, ProcedureDef, SlotValues } from '../../core/procedure';
 import type { Cell, OutputBlock, OutputTable } from '../../core/output';
-import { categoryLabel, requireVariable } from '../../core/data';
+import { selMissing } from '../core/common';
+import { requireVariable } from '../../core/data';
 import { chi2Sf } from '../../lib/stats/distributions';
 import { pseudoR2, screenCollinear } from '../../lib/stats/logistic';
 import { cumulativeNullLogLik, fitCumulativeLogit, ordinalGoodnessOfFit, waldCI } from '../../lib/stats/ordinal';
@@ -41,9 +43,10 @@ import {
   slot,
   syntaxPreamble,
   textBlock,
-  textName,
   type ReferenceChoice,
   type Term,
+  colProse,
+  proseNamer,
 } from './common';
 
 interface Col {
@@ -81,7 +84,7 @@ export const ordinalRegression: ProcedureDef = {
     },
     { key: 'parallel', label: 'Test of parallel lines', type: 'checkbox', default: true, group: 'Output' },
     { key: 'gof', label: 'Goodness-of-fit statistics', type: 'checkbox', default: true, group: 'Output' },
-    { key: 'confLevel', label: 'Confidence level (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Output' },
+    ciOption('confLevel', 'Confidence level (%)', 'Output'),
     { key: 'maxIter', label: 'Maximum iterations', type: 'number', default: 100, min: 5, max: 1000, step: 5, group: 'Output' },
   ],
   validate: (ds, v) => {
@@ -106,7 +109,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const reference = optStr<ReferenceChoice>(opts, 'reference', 'first');
   const showParallel = optBool(opts, 'parallel', true);
   const showGof = optBool(opts, 'gof', true);
-  const confPct = Math.min(Math.max(optNum(opts, 'confLevel', 95), 50), 99.9);
+  const confPct = confLevel(opts, 'confLevel', 'Confidence level (%)') * 100;
   const maxIter = Math.round(optNum(opts, 'maxIter', 100));
 
   const depVar = requireVariable(ds, depId);
@@ -135,7 +138,8 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   const fit = fitCumulativeLogit(y, J, X, w, { maxIter });
   const ll0 = cumulativeNullLogLik(y, J, w);
-  const chi = -2 * ll0 - fit.m2ll;
+  // The likelihood-ratio statistic cannot be negative (the null model is nested); a tiny negative value is rounding.
+  const chi = Math.max(0, -2 * ll0 - fit.m2ll);
   const pModel = chi2Sf(chi, q);
   const pr = pseudoR2(ll0, fit.logLik, W);
   const nPatterns = countPatterns(X, y.length);
@@ -147,7 +151,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   if (separated) {
     if (fit.singular) warnings.push(`${HESSIAN_SINGULARITY_WARNING} The procedure continues despite this warning; the results shown are based on the last iteration.`);
     const usedTerms = terms.filter((t) => cols.some((c) => c.term === t));
-    const catLab = (j: number) => categoryLabel(depVar, depLevels[j].value);
+    const catLab = (j: number) => labelOf(depVar, depLevels[j].value);
     const cells = emptyOutcomeCells(usedTerms, y, J, w)
       .map((c) => ({ c, only: [...Array(J).keys()].filter((j) => !c.empty.includes(j)) }))
       .filter(({ only }) => only.length === 1 && (only[0] === 0 || only[0] === J - 1));
@@ -179,7 +183,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   } else if (!fit.converged)
     warnings.push(`The model did not converge within ${maxIter} iterations. Estimates are unreliable; this usually means sparse categories. Merge rare outcome or predictor categories, or allow more iterations.`);
   const factorTerms = terms.filter((t) => t.kind === 'factor' && t.cols.length > 0);
-  blocks.push(tbl(marginalCaseSummary(depVar, depLevels, factorTerms, sel, nPatterns)));
+  blocks.push(tbl(marginalCaseSummary(depVar, depLevels, factorTerms, sel, nPatterns, selMissing(ds, sel))));
   blocks.push(
     tbl({
       title: 'Model Fitting Information',
@@ -227,7 +231,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const conf = confPct / 100;
   {
     const header: Cell[][] = [
-      [hcell('', { colSpan: 2, rowSpan: 2 }), hcell('Estimate', { rowSpan: 2 }), hcell('Std. Error', { rowSpan: 2 }), hcell('Wald', { rowSpan: 2 }), hcell('df', { rowSpan: 2 }), hcell('Sig.', { rowSpan: 2 }), hcell(`${confPct.toFixed(0)}% Confidence Interval`, { colSpan: 2 })],
+      [hcell('', { colSpan: 2, rowSpan: 2 }), hcell('Estimate', { rowSpan: 2 }), hcell('Std. Error', { rowSpan: 2 }), hcell('Wald', { rowSpan: 2 }), hcell('df', { rowSpan: 2 }), hcell('Sig.', { rowSpan: 2 }), hcell(`${levelText(confPct / 100)}% Confidence Interval`, { colSpan: 2 })],
       [hcell('Lower Bound'), hcell('Upper Bound')],
     ];
     let anyMarked = false;
@@ -240,10 +244,10 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
         seCell.mark = 'b';
         anyMarked = true;
       }
-      return [cell(label, 'text'), coefCell(est), seCell, cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1)), coefCell(lo), coefCell(hi)];
+      return [cell(label, 'text'), coefCell(est, 'coef', se), seCell, cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1)), coefCell(lo), coefCell(hi)];
     };
     const thrRows: Cell[][] = [];
-    for (let j = 0; j < J - 1; j++) thrRows.push(paramRow(`[${depVar.name} = ${categoryLabel(depVar, depLevels[j].value)}]`, j));
+    for (let j = 0; j < J - 1; j++) thrRows.push(paramRow(`[${depVar.name} = ${labelOf(depVar, depLevels[j].value)}]`, j));
     const locRows: Cell[][] = [];
     let anyRedundant = false;
     for (const t of terms) {
@@ -252,11 +256,11 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
         for (const lv of t.levels ?? []) {
           if (lv.value === t.refValue) {
             anyRedundant = true;
-            locRows.push([cell(`[${t.variable.name} = ${categoryLabel(t.variable, lv.value)}]`, 'text'), cell(0, 'coef', { mark: 'a' }), cell(null), cell(null), cell(0, 'int'), cell(null), cell(null), cell(null)]);
+            locRows.push([cell(`[${t.variable.name} = ${labelOf(t.variable, lv.value)}]`, 'text'), cell(0, 'coef', { mark: 'a' }), cell(null), cell(null), cell(0, 'int'), cell(null), cell(null), cell(null)]);
             continue;
           }
           const j = idx.find((jj) => cols[jj].term.levelValues[cols[jj].level] === lv.value);
-          if (j !== undefined) locRows.push(paramRow(`[${t.variable.name} = ${categoryLabel(t.variable, lv.value)}]`, J - 1 + j));
+          if (j !== undefined) locRows.push(paramRow(`[${t.variable.name} = ${labelOf(t.variable, lv.value)}]`, J - 1 + j));
         }
       } else for (const j of idx) locRows.push(paramRow(cols[j].name, J - 1 + j));
     }
@@ -318,10 +322,15 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   for (const t of notes) blocks.push(textBlock('note', t));
 
   // Interpretation
-  const depText = textName(depVar);
+  // One naming convention for every sentence: labels only if all the variables have usable labels.
+  const nm = proseNamer([depVar, ...terms.map((t) => t.variable)]);
+  const depText = nm(depVar);
   const ip: string[] = [];
+  const modelTestable = Number.isFinite(pModel) && q > 0;
   ip.push(
-    pModel < 0.05
+    !modelTestable
+      ? 'No predictor could be estimated (constant or collinear predictors are left out), so the model cannot be compared with a model with thresholds only.'
+      : pModel < 0.05
       ? `The model with predictors fits significantly better than a model with thresholds only (${fmtP(pModel)}); Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`
       : `The model with predictors does not fit significantly better than a model with thresholds only (${fmtP(pModel)}).`,
   );
@@ -337,21 +346,23 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
       return;
     }
     const change = or >= 1 ? `${num(or, 2)} times the odds` : `${num(or, 2)} times the odds (${((1 - or) * 100).toFixed(0)}% lower odds)`;
-    if (c.term.kind === 'factor') sig.push(`compared with ${c.term.variable.name} = ${c.term.refLabel}, cases in the "${c.term.levelLabels[c.level]}" group have ${change} of being in a higher category of ${depText} (${fmtP(pv)})`);
-    else sig.push(`each one-unit increase in ${textName(c.term.variable)} multiplies the odds of being in a higher category of ${depText} by ${num(or, 2)} (${fmtP(pv)})`);
+    if (c.term.kind === 'factor') sig.push(`compared with ${nm(c.term.variable)} = ${c.term.refLabel}, cases in the "${c.term.levelLabels[c.level]}" group have ${change} of being in a higher category of ${depText} (${fmtP(pv)})`);
+    else sig.push(`each one-unit increase in ${nm(c.term.variable)} multiplies the odds of being in a higher category of ${depText} by ${num(or, 2)} (${fmtP(pv)})`);
   });
   sig.forEach((s, i) => ip.push(i === 0 && q > 1 ? `Holding the other predictors constant, ${s}.` : `${capitalize(s)}.`));
-  if (nonsig.length) ip.push(`Not significantly related to ${depText} (p ≥ .05): ${listText(describeCols(nonsig))}.`);
+  if (nonsig.length) ip.push(`Not significantly related to ${depText} (p ≥ .05): ${listText(describeCols(nonsig, nm))}.`);
   if (anyUnstable) ip.push('Estimates affected by separation (marked b in the Parameter Estimates table) are left out of this summary.');
   if (J > 2) {
-    const l0 = categoryLabel(depVar, depLevels[0].value), l1 = categoryLabel(depVar, depLevels[1].value);
+    const l0 = labelOf(depVar, depLevels[0].value), l1 = labelOf(depVar, depLevels[1].value);
     ip.push(`The odds ratios (exp of the location estimates) apply at every cut-point of the outcome: above "${l0}" versus at it, above "${l1}" versus at or below it, and so on.`);
   }
   blocks.push(textBlock('interpretation', ip.join(' ')));
 
   const apa: string[] = [
-    `An ordinal logistic regression (proportional odds, logit link) was conducted to predict ${depText} from ${listText(terms.map((t) => t.variable.name))}. ` +
-      `The final model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the thresholds-only model, χ²(${q}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`,
+    `An ordinal logistic regression (proportional odds, logit link) was conducted to predict ${depText} from ${listText(terms.map((t) => nm(t.variable)))}. ` +
+      (modelTestable
+        ? `The final model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the thresholds-only model, χ²(${q}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`
+        : 'No predictor could be estimated, so the model was not tested against the thresholds-only model.'),
   ];
   if (Number.isFinite(parallelP)) apa.push(`The assumption of proportional odds was ${parallelP < 0.05 ? 'not ' : ''}supported by the test of parallel lines, ${fmtP(parallelP)}.`);
   const sigApa = cols
@@ -359,7 +370,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     .filter(({ r }) => !isUnstable(r) && chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1) < 0.05)
     .map(({ c, r }) => {
       const [lo, hi] = waldCI(fit.params[r], fit.se[r], conf);
-      return `${c.name} (b = ${num(fit.params[r], 2)}, SE = ${num(fit.se[r], 2)}, OR = ${num(Math.exp(fit.params[r]), 2)}, ${confPct.toFixed(0)}% CI [${num(Math.exp(lo), 2)}, ${num(Math.exp(hi), 2)}], ${fmtP(chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1))})`;
+      return `${colProse(c, nm)} (b = ${num(fit.params[r], 2)}, SE = ${num(fit.se[r], 2)}, OR = ${num(Math.exp(fit.params[r]), 2)}, ${levelText(confPct / 100)}% CI [${num(Math.exp(lo), 2)}, ${num(Math.exp(hi), 2)}], ${fmtP(chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1))})`;
     });
   if (sigApa.length) apa.push(`Significant predictors were ${listText(sigApa)}.`);
   blocks.push(textBlock('apa', apa.join(' ')));
@@ -378,7 +389,7 @@ function buildSyntax(ds: Dataset, depVar: Variable, terms: Term[], o: { showPara
   if (o.showParallel) print.push('TPARALLEL');
   lines.push(
     `PLUM ${depVar.name} WITH ${withVars.join(' ')}`,
-    `  /CRITERIA=CIN(${Number(o.confPct.toFixed(1))}) DELTA(0) LCONVERGE(0) MXITER(${o.maxIter}) MXSTEP(5) PCONVERGE(1.0E-6) SINGULAR(1.0E-8)`,
+    `  /CRITERIA=CIN(${levelText(o.confPct / 100)}) DELTA(0) LCONVERGE(0) MXITER(${o.maxIter}) MXSTEP(5) PCONVERGE(1.0E-6) SINGULAR(1.0E-8)`,
     '  /LINK=LOGIT',
     `  /PRINT=${print.join(' ')}.`,
   );

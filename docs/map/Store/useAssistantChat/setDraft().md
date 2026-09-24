@@ -18,6 +18,7 @@ area: features/assistant
 ## Called by
 - [[AssistantRoot|<AssistantRoot>]] · alias
 - [[Composer|<Composer>]] · selector
+- [[Components/Empty|<Empty>]] · getState
 
 ## Store
 - [[useAssistantChat]]

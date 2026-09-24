@@ -38,8 +38,16 @@ area: procedures
 - [[core/data.ts#selectCases|selectCases()]]
 - [[core/data.ts#varDisplayName|varDisplayName()]]
 
+## Uses
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
+- [[procedures/text.ts#labelOf|labelOf()]] · procedure helper
+- [[procedures/text.ts#nonEmpty|nonEmpty()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
+
 ## Tested by
 - [[graphs.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 
 ## Generates SPSS syntax
 - [[BEGIN]]

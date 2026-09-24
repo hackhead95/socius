@@ -2,13 +2,13 @@
 id: "src/features/charts/common.tsx#TipRow"
 type: component
 file: src/features/charts/common.tsx
-line: 170
+line: 174
 area: features/charts
 ---
 
 # <TipRow>
 
-*React component* · defined in [[charts/common.tsx]] (line 170) · area [[features - charts|features/charts]]
+*React component* · defined in [[charts/common.tsx]] (line 174) · area [[features - charts|features/charts]]
 
 > Tooltip row: value first (strong), then label; keyed by a short line of the series colour.
 

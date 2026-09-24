@@ -3,7 +3,7 @@
 import type { Column, Dataset, ValueLabel, Variable } from '../../core/types';
 import { newId } from '../../core/types';
 import { activeCaseMask, caseWeights, isMissingValue, isUserMissing, uniqueVarName, validateVarName } from '../../core/data';
-import { addVariable, fmtN, newNumericVar, replaceVariable, suggestDecimals, type TransformResult } from './dsops';
+import { addVariable, fmtN, maxOf, minOf, newNumericVar, replaceVariable, suggestDecimals, type TransformResult } from './dsops';
 import { matchesFrom, type RecodeFrom } from './recode';
 import { lines, sv, valueLabelsSyntax, variableLabelSyntax, varList } from './syntax';
 
@@ -29,7 +29,7 @@ export function detectScaleRange(ds: Dataset, v: Variable): ScaleRange | null {
   const labelled = v.valueLabels
     .map((l) => l.value)
     .filter((x): x is number => typeof x === 'number' && !isUserMissing(v.missing, x));
-  if (labelled.length >= 2) return { min: Math.min(...labelled), max: Math.max(...labelled), source: 'labels' };
+  if (labelled.length >= 2) return { min: minOf(labelled), max: maxOf(labelled), source: 'labels' };
   const col = ds.columns[v.id] as Float64Array;
   let min = Infinity, max = -Infinity;
   for (let i = 0; i < col.length; i++) {

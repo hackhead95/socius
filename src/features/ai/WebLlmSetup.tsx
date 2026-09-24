@@ -4,8 +4,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { aiErrorText, getAiSettings, refreshAiStatus, saveAiSettings } from '../../platform/ai';
 import {
-  WEBLLM_MODELS, deleteWebLlmModel, describeWebLlmProgress, detectWebGpu, deviceMemoryGB, prepareWebLlm, requestPersistentStorage, storageFreeMB, suggestSmallerModel, type WebGpuStatus,
+  WEBLLM_MODELS, deleteWebLlmModel, deleteWebLlmModelId, describeWebLlmProgress, detectWebGpu, deviceMemoryGB, modelDownloadBytes, prepareWebLlm, requestPersistentStorage, resolveModelId, storageFreeMB, suggestSmallerModel,
+  type WebGpuStatus,
 } from '../../platform/ai-webllm';
+import { OPENAI_PRESETS } from '../../platform/ai';
+import { checkSpaceFor, formatBytes, listWebLlmStorage, type SpaceCheck, type StoredModel } from '../../platform/ai-storage';
+import { StorageManager } from './StorageManager';
 import { detectBrowser, detectOs } from '../../platform/ai-local';
 import { useAiStatus, useWebLlmState } from './hooks';
 import './ai-local.css';
@@ -45,11 +49,20 @@ export function WebLlmSetup() {
   const [gpu, setGpu] = useState<WebGpuStatus | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [freeMB, setFreeMB] = useState<number | null>(null);
+  const [space, setSpace] = useState<SpaceCheck | null>(null);
+  const [stored, setStored] = useState<StoredModel[]>([]);
+  const [storageKey, setStorageKey] = useState(0);
   const abort = useRef<AbortController | null>(null);
 
+  const refreshStorage = () => {
+    void storageFreeMB().then(setFreeMB);
+    void listWebLlmStorage().then((l) => setStored(l.models));
+    setStorageKey((k) => k + 1);
+  };
   useEffect(() => {
     let alive = true;
     void storageFreeMB().then((m) => alive && setFreeMB(m));
+    void listWebLlmStorage().then((l) => alive && setStored(l.models));
     return () => {
       alive = false;
     };
@@ -69,6 +82,14 @@ export function WebLlmSetup() {
     const ctrl = new AbortController();
     abort.current = ctrl;
     setErr(null);
+    setSpace(null);
+    // Never fill the browser's storage (a full quota also stops autosave): check the room first.
+    const id = await resolveModelId(s.webllm.model);
+    const check = await checkSpaceFor(id, modelDownloadBytes(id));
+    if (!check.ok) {
+      setSpace(check);
+      return;
+    }
     void requestPersistentStorage();
     try {
       await prepareWebLlm(s.webllm.model, ctrl.signal);
@@ -78,7 +99,15 @@ export function WebLlmSetup() {
       // The 16-bit check may have changed during loading.
       void detectWebGpu().then(setGpu);
       void refreshAiStatus();
+      refreshStorage();
     }
+  };
+
+  const deleteOther = async (m: StoredModel) => {
+    await deleteWebLlmModelId(m.id).catch(() => undefined);
+    refreshStorage();
+    setSpace(null);
+    void refreshAiStatus();
   };
 
   const remove = async () => {
@@ -89,6 +118,7 @@ export function WebLlmSetup() {
       setErr(aiErrorText(e));
     }
     void refreshAiStatus();
+    refreshStorage();
   };
 
   const loading = load.phase === 'loading';
@@ -96,6 +126,8 @@ export function WebLlmSetup() {
   const chosen = WEBLLM_MODELS.find((m) => m.id === s.webllm.model) ?? WEBLLM_MODELS[0];
   const mem = deviceMemoryGB();
   const f16 = gpu?.f16 ?? true;
+  // Models stored besides the chosen one (after switching): offer to delete them.
+  const others = stored.filter((m) => !(m.id === chosen.id || m.id === chosen.id32));
 
   return (
     <section className="stack ai-section" aria-label="On-device model set-up">
@@ -135,6 +167,40 @@ export function WebLlmSetup() {
       {gpu?.ok && !status.modelCached && freeMB !== null && freeMB < (f16 ? chosen.vramMB : chosen.vramMB32) * 1.2 ? (
         <div className="callout callout-warn ai-storage">
           The browser can store only about {Math.round(freeMB / 100) / 10} GB more for this site, which may not be enough for this model. Free some disk space, or use a normal window (private windows allow very little).
+        </div>
+      ) : null}
+      {others.length && !loading ? (
+        <div className="callout callout-info ai-other-models" role="note" data-testid="webllm-other-models">
+          {others.map((m) => (
+            <span key={m.id} className="row" style={{ gap: 8 }}>
+              <span>
+                {m.label ? `The ${m.label} model` : `The model ${m.id}`} is also stored in this browser ({formatBytes(m.bytes)}{m.complete === false ? ', partly downloaded' : ''}). Delete it to free space?
+              </span>
+              <button type="button" className="btn btn-sm" onClick={() => void deleteOther(m)}>Delete it</button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {space && !space.ok ? (
+        <div className="callout callout-warn ai-space" role="alert" data-testid="webllm-no-space">
+          <b>Not enough browser storage for this model.</b> It needs about {formatBytes(space.need)} and the browser allows about {formatBytes(space.free)} more for this site (all sites at hackhead95.github.io share this). Downloading anyway would fill the storage, which also stops autosave. Instead:
+          <ul>
+            {space.others.map((m) => (
+              <li key={m.id}>
+                <button type="button" className="linkish" onClick={() => void deleteOther(m)}>Delete the stored {m.label ?? m.id} model</button> ({formatBytes(m.bytes)})
+              </li>
+            ))}
+            {chosen.id !== WEBLLM_MODELS[0].id ? (
+              <li>
+                <button type="button" className="linkish" onClick={() => { setSpace(null); saveAiSettings({ webllm: { model: WEBLLM_MODELS[0].id } }); }}>Choose {WEBLLM_MODELS[0].label}</button> (download {WEBLLM_MODELS[0].download})
+              </li>
+            ) : null}
+            <li>
+              <button type="button" className="linkish" onClick={() => saveAiSettings({ provider: 'gemini' })}>Use Google Gemini</button> or{' '}
+              <button type="button" className="linkish" onClick={() => saveAiSettings({ provider: 'openai', openai: { ...getAiSettings().openai, preset: 'ollama', baseUrl: OPENAI_PRESETS.ollama.baseUrl, model: OPENAI_PRESETS.ollama.model } })}>Ollama on this computer</button>, which need no browser storage.
+            </li>
+            <li>Or free disk space on this computer, then click Download again.</li>
+          </ul>
         </div>
       ) : null}
       {gpu?.ok ? (
@@ -181,6 +247,10 @@ export function WebLlmSetup() {
           ) : null}
         </div>
       ) : null}
+      <details className="ai-storage-details" open={!!(space && !space.ok) || undefined}>
+        <summary>Browser storage (downloaded models)</summary>
+        <StorageManager key={storageKey} onChanged={refreshStorage} />
+      </details>
     </section>
   );
 }

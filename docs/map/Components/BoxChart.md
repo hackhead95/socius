@@ -18,10 +18,10 @@ area: features/charts
 - [[charts/common.tsx#fit|fit()]]
 - [[scale.ts#formatTick|formatTick()]]
 - [[scale.ts#formatValue|formatValue()]]
-- [[charts/common.tsx#headerLayout|headerLayout()]]
 - [[scale.ts#linear|linear()]]
 - [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]]
 - [[scale.ts#niceTicks|niceTicks()]]
+- [[useHeaderLayout|useHeaderLayout()]]
 
 ## Renders
 - [[ChartHeader|<ChartHeader>]]

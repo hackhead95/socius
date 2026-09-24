@@ -37,3 +37,11 @@
 .crash-panel { margin: var(--space-5) auto; width: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: var(--r-md); background: var(--surface); }
 .crash-panel h2 { font-size: var(--fs-lg); margin: 0; }
 .crash-panel p { margin: 0; color: var(--text-2); font-size: var(--fs-sm); }
+
+/* "Socius was updated. Reload to get the new version." (UpdateBanner.tsx) */
+.update-banner { position: fixed; left: 50%; bottom: var(--space-4); transform: translateX(-50%); z-index: 140; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; width: max-content; max-width: calc(100vw - 32px); padding: 8px 10px 8px 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--r-md); background: var(--surface); color: var(--text); box-shadow: var(--shadow-2); font-size: var(--fs-sm); }
+.update-banner > svg { color: var(--accent); flex: none; }
+.update-banner > span { flex: 1 1 220px; min-width: 0; }
+@media (max-width: 640px) {
+  .update-banner { bottom: auto; top: 8px; }
+}

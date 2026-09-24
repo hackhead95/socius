@@ -20,6 +20,7 @@ area: tests
 - [[vitest]] · value
 
 ## Imported by
+- [[codebook-roundtrip.test.ts]] · value
 - [[csv.test.ts]] · value
 - [[import.test.ts]] · value
 - [[sav-malformed.test.ts]] · value
@@ -28,6 +29,7 @@ area: tests
 - [[sav-write.test.ts]] · value
 - [[xlsx.test.ts]] · value
 - [[zip.test.ts]] · value
+- [[dialog-transforms.test.ts]] · value
 - [[sample-oracle.test.ts]] · value
 
 ## Tests
@@ -43,13 +45,13 @@ DUMP (line 15) · tmp (line 40) · bound() (line 62) · missingPairs() (line 69)
 
 ### PYTHON
 *const* · line 10 · exported
-- Used in: [[csv.test.ts]], [[sav-spssio.test.ts]], [[xlsx.test.ts]], [[sample-oracle.test.ts]]
+- Used in: [[codebook-roundtrip.test.ts]], [[csv.test.ts]], [[sav-spssio.test.ts]], [[xlsx.test.ts]], [[dialog-transforms.test.ts]], [[sample-oracle.test.ts]]
 
 ### HAS_ORACLE
 *const* · line 12 · exported
 > The Python oracle is optional (absent in CI). SOCIUS_NO_ORACLE=1 simulates its absence.
 - Uses: [[io/helpers.ts#PYTHON|PYTHON]]
-- Used in: [[csv.test.ts]], [[sav-spssio.test.ts]], [[sav-write.test.ts]], [[xlsx.test.ts]], [[sample-oracle.test.ts]]
+- Used in: [[codebook-roundtrip.test.ts]], [[csv.test.ts]], [[sav-spssio.test.ts]], [[sav-write.test.ts]], [[xlsx.test.ts]], [[dialog-transforms.test.ts]], [[sample-oracle.test.ts]]
 
 ### ROOT
 *const* · line 13 · exported
@@ -63,7 +65,7 @@ DUMP (line 15) · tmp (line 40) · bound() (line 62) · missingPairs() (line 69)
 ### tempPath
 *function* · line 41 · exported
 - Uses: [[io/helpers.ts]]
-- Used in: [[csv.test.ts]], [[sav-spssio.test.ts]], [[xlsx.test.ts]]
+- Used in: [[codebook-roundtrip.test.ts]], [[csv.test.ts]], [[sav-spssio.test.ts]], [[xlsx.test.ts]]
 
 ### pyreadstatRead
 *function* · line 47 · exported

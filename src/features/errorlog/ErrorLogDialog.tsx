@@ -5,6 +5,7 @@ import { Modal } from '../../ui/Modal';
 import { clearLog, formatEntry, LOG_AREAS, logIsMemoryOnly, markLogSeen, SESSION_ID, type LogArea, type LogEntry, type LogLevel } from '../../platform/errorlog';
 import { copyErrorReport, downloadErrorReport, openFeedback, useErrorLog } from './actions';
 import './errorlog.css';
+import { formatDateTime, formatTime } from '../../core/format-date';
 
 const LEVEL_LABEL: Record<LogLevel, string> = { error: 'Error', warn: 'Warning', info: 'Info' };
 const AREA_LABEL: Record<LogArea, string> = {
@@ -16,7 +17,7 @@ function when(iso: string): string {
   try {
     const d = new Date(iso);
     const today = new Date().toDateString() === d.toDateString();
-    return today ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    return today ? formatTime(d) : formatDateTime(d);
   } catch {
     return iso;
   }

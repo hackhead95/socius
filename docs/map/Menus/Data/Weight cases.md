@@ -23,6 +23,7 @@ area: app
 - [[Data]]
 
 ## Tested by
+- [[commands-smoke-app.spec.ts]] · menu label
 - [[data.spec.ts]] · menu label
 - [[quant.spec.ts]] · menu label
 - [[search.test.ts]] · menu label

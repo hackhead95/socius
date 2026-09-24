@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { PointIndex, extent, formatTick, formatValue, linear, niceTicks } from './scale';
-import { ChartHeader, ChartSvg, FS_TICK, TipRow, XAxisNumeric, YAxis, headerLayout, maxLabelWidth, measureText, seriesColor, type LegendItem, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_TICK, TipRow, XAxisNumeric, YAxis, useHeaderLayout, maxLabelWidth, measureText, seriesColor, type LegendItem, type SetTip } from './common';
 
 type ScatterSpec = Extract<ChartSpec, { type: 'scatter' }>;
 
@@ -58,7 +58,7 @@ export function ScatterChart({ spec, width, setTip }: { spec: ScatterSpec; width
   }, [spec.points, spec.groups]);
   const legend: LegendItem[] = groups.names.map((g, i) => ({ label: g, color: seriesColor(i), kind: 'dot' }));
   if (spec.fit && groups.names.length >= 2) legend.push({ label: 'Fit line (all cases)', color: 'var(--text)', kind: 'line' });
-  const head = headerLayout(spec.title, legend, width);
+  const head = useHeaderLayout(spec.title, legend, width);
   const n = spec.points.length;
   const useCanvas = n > CANVAS_THRESHOLD;
 

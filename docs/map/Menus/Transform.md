@@ -22,7 +22,7 @@ area: app
 - [[Visual binning|Transform > Visual binning...]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

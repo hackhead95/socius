@@ -7,7 +7,7 @@ area: lib/coding
 
 # src/lib/coding/segments.ts
 
-*Module* · area [[lib - coding|lib/coding]] · 147 lines
+*Module* · area [[lib - coding|lib/coding]] · 136 lines
 
 > Segment utilities: overlap tests, merging, subtracting ranges, paragraph runs for rendering.
 
@@ -23,11 +23,11 @@ area: lib/coding
 - [[Reader.tsx]] · value
 - [[coding/reliability.ts]] · type-only
 - [[rules.ts]] · type-only, value
-- [[text.ts]] · type-only
+- [[coding/text.ts]] · type-only
 - [[segments.test.ts]] · value
 
 ## Types
-Range (line 5) · Run (line 102)
+Range (line 5) · Run (line 97)
 
 ## Symbols
 
@@ -56,25 +56,17 @@ Range (line 5) · Run (line 102)
 > Segments grouped by document id (each list sorted by start).
 - Used in: [[coding/hooks.ts]]
 
-### segmentsAt
-*function* · line 83 · exported
-> Segments covering character `offset` (inclusive start, exclusive end).
-
 ### splitLines
-*function* · line 88 · exported
+*function* · line 83 · exported
 > Paragraph ranges: text split at line breaks. Empty lines give empty ranges (kept for spacing).
 - Used in: [[Reader.tsx]], [[segments.test.ts]]
 
 ### buildRuns
-*function* · line 108 · exported
+*function* · line 103 · exported
 > Split [start, end) into runs where the set of covering segments is constant.
 - Used in: [[segments.test.ts]]
 
 ### assignLanes
-*function* · line 126 · exported
+*function* · line 121 · exported
 > Greedy lane assignment so overlapping segments get different gutter lanes. Returns lane per id.
 - Used in: [[Reader.tsx]], [[segments.test.ts]]
-
-### clampSegments
-*function* · line 142 · exported
-> Clamp segments to a (possibly edited, shorter) text length; drop empties.

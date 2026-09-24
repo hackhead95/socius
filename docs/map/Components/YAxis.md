@@ -2,13 +2,13 @@
 id: "src/features/charts/common.tsx#YAxis"
 type: component
 file: src/features/charts/common.tsx
-line: 181
+line: 185
 area: features/charts
 ---
 
 # <YAxis>
 
-*React component* · defined in [[charts/common.tsx]] (line 181) · area [[features - charts|features/charts]]
+*React component* · defined in [[charts/common.tsx]] (line 185) · area [[features - charts|features/charts]]
 
 > Y-axis ticks + gridlines + axis title.
 

@@ -23,6 +23,8 @@ export interface Toast {
   id: number;
   tone: 'info' | 'success' | 'warning' | 'error';
   text: string;
+  /** Optional button in the toast ("Undo", "Show"). Choosing it runs `run` and dismisses the toast. */
+  action?: { label: string; run: () => void };
 }
 
 const HISTORY_LIMIT = 40;
@@ -108,8 +110,9 @@ export interface AppState {
   moveVariable: (varId: string, toIndex: number) => void;
   insertCases: (at: number, count: number) => void;
   deleteCases: (rows: number[]) => void;
-  setWeight: (varId: string | null) => void;
-  setFilter: (varId: string | null) => void;
+  // Weighting and filtering are transforms (Data > Weight cases..., Select cases..., the dataset-bar
+  // chips and Turn weighting/filter off all go through weightCases / selectCasesTransform and
+  // applyTransform), so they get SPSS syntax in Output and a named undo step. No store shortcut.
   undo: () => void;
   redo: () => void;
 
@@ -125,8 +128,7 @@ export interface AppState {
   redeleteOutput: () => boolean;
   moveOutput: (id: string, toIndex: number) => void;
 
-  // coding
-  updateCoding: (fn: (c: CodingProject) => CodingProject) => void;
+  // coding (changes go through src/features/coding/actions.ts, which records coding undo)
   setCoding: (c: CodingProject) => void;
 
   // ui
@@ -134,7 +136,7 @@ export interface AppState {
   openDialog: (d: DialogRequest) => void;
   closeDialog: () => void;
   setShowValueLabels: (b: boolean) => void;
-  toast: (text: string, tone?: Toast['tone']) => void;
+  toast: (text: string, tone?: Toast['tone'], opts?: { action?: Toast['action']; ms?: number }) => void;
   dismissToast: (id: number) => void;
 }
 
@@ -288,9 +290,6 @@ export const useStore = create<AppState>((set, get) => ({
       return bump(ds, { columns, nCases: keep.length });
     }),
 
-  setWeight: (varId) => get().mutateDataset((ds) => bump(ds, { weightVarId: varId })),
-  setFilter: (varId) => get().mutateDataset((ds) => bump(ds, { filterVarId: varId })),
-
   undo: () => {
     const { past, dataset, future } = get();
     if (!past.length || !dataset) return;
@@ -353,17 +352,19 @@ export const useStore = create<AppState>((set, get) => ({
     set({ outputs: outs });
   },
 
-  updateCoding: (fn) => set({ coding: fn(get().coding) }),
   setCoding: (c) => set({ coding: c }),
 
   setTab: (t) => set({ tab: t }),
   openDialog: (d) => set({ dialog: d }),
   closeDialog: () => set({ dialog: null }),
   setShowValueLabels: (b) => set({ showValueLabels: b }),
-  toast: (text, tone = 'info') => {
+  toast: (text, tone = 'info', opts) => {
     const id = ++toastSeq;
-    set({ toasts: [...get().toasts, { id, tone, text }] });
-    setTimeout(() => get().dismissToast(id), tone === 'error' ? 8000 : 4500);
+    // The same message again (weighting on, off, on...) replaces the old one instead of stacking.
+    const rest = get().toasts.filter((t) => t.text !== text);
+    set({ toasts: [...rest, { id, tone, text, action: opts?.action }] });
+    // A toast with a button stays long enough to use it.
+    setTimeout(() => get().dismissToast(id), opts?.ms ?? (tone === 'error' ? 8000 : opts?.action ? 8000 : 4500));
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
 }));

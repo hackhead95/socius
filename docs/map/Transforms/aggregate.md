@@ -11,7 +11,9 @@ area: transforms
 
 ## Calls
 - [[aggregate.ts#AGG_FUNCTIONS|AGG_FUNCTIONS]]
+- [[aggregate.ts#aggNeedsSource|aggNeedsSource()]]
 - [[aggregate.ts#aggregate|aggregate()]]
+- [[aggregate.ts#STRING_AGG_FUNCTIONS|STRING_AGG_FUNCTIONS]]
 
 ## Uses
 - [[TextField|<TextField>]] · dialog helper

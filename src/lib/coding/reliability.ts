@@ -197,8 +197,8 @@ export function compareCoders(docs: TextDoc[], segments: CodedSegment[], coderA:
         disagreements.push({ unit: units[i], codeId, appliedBy: 'B' });
       } else neither++;
     });
-    pooledA.push(...ra);
-    pooledB.push(...rb);
+    for (const x of ra) pooledA.push(x); // not push(...ra): one argument per unit overflows on large projects
+    for (const x of rb) pooledB.push(x);
     perCode.push({
       codeId,
       kappa: cohenKappa(ra, rb),

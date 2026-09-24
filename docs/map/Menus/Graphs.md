@@ -20,7 +20,7 @@ area: app
 - [[Scatter Plot|Graphs > Scatter Plot...]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

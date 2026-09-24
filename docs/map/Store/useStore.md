@@ -2,13 +2,13 @@
 id: "src/core/store.ts#useStore"
 type: store
 file: src/core/store.ts
-line: 147
+line: 149
 area: core
 ---
 
 # useStore
 
-*Store* · defined in [[store.ts]] (line 147) · area [[core]]
+*Store* · defined in [[store.ts]] (line 149) · area [[core]]
 
 - **Exported:** yes
 
@@ -16,17 +16,17 @@ area: core
 | key | written by | read by |
 |---|---|---|
 | [[useStore/coding\|coding]] | 7 ([[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[shell-fixes.test.ts]], …) | 61 |
-| [[dataset]] | 13 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], …) | 60 |
-| [[useStore/dialog\|dialog]] | 9 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[error-boundary.test.tsx]], [[navigation-audit.test.tsx]], …) | 7 |
+| [[dataset]] | 16 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], …) | 64 |
+| [[useStore/dialog\|dialog]] | 10 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[error-boundary.test.tsx]], [[navigation-audit.test.tsx]], …) | 7 |
 | [[useStore/focusOutputId\|focusOutputId]] | 5 ([[Close data and start fresh\|File > Close data and start fresh...]], [[addOutput()\|useStore.addOutput()]], [[restoreOutput()\|useStore.restoreOutput()]], [[fileActions.ts#applyProject\|applyProject()]], …) | 1 |
-| [[useStore/future\|future]] | 9 ([[Close data and start fresh\|File > Close data and start fresh...]], [[navigation-audit.test.tsx]], [[shell-fixes.test.ts]], [[mutateDataset()\|useStore.mutateDataset()]], …) | 4 |
+| [[useStore/future\|future]] | 10 ([[Close data and start fresh\|File > Close data and start fresh...]], [[navigation-audit.test.tsx]], [[shell-fixes.test.ts]], [[data-fixes.test.ts]], …) | 4 |
 | [[outputRedo]] | 7 ([[store.ts]], [[navigation-audit.test.tsx]], [[shell-fixes.test.ts]], [[clearOutputs()\|useStore.clearOutputs()]], …) | 5 |
 | [[outputUndo]] | 7 ([[store.ts]], [[navigation-audit.test.tsx]], [[shell-fixes.test.ts]], [[clearOutputs()\|useStore.clearOutputs()]], …) | 7 |
-| [[outputs]] | 18 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], …) | 32 |
-| [[past]] | 9 ([[Close data and start fresh\|File > Close data and start fresh...]], [[navigation-audit.test.tsx]], [[shell-fixes.test.ts]], [[mutateDataset()\|useStore.mutateDataset()]], …) | 9 |
+| [[outputs]] | 19 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], …) | 33 |
+| [[past]] | 10 ([[Close data and start fresh\|File > Close data and start fresh...]], [[navigation-audit.test.tsx]], [[shell-fixes.test.ts]], [[data-fixes.test.ts]], …) | 9 |
 | [[showValueLabels]] | 2 ([[setShowValueLabels()\|useStore.setShowValueLabels()]], [[fileActions.ts#applyProject\|applyProject()]]) | 4 |
-| [[useStore/tab\|tab]] | 9 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], …) | 17 |
-| [[useStore/toasts\|toasts]] | 3 ([[error-boundary.test.tsx]], [[dismissToast()\|useStore.dismissToast()]], [[toast()\|useStore.toast()]]) | 4 |
+| [[useStore/tab\|tab]] | 12 ([[Close data and start fresh\|File > Close data and start fresh...]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], …) | 19 |
+| [[useStore/toasts\|toasts]] | 5 ([[error-boundary.test.tsx]], [[ui-overlays.test.tsx]], [[ui-fixes.test.tsx]], [[dismissToast()\|useStore.dismissToast()]], …) | 6 |
 
 ## Actions
 | action | writes | callers |
@@ -41,23 +41,20 @@ area: core
 | [[insertCases()]] |  | 1 |
 | [[moveOutput()]] | [[outputs]] | 1 |
 | [[moveVariable()]] |  | 1 |
-| [[mutateDataset()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 22 |
+| [[mutateDataset()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 21 |
 | [[openDialog()]] | [[useStore/dialog\|dialog]] | 92 |
 | [[redeleteOutput()]] | [[outputRedo]], [[outputs]], [[outputUndo]] | 3 |
 | [[redo()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 5 |
 | [[removeOutput()]] | [[outputRedo]], [[outputs]], [[outputUndo]] | 3 |
-| [[restoreOutput()]] | [[useStore/focusOutputId\|focusOutputId]], [[outputRedo]], [[outputs]], [[outputUndo]] | 3 |
+| [[restoreOutput()]] | [[useStore/focusOutputId\|focusOutputId]], [[outputRedo]], [[outputs]], [[outputUndo]] | 4 |
 | [[setCell()]] |  | 1 |
-| [[setCoding()]] | [[useStore/coding\|coding]] | 9 |
-| [[setDataset()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 9 |
-| [[setFilter()]] |  | 0 |
+| [[setCoding()]] | [[useStore/coding\|coding]] | 10 |
+| [[setDataset()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 10 |
 | [[setShowValueLabels()]] | [[showValueLabels]] | 4 |
-| [[setTab()]] | [[useStore/tab\|tab]] | 48 |
-| [[setWeight()]] |  | 0 |
-| [[toast()]] | [[useStore/toasts\|toasts]] | 31 |
-| [[undo()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 7 |
-| [[updateCoding()]] | [[useStore/coding\|coding]] | 0 |
-| [[updateVariable()]] |  | 4 |
+| [[setTab()]] | [[useStore/tab\|tab]] | 50 |
+| [[toast()]] | [[useStore/toasts\|toasts]] | 32 |
+| [[undo()]] | [[dataset]], [[useStore/future\|future]], [[past]] | 8 |
+| [[updateVariable()]] |  | 2 |
 
 ## Calls
 - [[coding-types.ts#emptyCodingProject|emptyCodingProject()]]
@@ -98,13 +95,10 @@ area: core
 - [[setCell()|useStore.setCell()]]
 - [[setCoding()|useStore.setCoding()]]
 - [[setDataset()|useStore.setDataset()]]
-- [[setFilter()|useStore.setFilter()]]
 - [[setShowValueLabels()|useStore.setShowValueLabels()]]
 - [[setTab()|useStore.setTab()]]
-- [[setWeight()|useStore.setWeight()]]
 - [[toast()|useStore.toast()]]
 - [[undo()|useStore.undo()]]
-- [[updateCoding()|useStore.updateCoding()]]
 - [[updateVariable()|useStore.updateVariable()]]
 
 ## Called by
@@ -122,7 +116,6 @@ area: core
 - [[CommandPalette|<CommandPalette>]]
 - [[Composer|<Composer>]]
 - [[Cooccurrence|<Cooccurrence>]]
-- [[CopyPropertiesDialog|<CopyPropertiesDialog>]]
 - [[DatasetName|<DatasetName>]]
 - [[DataView|<DataView>]]
 - [[DataViewInner|<DataViewInner>]]
@@ -159,6 +152,8 @@ area: core
 - [[TransformDialog|<TransformDialog>]]
 - [[TypeDialog|<TypeDialog>]]
 - [[ValueLabelsDialog|<ValueLabelsDialog>]]
+- [[VariableDrawer|<VariableDrawer>]]
+- [[VariableList|<VariableList>]]
 - [[VariableView|<VariableView>]]
 - [[VariableViewInner|<VariableViewInner>]]
 - [[Welcome (app-Welcome)|<Welcome>]]
@@ -168,6 +163,7 @@ area: core
 - [[useEntries|useEntries()]]
 - [[useMenus|useMenus()]]
 - [[useOrderedCodes|useOrderedCodes()]]
+- [[useToastPlacement|useToastPlacement()]]
 - [[useUndoRedo|useUndoRedo()]]
 - [[useVisibleSegments|useVisibleSegments()]]
 
@@ -175,6 +171,7 @@ area: core
 - [[AggregateDialog|<AggregateDialog>]]
 - [[Components/App|<App>]]
 - [[CommandPalette|<CommandPalette>]]
+- [[CopyPropertiesDialog|<CopyPropertiesDialog>]]
 - [[DataViewInner|<DataViewInner>]]
 - [[DefinePropertiesDialog|<DefinePropertiesDialog>]]
 - [[DialogBody|<DialogBody>]]
@@ -190,6 +187,7 @@ area: core
 - [[fileActions.ts#applyProject|applyProject()]]
 - [[transform/common.tsx#applyTransform|applyTransform()]]
 - [[controller.ts#appSnapshot|appSnapshot()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 - [[coding/actions.ts#commit|commit()]]
 - [[output/actions.ts#confirmAndClearOutputs|confirmAndClearOutputs()]]
 - [[fileActions.ts#confirmReplace|confirmReplace()]]
@@ -243,12 +241,16 @@ area: core
 - [[palette.test.tsx]]
 - [[search.test.ts]]
 - [[shell-fixes.test.ts]]
+- [[shortcut-precedence.test.tsx]]
+- [[ui-overlays.test.tsx]]
 - [[scenarios.test.ts]]
 - [[actions.test.ts]]
 - [[dataset.test.ts]]
+- [[ui-fixes.test.tsx]]
 - [[transforms-expr.fuzz.test.ts]]
 - [[transforms-ops.fuzz.test.ts]]
 - [[dialog-ui.test.tsx]]
+- [[data-fixes.test.ts]]
 - [[history.test.ts]]
 - [[coding/hooks.ts#toast|toast()]]
 - [[transform/common.tsx#turnFilterOff|turnFilterOff()]]
@@ -259,5 +261,4 @@ area: core
 - [[useAutosave|useAutosave()]]
 - [[useEntries|useEntries()]]
 - [[useExplain]]
-- [[useMenus|useMenus()]]
 - [[CodingDialog.tsx#ViewSwitch|ViewSwitch()]]

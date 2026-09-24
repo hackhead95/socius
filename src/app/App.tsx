@@ -1,6 +1,6 @@
 // App shell: top bar + menubar, main tabs, variable sidebar, dialogs, toasts, drag-and-drop,
 // session restore (else the welcome screen) and autosave.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useStore, type MainTab } from '../core/store';
 import { OutputViewer } from '../features/output/OutputViewer';
 import { CodingWorkspace } from '../features/coding/CodingWorkspace';
@@ -19,6 +19,8 @@ import { SampleBanner, Welcome } from './Welcome';
 import { applyTheme, useUi } from './ui-store';
 import { handleGlobalKey } from './shortcuts';
 import { GuardedDialogs, PanelBoundary, QuietBoundary } from './ErrorBoundary';
+import { UpdateBanner } from '../features/errorlog/UpdateBanner';
+import { setBeforeReload } from '../features/errorlog/update';
 import './app.css';
 import '../features/data/data.css';
 import '../features/transform/transform.css';
@@ -62,8 +64,13 @@ function useAutosave(enabled: boolean) {
     if (!enabled) return;
     const save = () => {
       timer.current = null;
-      void saveSession(currentProjectState(), isModified()).catch(() => undefined);
+      return saveSession(currentProjectState(), isModified()).catch(() => false);
     };
+    // "Socius was updated" > Reload saves first, so nothing changed a moment ago is lost.
+    setBeforeReload(() => {
+      if (timer.current) clearTimeout(timer.current);
+      return save();
+    });
     const schedule = () => {
       if (timer.current) clearTimeout(timer.current);
       const ds = useStore.getState().dataset;
@@ -94,9 +101,39 @@ function useAutosave(enabled: boolean) {
       unsub();
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onVis);
+      setBeforeReload(null);
       if (timer.current) clearTimeout(timer.current);
     };
   }, [enabled]);
+}
+
+/**
+ * Publish where the app's fixed chrome (top bar and view tabs) ends, as CSS variables: the assistant
+ * panel opens below it, so Undo, Redo, the menus and Search stay usable, and on narrow screens the
+ * assistant button docks into the tab bar instead of floating over the content.
+ */
+function useShellMetrics() {
+  useLayoutEffect(() => {
+    const tabbar = document.querySelector<HTMLElement>('.tabbar');
+    const topbar = document.querySelector<HTMLElement>('.topbar');
+    if (!tabbar) return;
+    const root = document.documentElement.style;
+    const apply = () => {
+      const r = tabbar.getBoundingClientRect();
+      root.setProperty('--shell-top', `${Math.round(r.bottom)}px`);
+      root.setProperty('--tabbar-top', `${Math.round(r.top)}px`);
+      root.setProperty('--tabbar-h', `${Math.round(r.height)}px`);
+    };
+    apply();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
+    ro?.observe(tabbar);
+    if (topbar) ro?.observe(topbar);
+    window.addEventListener('resize', apply);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', apply);
+    };
+  }, []);
 }
 
 export function App() {
@@ -109,6 +146,7 @@ export function App() {
   const nOut = useStore((s) => s.outputs.length);
   // Home (the Socius logo) shows the start screen over open work until you pick a tab or open something.
   const home = useUi((s) => s.home);
+  useShellMetrics();
 
   useEffect(() => applyTheme(theme), [theme]);
   useEffect(
@@ -154,7 +192,8 @@ export function App() {
               type="button"
               role="tab"
               className="tab"
-              aria-selected={tab === t.id}
+              // On the start screen (Home) no view is current, so no tab is marked.
+              aria-selected={!home && tab === t.id}
               aria-controls="main"
               tabIndex={tab === t.id ? 0 : -1}
               disabled={t.needsData && !hasData}
@@ -200,6 +239,7 @@ export function App() {
       <AiSettingsHost />
       <ConfirmHost />
       <Toasts />
+      <UpdateBanner />
       <BusyOverlay />
       <DropOverlay />
     </div>

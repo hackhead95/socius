@@ -22,3 +22,7 @@ area: app
 
 ## Part of
 - [[File]]
+
+## Tested by
+- [[commands-smoke-app.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label

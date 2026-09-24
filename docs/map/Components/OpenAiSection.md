@@ -2,13 +2,13 @@
 id: "src/features/ai/AiSettingsDialog.tsx#OpenAiSection"
 type: component
 file: src/features/ai/AiSettingsDialog.tsx
-line: 303
+line: 343
 area: features/ai
 ---
 
 # <OpenAiSection>
 
-*React component* · defined in [[AiSettingsDialog.tsx]] (line 303) · area [[features - ai|features/ai]]
+*React component* · defined in [[AiSettingsDialog.tsx]] (line 343) · area [[features - ai|features/ai]]
 
 ## Calls
 - [[platform/ai.ts#forgetAiKey|forgetAiKey()]]
@@ -19,6 +19,7 @@ area: features/ai
 ## Renders
 - [[KeyField|<KeyField>]]
 - [[LocalSetup|<LocalSetup>]]
+- [[RememberKey|<RememberKey>]]
 
 ## Uses
 - [[platform/ai.ts#OPENAI_PRESETS|OPENAI_PRESETS]]

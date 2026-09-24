@@ -2,13 +2,13 @@
 id: "store-action:useStore.openDialog"
 type: store-action
 file: src/core/store.ts
-line: 134
+line: 136
 area: core
 ---
 
 # useStore.openDialog()
 
-*Store action* · defined in [[store.ts]] (line 134) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 136) · area [[core]]
 
 - **Store:** useStore
 
@@ -47,6 +47,7 @@ area: core
 - [[Multinomial Logistic Regression|Analyze > Regression > Multinomial Logistic Regression...]]
 - [[Ordinal Regression|Analyze > Regression > Ordinal Regression...]]
 - [[Reliability Analysis|Analyze > Scale > Reliability Analysis...]]
+- [[menus.ts#buildMenus|buildMenus()]] · getState alias
 - [[Data/Aggregate|Data > Aggregate...]]
 - [[Copy variable properties|Data > Copy variable properties...]]
 - [[Define variable properties|Data > Define variable properties...]]
@@ -107,7 +108,6 @@ area: core
 - [[Standardize (z-scores)|Transform > Standardize (z-scores)...]]
 - [[Visual binning|Transform > Visual binning...]]
 - [[useEntries|useEntries()]] · getState alias
-- [[useMenus|useMenus()]] · getState alias
 
 ## Store
 - [[useStore]]

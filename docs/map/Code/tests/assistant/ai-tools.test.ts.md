@@ -7,7 +7,7 @@ area: tests
 
 # tests/assistant/ai-tools.test.ts
 
-*Test file* · area [[tests]] · 243 lines
+*Test file* · area [[tests]] · 244 lines
 
 > Tool-calling adapters: Gemini via the Interactions API (function tools, function_call steps, thought steps replayed verbatim with store: false) and the generateContent fallback (functionDeclarations / functionCall / functionResponse with thought signatures), OpenAI-compatible tools / tool_calls (streamed and not), rate-limit details, and the Claude `sample` tools path.
 
@@ -40,6 +40,7 @@ area: tests
 - [[claude.ts#__resetCapabilityCache|__resetCapabilityCache()]]
 - [[ai-http.ts#__resetGeminiState|__resetGeminiState()]]
 - [[ai-http.ts#__setHttpRetryDelay|__setHttpRetryDelay()]]
+- [[ai-http.ts#__setRateLimitSleep|__setRateLimitSleep()]]
 - [[ai-tools.ts#askClaudeTools|askClaudeTools()]]
 - [[ai-tools.ts#askGeminiTools|askGeminiTools()]]
 - [[ai-tools.ts#askOpenAiTools|askOpenAiTools()]]
@@ -71,4 +72,4 @@ area: tests
 - [[claude.ts]] · import
 
 ## Private helpers
-gem (line 15) · oa (line 16) · tools (line 18) · mockFetch() (line 38) · modelList() (line 44)
+gem (line 15) · oa (line 16) · tools (line 18) · mockFetch() (line 39) · modelList() (line 45)

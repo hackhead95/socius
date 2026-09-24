@@ -62,6 +62,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 ### P0: crash or wrong numbers
 
 **FZ-01 [P0] Transforms: Aggregate MIN/MAX crashes on large groups**
+- **Resolved.** MIN/MAX use a loop. A codebase-wide audit replaced every `Math.min(...)`/`Math.max(...)`/`push(...)` spread over data-sized lists in transforms, IO, Data View paste, Define properties and text-coding reliability (`minOf`/`maxOf` in `src/lib/transform/dsops.ts`). Tests: `tests/transform/data-fixes.test.ts`.
 - Source: `src/lib/transform/aggregate.ts:85-86` (`Math.min(...valid.map(...))` spreads every value of a group as function arguments).
 - Symptom: `RangeError: Maximum call stack size exceeded` when a group has about 120k or more valid cases. The raw message reaches the dialog. Survey files of 100k+ cases are common.
 - Seed: transforms-ops 777001 (deterministic probe).
@@ -73,6 +74,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
   ```
 
 **FZ-02 [P0] Transforms: Visual Binning crashes when no cutpoint falls inside the data**
+- **Resolved.** "Equal widths from" checks its inputs and says "The first cutpoint (1000) is not below the largest value of income (30) ... Choose a first cutpoint below 30." `binLabels` never reads a missing cutpoint.
 - Source: `src/lib/transform/binning.ts` (`binLabels` reads `cuts[0]` when `cuts` is empty; `computeCutpoints` 'widthFrom' makes no cuts when `first >= max`).
 - Symptom: `TypeError: Cannot read properties of undefined (reading 'toPrecision')` for non-integer data when "equal widths starting at" begins at or above the maximum. 29 hits.
 - Seed: transforms-ops 214568386 (FUZZ_SEED=777001, `bin#` rows).
@@ -110,6 +112,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 ### P1: unclear error, misleading text, or freeze
 
 **FZ-05 [P1] Transforms: Select Cases can create two variables with the same name**
+- **Resolved.** A string `filter_$` makes Select Cases use the next free name from `uniqueVarName` (`filter_$_1`), and the syntax names that variable. Audit: Merge files > Add variables now renames names in the second file that differ only in capitals, and pasted headings can no longer repeat the name of a variable further right.
 - Source: `src/lib/transform/cases.ts:216` (when `filter_$` exists but is a string variable, it creates `filter_$1` without checking that the name is free; the syntax still says `filter_$`).
 - Symptom: with a string `filter_$` and a numeric `filter_$1` already in the file (possible after import or a merge), "Cases that meet a condition, filtered out" adds a second `filter_$1`. The dataset then has duplicate names, which breaks lookups by name and .sav export.
 - Seed: transforms-ops 777001 (deterministic probe).
@@ -140,6 +143,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 - Repro: `y = sin(i)*10 + i%7`, `g = 1 + i%7`, n = 3000, One-Way ANOVA with Games-Howell (about 3.5 s for 1 dependent).
 
 **FZ-10 [P1] IO: Excel round trip corrupts string missing values**
+- **Resolved.** The codebook writes string codes SPSS-style (`'DK', ''`, `'it''s'`, `'KOL' = Kolkata`), and the reader parses quotes (older unquoted text still reads). Round-trip tests with commas, quotes, `; `, ` = `, empty strings and Bengali: `tests/io/codebook-roundtrip.test.ts`.
 - Source: `src/lib/io/codebook.ts` `missingText` (joins values with ", " and does not quote them) and `src/lib/io/xlsx.ts` `parseMissingText` (`text.split(', ')` after the cell was trimmed).
 - Symptom: a string variable with missing values `DK` and `""` (blank) is written as `DK, `, trimmed to `DK,`, and read back as `["DK,"]`. After an Excel round trip, **DK counts as a valid answer** in every analysis. A value that contains ", " breaks the same way. 7 hits.
 - Seed: io 9090 (`csv#` rows, seed 1249739366).
@@ -153,11 +157,13 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 - Seed: procedures-perf 5150 (`crosstabs`, exact=exact).
 
 **FZ-12 [P2] Transforms: very long or deeply nested expressions overflow the stack**
+- **Resolved.** The parser limits nesting (100 parentheses, calls or signs) and chain depth (500 operations) and length (100,000 characters), each with an ExprError that says what to do (for example use SUM(q1 TO q500)). Checked with a 300 KB stack.
 - Source: `src/lib/transform/expr.ts` (recursive-descent parser) and `evaluate.ts` (closure chain).
 - Symptom: 1,000 or more nested parentheses, about 5,000 terms in one sum, or 20,000 unary minus signs give a raw `RangeError: Maximum call stack size exceeded` instead of an ExprError. This is unlikely by hand but possible from generated syntax.
 - Repro: `compileExpression(ds, '('.repeat(2000) + '1' + ')'.repeat(2000))`.
 
 **FZ-13 [P2] Transforms: bin labels for negative numbers read "-28.3643--11.5189"**
+- **Resolved.** All ranges read "lo to hi" ("-28.36 to -11.52", "18 to 29"). Cutpoints that lie very close together get enough digits to keep labels distinct.
 - Source: `src/lib/transform/binning.ts` `binLabels` (joins bounds with "-").
 - Symptom: labels are ambiguous for negative data, for example "-20--10". Use " to " or an en dash. 67 hits.
 - Repro: `binLabels([-11.52], -28.36, false)` or `binLabels([-20, -10], -30, true)`.
@@ -181,14 +187,17 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 - Seeds: procedures 20260924 `graph-line:1`, `models.multinomial:12`, `graph-box:3`.
 
 **FZ-17 [P2] IO: Excel round trip drops value labels when no case has a labelled value**
+- **Resolved.** The Variables sheet is authoritative: value labels and missing values are restored whatever the data holds; String columns stay text; a numeric column exported with value labels is read back as codes.
 - Source: `src/lib/io/xlsx.ts:155` (labels are applied only if some label's value occurs in the data, a heuristic for "labels mode" exports).
 - Symptom: a new or empty variable, or one whose cases are all missing, loses its value labels, for example `sex` with 1 = Male, 2 = Female and all system-missing. 10 hits.
 
 **FZ-18 [P2] IO: CSV/XLSX import turns numeric-looking text columns into numbers and "NA" into system-missing**
+- **Resolved: intended, with warning.** CSV keeps the R convention (numeric-looking columns become numbers, "NA" becomes system-missing). The import warning lists every column whose text changed and how ("Read as numbers: code ("NA" became system-missing in 1 case), zip (leading zeros were dropped ...)"), and the import preview has a "Keep as text" box per column (`textColumns` in `importFile`). Socius-written XLSX files keep String columns as text (FZ-17).
 - Source: `src/lib/io/infer.ts` (type inference; "NA" treated as missing). For XLSX, the Variables sheet says the type is String but is not used.
 - Symptom: a string column `['1','2','NA','3']` comes back numeric with "NA" as sysmis. String value labels become numeric labels and string user-missing codes are dropped. This may be intended for CSV (the R convention). For a Socius-written XLSX, the Variables sheet should win. Decide, then adjust or delete the repro.
 
 **FZ-19 [P2] Transforms: Aggregate suggests Minimum/Maximum for a string variable, then refuses them**
+- **Resolved.** Strings support First, Last, Minimum, Maximum, N (number of valid values) and NMISS, as in SPSS, and the message lists exactly those.
 - Source: `src/lib/transform/aggregate.ts:71-72`.
 - Symptom: choosing SD for a string variable says "use First, Last, Minimum or Maximum". Choosing Minimum then says "use First or Last".
 

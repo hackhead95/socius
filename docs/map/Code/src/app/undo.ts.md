@@ -27,12 +27,14 @@ area: app
 
 ## Tested by
 - [[shell-fixes.test.ts]] · import
+- [[data-fixes.test.ts]] · import
 
 ## Imported by
 - [[menus.ts]] · value
 - [[shortcuts.ts]] · value
 - [[TopBar.tsx]] · value
 - [[shell-fixes.test.ts]] · value
+- [[data-fixes.test.ts]] · value
 
 ## Types
 UndoScope (line 11) · UndoStep (line 13)
@@ -54,7 +56,7 @@ MAX_NAME (line 19) · short() (line 21) · lowerFirst() (line 22) · plural() (l
 - Calls: [[coding/actions.ts#undoLabel|undoLabel()]], [[undo.ts#describeDatasetChange|describeDatasetChange()]], [[undo.ts]]
 - Uses: [[useStore]]
 - Reads: [[dataset|useStore.dataset]], [[past|useStore.past]], [[useStore/tab|useStore.tab]]
-- Used in: [[shortcuts.ts]]
+- Used in: [[shortcuts.ts]], [[data-fixes.test.ts]]
 
 ### redoStep
 *function* · line 110 · exported
@@ -62,7 +64,7 @@ MAX_NAME (line 19) · short() (line 21) · lowerFirst() (line 22) · plural() (l
 - Calls: [[coding/actions.ts#redoLabel|redoLabel()]], [[undo.ts#describeDatasetChange|describeDatasetChange()]], [[undo.ts]]
 - Uses: [[useStore]]
 - Reads: [[dataset|useStore.dataset]], [[useStore/future|useStore.future]], [[useStore/tab|useStore.tab]]
-- Used in: [[shortcuts.ts]]
+- Used in: [[shortcuts.ts]], [[data-fixes.test.ts]]
 
 ### nothingTo
 *function* · line 125 · exported

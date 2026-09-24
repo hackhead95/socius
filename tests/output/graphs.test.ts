@@ -111,7 +111,7 @@ describe('graph procedures', () => {
     expect(c.series[0].values).toEqual([3, 3, 4]);
     expect(it0.syntax).toContain('GRAPH\n  /BAR(SIMPLE)=COUNT BY educ.');
     expect(it0.caseNote).toContain('N = 10');
-    expect(it0.caseNote).toContain('2 excluded');
+    expect(it0.caseNote).toContain('2 cases excluded');
     expect(it0.blocks.some((b) => b.kind === 'text' && b.style === 'interpretation')).toBe(true);
   });
 

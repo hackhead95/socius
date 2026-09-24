@@ -17,10 +17,13 @@ area: core
 - [[palette.test.tsx]] · import
 - [[search.test.ts]] · import
 - [[shell-fixes.test.ts]] · import
+- [[shortcut-precedence.test.tsx]] · import
 - [[scenarios.test.ts]] · import
 - [[units.test.ts]] · import
 - [[dataset.test.ts]] · import
 - [[example.test.ts]] · import
+- [[ui-fixes.test.tsx]] · import
+- [[findings-repro.test.ts]] · import
 - [[io.fuzz.test.ts]] · import
 - [[gen-data.ts]] · import
 - [[gen-expr.ts]] · import
@@ -29,6 +32,7 @@ area: core
 - [[replay.test.ts]] · import
 - [[transforms-expr.fuzz.test.ts]] · import
 - [[transforms-ops.fuzz.test.ts]] · import
+- [[codebook-roundtrip.test.ts]] · import
 - [[csv.test.ts]] · import
 - [[datasets.ts]] · import
 - [[io/helpers.ts]] · import
@@ -39,13 +43,17 @@ area: core
 - [[dialog-ui.test.tsx]] · import
 - [[dialog.test.ts]] · import
 - [[graphs.test.ts]] · import
+- [[ai-latency.test.ts]] · import
 - [[samples.test.ts]] · import
+- [[fuzz-fixes.test.ts]] · import
 - [[stats-core/procedures.test.ts]] · import
 - [[sample-survey.test.ts]] · import
 - [[dataset.ts]] · import
 - [[stats-models/procedures.test.ts]] · import
 - [[separation.test.ts]] · import
+- [[data-fixes.test.ts]] · import
 - [[dataview.test.ts]] · import
+- [[dialog-transforms.test.ts]] · import
 - [[transform/helpers.ts]] · import
 - [[history.test.ts]] · import
 - [[properties.test.ts]] · import
@@ -53,12 +61,14 @@ area: core
 
 ## Imported by
 - [[CommandPalette.tsx]] · type-only
+- [[Sidebar.tsx]] · type-only
 - [[ui-store.ts]] · type-only
 - [[undo.ts]] · type-only
 - [[core/data.ts]] · type-only
 - [[procedure.ts]] · type-only
 - [[store.ts]] · type-only, value
 - [[ProcedureDialog.tsx]] · type-only
+- [[runProcedure.ts]] · type-only
 - [[varUtils.ts]] · type-only
 - [[controller.ts]] · value
 - [[starters.ts]] · type-only
@@ -130,6 +140,7 @@ area: core
 - [[nomreg.ts]] · type-only
 - [[plum.ts]] · type-only
 - [[models/reliability.ts]] · type-only
+- [[procedures/text.ts]] · type-only
 - [[samples/index.ts]] · type-only
 - [[MeasureIcon.tsx]] · type-only
 - [[VarPicker.tsx]] · type-only
@@ -138,10 +149,13 @@ area: core
 - [[palette.test.tsx]] · value
 - [[search.test.ts]] · value
 - [[shell-fixes.test.ts]] · value
+- [[shortcut-precedence.test.tsx]] · value
 - [[scenarios.test.ts]] · type-only
 - [[units.test.ts]] · value
 - [[dataset.test.ts]] · value
 - [[example.test.ts]] · type-only
+- [[ui-fixes.test.tsx]] · type-only
+- [[findings-repro.test.ts]] · value
 - [[io.fuzz.test.ts]] · value
 - [[gen-data.ts]] · value
 - [[gen-expr.ts]] · type-only
@@ -150,6 +164,7 @@ area: core
 - [[replay.test.ts]] · type-only
 - [[transforms-expr.fuzz.test.ts]] · type-only
 - [[transforms-ops.fuzz.test.ts]] · type-only, value
+- [[codebook-roundtrip.test.ts]] · value
 - [[csv.test.ts]] · value
 - [[datasets.ts]] · type-only, value
 - [[io/helpers.ts]] · type-only
@@ -160,17 +175,12 @@ area: core
 - [[dialog-ui.test.tsx]] · value
 - [[dialog.test.ts]] · value
 - [[graphs.test.ts]] · value
+- [[ai-latency.test.ts]] · type-only
 - [[samples.test.ts]] · type-only
+- [[fuzz-fixes.test.ts]] · value
 - [[stats-core/procedures.test.ts]] · value
 - [[sample-survey.test.ts]] · value
-- [[dataset.ts]] · value
-- [[stats-models/procedures.test.ts]] · type-only, value
-- [[separation.test.ts]] · type-only
-- [[dataview.test.ts]] · value
-- [[transform/helpers.ts]] · value
-- [[history.test.ts]] · value
-- [[properties.test.ts]] · value
-- [[sample-oracle.test.ts]] · type-only
+- … and 10 more (see graph.json)
 
 ## Types
 VarType (line 13) · MeasureLevel (line 14) · VarRole (line 15) · Alignment (line 16) · ValueLabel (line 18) · MissingSpec (line 24) · Variable (line 31) · Column (line 55) · Dataset (line 57)
@@ -190,7 +200,7 @@ idCounter (line 79)
 *function* · line 87 · exported
 > Build a Variable with sensible SPSS defaults.
 - Calls: [[core/types.ts#newId|newId()]]
-- Used in: [[mutations.ts]], [[toDataset.ts]], [[infer.ts]], [[dsops.ts]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[search.test.ts]], [[shell-fixes.test.ts]], [[units.test.ts]], [[dataset.test.ts]], [[io.fuzz.test.ts]], [[gen-data.ts]], [[transforms-ops.fuzz.test.ts]], [[csv.test.ts]], [[datasets.ts]], [[import.test.ts]], [[sav-perf.test.ts]], [[xlsx.test.ts]], [[dialog-ui.test.tsx]], [[dialog.test.ts]], [[graphs.test.ts]], [[stats-core/procedures.test.ts]], [[sample-survey.test.ts]], [[dataset.ts]] … +5
+- Used in: [[mutations.ts]], [[toDataset.ts]], [[infer.ts]], [[dsops.ts]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[search.test.ts]], [[shell-fixes.test.ts]], [[shortcut-precedence.test.tsx]], [[units.test.ts]], [[dataset.test.ts]], [[findings-repro.test.ts]], [[io.fuzz.test.ts]], [[gen-data.ts]], [[transforms-ops.fuzz.test.ts]], [[codebook-roundtrip.test.ts]], [[csv.test.ts]], [[datasets.ts]], [[import.test.ts]], [[sav-perf.test.ts]], [[xlsx.test.ts]], [[dialog-ui.test.tsx]], [[dialog.test.ts]], [[graphs.test.ts]] … +10
 
 ### emptyColumn
 *function* · line 109 · exported
@@ -199,4 +209,4 @@ idCounter (line 79)
 ### makeDataset
 *function* · line 118 · exported
 - Calls: [[core/types.ts#newId|newId()]]
-- Used in: [[fileActions.ts]], [[infer.ts]], [[sav-reader.ts]], [[aggregate.ts]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[search.test.ts]], [[shell-fixes.test.ts]], [[units.test.ts]], [[dataset.test.ts]], [[io.fuzz.test.ts]], [[gen-data.ts]], [[transforms-ops.fuzz.test.ts]], [[csv.test.ts]], [[datasets.ts]], [[import.test.ts]], [[sav-perf.test.ts]], [[xlsx.test.ts]], [[dialog-ui.test.tsx]], [[dialog.test.ts]], [[graphs.test.ts]], [[stats-core/procedures.test.ts]], [[dataset.ts]], [[transform/helpers.ts]] … +1
+- Used in: [[fileActions.ts]], [[infer.ts]], [[sav-reader.ts]], [[aggregate.ts]], [[features.test.ts]], [[navigation-audit.test.tsx]], [[palette.test.tsx]], [[search.test.ts]], [[shell-fixes.test.ts]], [[shortcut-precedence.test.tsx]], [[units.test.ts]], [[dataset.test.ts]], [[findings-repro.test.ts]], [[io.fuzz.test.ts]], [[gen-data.ts]], [[transforms-ops.fuzz.test.ts]], [[codebook-roundtrip.test.ts]], [[csv.test.ts]], [[datasets.ts]], [[import.test.ts]], [[sav-perf.test.ts]], [[xlsx.test.ts]], [[dialog-ui.test.tsx]], [[dialog.test.ts]], [[graphs.test.ts]] … +6

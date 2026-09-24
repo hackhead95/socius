@@ -6,6 +6,7 @@ import { loadSample, newDataset, openDataFile, openProjectFile, openRecentProjec
 import { listRecent, type RecentEntry } from '../features/project/persistence';
 import { samples } from '../samples';
 import { useUi } from './ui-store';
+import { formatDate } from '../core/format-date';
 
 const TAB_NAMES: Record<MainTab, string> = { data: 'Data View', variables: 'Variable View', output: 'Output', coding: 'Text coding' };
 
@@ -81,7 +82,7 @@ export function Welcome() {
               <button key={r.id} type="button" className="recent-item" onClick={() => void openRecentProject(r.id, r.name)}>
                 <Icon name="file" size={15} />
                 <span className="recent-name">{r.name}</span>
-                <span className="help num">{r.nCases.toLocaleString('en-US')} cases · {new Date(r.savedAt).toLocaleDateString()}</span>
+                <span className="help num">{r.nCases.toLocaleString('en-US')} cases · {formatDate(r.savedAt)}</span>
               </button>
             ))}
           </div>
@@ -112,9 +113,11 @@ export function SampleBanner() {
     <div className="sample-banner" role="note">
       <Icon name="info" size={15} />
       <span>You are exploring sample data (a fictional survey). Open your own .sav, CSV or Excel file to start.</span>
-      <span className="spacer" />
-      <button type="button" className="btn btn-sm" onClick={() => void openDataFile()}>Open data file</button>
-      <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => setShow(false)} aria-label="Dismiss"><Icon name="x" size={13} /></button>
+      {/* The two buttons stay together when the banner wraps on a phone. */}
+      <span className="sample-banner-actions">
+        <button type="button" className="btn btn-sm" onClick={() => void openDataFile()}>Open data file</button>
+        <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => setShow(false)} aria-label="Dismiss" title="Hide this note"><Icon name="x" size={13} /></button>
+      </span>
     </div>
   );
 }

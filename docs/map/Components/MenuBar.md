@@ -2,17 +2,19 @@
 id: "src/app/MenuBar.tsx#MenuBar"
 type: component
 file: src/app/MenuBar.tsx
-line: 9
+line: 38
 area: app
 ---
 
 # <MenuBar>
 
-*React component* · defined in [[MenuBar.tsx]] (line 9) · area [[Areas/app|app]]
+*React component* · defined in [[MenuBar.tsx]] (line 38) · area [[Areas/app|app]]
 
 - **Exported:** yes
 
 ## Calls
+- [[MenuBar.tsx#aimsAtDropdown|aimsAtDropdown()]]
+- [[Modal.tsx#setDialogReturnFocus|setDialogReturnFocus()]]
 - [[useMenus|useMenus()]]
 - [[useStore]]
 - [[useUnseenErrors|useUnseenErrors()]]
@@ -20,6 +22,9 @@ area: app
 ## Renders
 - [[MenuList|<MenuList>]]
 - [[MenuSheetButton|<MenuSheetButton>]]
+
+## Uses
+- [[MenuBar.tsx#MENUBAR_AIM_MS|MENUBAR_AIM_MS]]
 
 ## Reads
 - [[useStore/tab|useStore.tab]] · selector

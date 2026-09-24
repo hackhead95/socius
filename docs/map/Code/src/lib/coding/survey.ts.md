@@ -7,7 +7,7 @@ area: lib/coding
 
 # src/lib/coding/survey.ts
 
-*Module* · area [[lib - coding|lib/coding]] · 69 lines
+*Module* · area [[lib - coding|lib/coding]] · 65 lines
 
 > Open-ended survey answers (a string variable of the active dataset) -> response documents.
 
@@ -38,7 +38,3 @@ ResponseImport (line 8)
 ### attrName
 *function* · line 61 · exported
 > Attribute key for a dataset variable: its name (short, stable in tables).
-
-### questionLabel
-*function* · line 65 · exported
-- Calls: [[core/data.ts#varDisplayName|varDisplayName()]]

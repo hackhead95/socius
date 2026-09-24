@@ -2,13 +2,13 @@
 id: "src/features/coding/ui.tsx#Swatch"
 type: component
 file: src/features/coding/ui.tsx
-line: 95
+line: 202
 area: features/coding
 ---
 
 # <Swatch>
 
-*React component* · defined in [[ui.tsx]] (line 95) · area [[features - coding|features/coding]]
+*React component* · defined in [[ui.tsx]] (line 202) · area [[features - coding|features/coding]]
 
 - **Exported:** yes
 

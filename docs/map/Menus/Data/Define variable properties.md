@@ -25,4 +25,5 @@ area: app
 
 ## Tested by
 - [[define-properties.spec.ts]] · menu label
+- [[menu-knowledge.test.ts]] · menu label
 - [[navigation-audit.test.tsx]] · menu label

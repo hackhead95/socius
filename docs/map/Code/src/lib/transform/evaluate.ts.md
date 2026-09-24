@@ -69,7 +69,7 @@ DAY (line 29) · EPOCH_MS (line 30) · fin() (line 32) · trimR() (line 33) · l
 > Compile `src` against the dataset's dictionary. Throws ExprError (with position) on any problem.
 - Calls: [[core/data.ts#dateToSpssSeconds|dateToSpssSeconds()]], [[core/data.ts#isUserMissing|isUserMissing()]], [[core/data.ts#spssSecondsToDate|spssSecondsToDate()]], [[core/data.ts#valueLabelFor|valueLabelFor()]], [[evaluate.ts#numberFromString|numberFromString()]], [[evaluate.ts#spssDate|spssDate()]], [[evaluate.ts#stringFromNumber|stringFromNumber()]], [[evaluate.ts]], [[expr.ts#ExprError|ExprError]], [[expr.ts#parse|parse()]]
 - Uses: [[evaluate.ts#spssRound|spssRound()]], [[evaluate.ts#spssTrunc|spssTrunc()]], [[evaluate.ts]]
-- Used in: [[cases.ts]], [[compute.ts]], [[recode.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]], [[expr.test.ts]]
+- Used in: [[cases.ts]], [[compute.ts]], [[recode.ts]], [[findings-repro.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]], [[data-fixes.test.ts]], [[expr.test.ts]]
 
 ### evaluateAll
 *function* · line 776 · exported

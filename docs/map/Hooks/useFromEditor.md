@@ -2,13 +2,13 @@
 id: "src/features/transform/common.tsx#useFromEditor"
 type: hook
 file: src/features/transform/common.tsx
-line: 257
+line: 281
 area: features/transform
 ---
 
 # useFromEditor()
 
-*React hook* · defined in [[transform/common.tsx]] (line 257) · area [[features - transform|features/transform]]
+*React hook* · defined in [[transform/common.tsx]] (line 281) · area [[features - transform|features/transform]]
 
 - **Exported:** yes
 

@@ -44,6 +44,8 @@ area: procedures
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
 - [[core/common.ts#categoriesOf|categoriesOf()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
 - [[core/common.ts#fmtCount|fmtCount()]] · procedure helper
@@ -52,6 +54,7 @@ area: procedures
 - [[core/common.ts#optNum|optNum()]] · procedure helper
 - [[core/common.ts#optStr|optStr()]] · procedure helper
 - [[core/common.ts#sameValue|sameValue()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
 - [[core/common.ts#tableBlock|tableBlock()]] · procedure helper
@@ -64,6 +67,7 @@ area: procedures
 - [[core/common.ts#weightVar|weightVar()]] · procedure helper
 
 ## Tested by
+- [[commands-smoke-analyze.spec.ts]] · procedure id
 - [[dialog.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id

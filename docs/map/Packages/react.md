@@ -15,6 +15,7 @@ type: package
 - [[Overlays.tsx]] · value
 - [[Sidebar.tsx]] · value
 - [[TopBar.tsx]] · value
+- [[ui-store.ts]] · value
 - [[Welcome.tsx]] · value
 - [[AiBits.tsx]] · value
 - [[AiFeatureDialogs.tsx]] · value
@@ -24,6 +25,8 @@ type: package
 - [[ExplainPanel.tsx]] · value
 - [[ai/hooks.ts]] · value
 - [[LocalSetup.tsx]] · value
+- [[StorageBanner.tsx]] · value
+- [[StorageManager.tsx]] · value
 - [[WebLlmSetup.tsx]] · value
 - [[ProcedureDialog.tsx]] · value
 - [[AssistantPanel.tsx]] · value
@@ -66,6 +69,7 @@ type: package
 - [[errorlog/actions.ts]] · value
 - [[ErrorLogDialog.tsx]] · value
 - [[FeedbackDialog.tsx]] · value
+- [[update.ts]] · value
 - [[output/icons.tsx]] · type-only
 - [[OutputTableView.tsx]] · value
 - [[OutputViewer.tsx]] · value
@@ -84,3 +88,4 @@ type: package
 - [[VarPicker.tsx]] · value
 - [[error-boundary.test.tsx]] · value
 - [[invariants.ts]] · value
+- [[errorlog-install.test.tsx]] · value

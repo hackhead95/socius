@@ -17,8 +17,10 @@ area: features/analysis
 
 ## Tested by
 - [[palette.test.tsx]] · import
+- [[findings-repro.test.ts]] · import
 - [[proc-harness.ts]] · import
 - [[dialog.test.ts]] · import
+- [[fuzz-fixes.test.ts]] · import
 
 ## Imported by
 - [[CommandPalette.tsx]] · value
@@ -26,8 +28,10 @@ area: features/analysis
 - [[assistant/actions.ts]] · value
 - [[tools/analysis.ts]] · value
 - [[palette.test.tsx]] · value
+- [[findings-repro.test.ts]] · value
 - [[proc-harness.ts]] · value
 - [[dialog.test.ts]] · dynamic, value
+- [[fuzz-fixes.test.ts]] · value
 
 ## Types
 Remembered (line 154)
@@ -100,7 +104,7 @@ memory (line 160)
 *function* · line 114 · exported
 > Problems that block running.
 - Calls: [[varUtils.ts#optionInactive|optionInactive()]], [[varUtils.ts#typeProblem|typeProblem()]]
-- Used in: [[ProcedureDialog.tsx]], [[tools/analysis.ts]], [[proc-harness.ts]], [[dialog.test.ts]]
+- Used in: [[ProcedureDialog.tsx]], [[tools/analysis.ts]], [[findings-repro.test.ts]], [[proc-harness.ts]], [[dialog.test.ts]], [[fuzz-fixes.test.ts]]
 
 ### remember
 *function* · line 162 · exported

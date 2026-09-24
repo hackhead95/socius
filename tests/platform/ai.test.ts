@@ -17,6 +17,7 @@ beforeEach(() => {
   __resetGeminiState();
   store = memoryStorage();
   vi.stubGlobal('localStorage', store);
+  vi.stubGlobal('sessionStorage', memoryStorage());
   __resetCapabilityCache();
   __setWebLlmLoader(null, { ok: false, reason: 'no_api', f16: false });
   __reloadAiSettings();
@@ -38,7 +39,7 @@ describe('settings persistence', () => {
   });
 
   it('saves to localStorage only and reads it back after a reload', () => {
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIza123', model: 'gemini-3.6-flash-lite' } });
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIza123', model: 'gemini-3.6-flash-lite' }, remember: { gemini: true, openai: false } });
     const raw = JSON.parse(store.data.get(AI_SETTINGS_KEY)!);
     expect(raw.provider).toBe('gemini');
     expect(raw.gemini.apiKey).toBe('AIza123');

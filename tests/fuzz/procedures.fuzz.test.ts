@@ -67,8 +67,11 @@ function fuzzProcedure(def: ProcedureDef) {
       if (m) report('filter', `filtered result differs from the same cases without a filter: ${m}`, (cc) => !!checkFilterSubset(cc));
     }
     if (row.$weight === 'none' && i % 2 === 0) {
-      const m = checkUserMissing(c, (t) => LISTS_MISSING_CODES.test(t));
-      if (m) report('missing', `user-missing codes not treated like system-missing: ${m}`, (cc) => !!checkUserMissing(cc, (t) => LISTS_MISSING_CODES.test(t)));
+      // Frequency tables are titled with the variable label and list each user-missing code as its own
+      // Missing row (SPSS), so they legitimately differ from the system-missing version.
+      const skip = (t: string) => LISTS_MISSING_CODES.test(t) || def.id === 'frequencies';
+      const m = checkUserMissing(c, skip);
+      if (m) report('missing', `user-missing codes not treated like system-missing: ${m}`, (cc) => !!checkUserMissing(cc, skip));
     }
   });
 

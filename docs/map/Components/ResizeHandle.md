@@ -2,13 +2,13 @@
 id: "src/features/assistant/AssistantPanel.tsx#ResizeHandle"
 type: component
 file: src/features/assistant/AssistantPanel.tsx
-line: 117
+line: 118
 area: features/assistant
 ---
 
 # <ResizeHandle>
 
-*React component* · defined in [[AssistantPanel.tsx]] (line 117) · area [[features - assistant|features/assistant]]
+*React component* · defined in [[AssistantPanel.tsx]] (line 118) · area [[features - assistant|features/assistant]]
 
 ## Calls
 - [[useAssistantChat]]

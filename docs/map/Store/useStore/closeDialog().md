@@ -2,13 +2,13 @@
 id: "store-action:useStore.closeDialog"
 type: store-action
 file: src/core/store.ts
-line: 135
+line: 137
 area: core
 ---
 
 # useStore.closeDialog()
 
-*Store action* · defined in [[store.ts]] (line 135) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 137) · area [[core]]
 
 - **Store:** useStore
 

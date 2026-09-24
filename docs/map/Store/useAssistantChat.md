@@ -30,7 +30,7 @@ area: features/assistant
 |---|---|---|
 | [[clear()]] | [[controller]], [[datasetId]], [[entries]], [[useAssistantChat/focusOutputId\|focusOutputId]], [[useAssistantChat/history\|history]], [[running]] | 2 |
 | [[patchEntry()]] | [[entries]] | 3 |
-| [[setDraft()]] | [[draft]] | 2 |
+| [[setDraft()]] | [[draft]] | 3 |
 | [[setFocusOutput()]] | [[useAssistantChat/focusOutputId\|focusOutputId]] | 2 |
 | [[setPermission()]] | [[permissions]] | 1 |
 | [[setWidth()]] | [[width]] | 1 |
@@ -72,6 +72,7 @@ area: features/assistant
 - [[AssistantPanel|<AssistantPanel>]]
 - [[AssistantRoot|<AssistantRoot>]]
 - [[Composer|<Composer>]]
+- [[Components/Empty|<Empty>]]
 - [[AssistantPanel.tsx#currentContext|currentContext()]]
 - [[controller.ts#dismissArtifact|dismissArtifact()]]
 - [[controller.ts#retryLast|retryLast()]]

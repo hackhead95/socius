@@ -2,7 +2,7 @@ import { Fragment, useState, type ReactElement } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { band, barPath, formatTick, formatValue, linear, niceTicks } from './scale';
 import {
-  ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, XAxisNumeric, YAxis, fit, headerLayout, listText, maxLabelWidth, measureText, seriesColor,
+  ChartHeader, ChartSvg, FS_AXIS, FS_TICK, TipRow, XAxisNumeric, YAxis, fit, useHeaderLayout, listText, maxLabelWidth, measureText, seriesColor,
   type LegendItem, type SetTip,
 } from './common';
 
@@ -29,7 +29,7 @@ export function BarChart({ spec, width, setTip }: { spec: BarSpec; width: number
   const S = spec.series.length;
   const C = spec.categories.length;
   const legend: LegendItem[] = spec.series.map((s, i) => ({ label: s.name, color: seriesColor(i) }));
-  const head = headerLayout(spec.title, legend, width);
+  const head = useHeaderLayout(spec.title, legend, width);
   const pct = !!spec.percent;
   const horizontal = !!spec.horizontal;
 

@@ -65,6 +65,8 @@ area: procedures
 - [[core/common.ts#blank|blank()]] · procedure helper
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#decFmt|decFmt()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
@@ -74,6 +76,7 @@ area: procedures
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#listProse|listProse()]] · procedure helper
 - [[chartUtil.ts#niceWidth|niceWidth()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#optBool|optBool()]] · procedure helper
 - [[core/common.ts#optStr|optStr()]] · procedure helper
 - [[core/common.ts#parseNumberList|parseNumberList()]] · procedure helper
@@ -90,13 +93,20 @@ area: procedures
 ## Tested by
 - [[ai-features.spec.ts]] · menu label
 - [[ai-local.spec.ts]] · menu label
+- [[commands-smoke-app.spec.ts]] · menu label
+- [[errorlog.spec.ts]] · menu label
 - [[quant.spec.ts]] · menu label
 - [[search.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
 - [[navigation-audit.test.tsx]] · menu label
 - [[palette.test.tsx]] · procedure id
 - [[search.test.ts]] · menu label, procedure id
+- [[ui-overlays.test.tsx]] · menu label
 - [[scenarios.test.ts]] · procedure id
+- [[procedures.fuzz.test.ts]] · procedure id
+- [[figures.test.tsx]] · menu label
 - [[format.test.ts]] · menu label
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 

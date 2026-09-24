@@ -7,7 +7,7 @@ area: features/transform
 
 # src/features/transform/MergeDialogs.tsx
 
-*Module* · area [[features - transform|features/transform]] · 242 lines
+*Module* · area [[features - transform|features/transform]] · 243 lines
 
 > Data > Merge Files (Add Cases / Add Variables) and Data > Aggregate.
 
@@ -53,7 +53,7 @@ fmtN() (line 14)
 ### AggregateDialog
 *component* · line 165 · exported · note: [[AggregateDialog|<AggregateDialog>]]
 - Renders: [[Icon|<Icon>]], [[TextField|<TextField>]], [[TransformModal|<TransformModal>]], [[VarPicker|<VarPicker>]], [[VarSelect|<VarSelect>]]
-- Calls: [[MergeDialogs.tsx]], [[aggregate.ts#aggregate|aggregate()]], [[errorlog.ts#logFailure|logFailure()]], [[transform/common.tsx#applyTransform|applyTransform()]]
-- Uses: [[aggregate.ts#AGG_FUNCTIONS|AGG_FUNCTIONS]], [[useStore]], [[useUi]]
+- Calls: [[MergeDialogs.tsx]], [[aggregate.ts#aggNeedsSource|aggNeedsSource()]], [[aggregate.ts#aggregate|aggregate()]], [[errorlog.ts#logFailure|logFailure()]], [[transform/common.tsx#applyTransform|applyTransform()]]
+- Uses: [[aggregate.ts#AGG_FUNCTIONS|AGG_FUNCTIONS]], [[aggregate.ts#STRING_AGG_FUNCTIONS|STRING_AGG_FUNCTIONS]], [[useStore]], [[useUi]]
 - Store actions: [[confirm()|useUi.confirm()]], [[setTab()|useStore.setTab()]]
 - Used in: [[TransformDialogs.tsx]]

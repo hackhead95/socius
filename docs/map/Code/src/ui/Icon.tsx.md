@@ -25,6 +25,7 @@ area: ui
 - [[DefineProperties.tsx]] · value
 - [[VarDialogs.tsx]] · value
 - [[VariableView.tsx]] · value
+- [[UpdateBanner.tsx]] · value
 - [[FileDialogs.tsx]] · value
 - [[CasesDialogs.tsx]] · value
 - [[transform/common.tsx]] · value
@@ -45,4 +46,4 @@ PATHS (line 4)
 ### Icon
 *component* · line 46 · exported · note: [[Icon|<Icon>]]
 - Uses: [[Icon.tsx]]
-- Rendered by: [[AggregateDialog|<AggregateDialog>]], [[AutoRecodeDialog|<AutoRecodeDialog>]], [[CommandPalette|<CommandPalette>]], [[Components/SampleBanner|<SampleBanner>]], [[Components/Toasts|<Toasts>]], [[CountDialog|<CountDialog>]], [[DataViewInner|<DataViewInner>]], [[DefinePropertiesDialog|<DefinePropertiesDialog>]], [[DialogCell|<DialogCell>]], [[DropOverlay|<DropOverlay>]], [[ExpressionHelper|<ExpressionHelper>]], [[FindBar|<FindBar>]], [[GotoBar|<GotoBar>]], [[MenuList|<MenuList>]], [[MenuSheetButton|<MenuSheetButton>]], [[RecentProjectsDialog|<RecentProjectsDialog>]], [[RecodeDialog|<RecodeDialog>]], [[Sidebar|<Sidebar>]], [[SortDialog|<SortDialog>]], [[StatsPopover|<StatsPopover>]], [[StatusGlyph|<StatusGlyph>]], [[TopBar|<TopBar>]], [[TransformModal|<TransformModal>]], [[ValueLabelsDialog|<ValueLabelsDialog>]], [[VarPicker|<VarPicker>]] … +4
+- Rendered by: [[AggregateDialog|<AggregateDialog>]], [[AutoRecodeDialog|<AutoRecodeDialog>]], [[CommandPalette|<CommandPalette>]], [[Components/SampleBanner|<SampleBanner>]], [[Components/Toasts|<Toasts>]], [[CountDialog|<CountDialog>]], [[DataViewInner|<DataViewInner>]], [[DefinePropertiesDialog|<DefinePropertiesDialog>]], [[DialogCell|<DialogCell>]], [[DropOverlay|<DropOverlay>]], [[ExpressionHelper|<ExpressionHelper>]], [[FindBar|<FindBar>]], [[GotoBar|<GotoBar>]], [[MenuList|<MenuList>]], [[MenuSheetButton|<MenuSheetButton>]], [[RecentProjectsDialog|<RecentProjectsDialog>]], [[RecodeDialog|<RecodeDialog>]], [[Sidebar|<Sidebar>]], [[SortDialog|<SortDialog>]], [[StatsPopover|<StatsPopover>]], [[StatusGlyph|<StatusGlyph>]], [[TopBar|<TopBar>]], [[TransformModal|<TransformModal>]], [[UpdateBanner|<UpdateBanner>]], [[ValueLabelsDialog|<ValueLabelsDialog>]] … +6

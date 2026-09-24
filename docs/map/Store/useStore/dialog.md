@@ -2,13 +2,13 @@
 id: "store-key:useStore.dialog"
 type: store-key
 file: src/core/store.ts
-line: 89
+line: 91
 area: core
 ---
 
 # useStore.dialog
 
-*Store state key* · defined in [[store.ts]] (line 89) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 91) · area [[core]]
 
 - **Store:** useStore
 
@@ -29,6 +29,7 @@ area: core
 - [[error-boundary.test.tsx]] · setState
 - [[navigation-audit.test.tsx]] · setState
 - [[palette.test.tsx]] · setState
+- [[shortcut-precedence.test.tsx]] · setState
 - [[closeDialog()|useStore.closeDialog()]]
 - [[openDialog()|useStore.openDialog()]]
 

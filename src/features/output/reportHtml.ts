@@ -4,6 +4,7 @@
 import type { OutputBlock, OutputItem } from '../../core/output';
 import type { TableStyle } from './format';
 import { esc, tableToHtml } from './tableRender';
+import { formatDateTime, formatLongDate } from '../../core/format-date';
 
 export interface ReportOptions {
   style: TableStyle;
@@ -21,9 +22,9 @@ export type ChartHtml = (block: Extract<OutputBlock, { kind: 'chart' }>, index: 
 
 const SERIF = "'Source Serif 4', Georgia, 'Times New Roman', serif";
 
+/** When a result was made: the app-wide date and time format ("24 Sep 2026, 14:55"). */
 export function formatItemTime(ts: number): string {
-  const d = new Date(ts);
-  return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatDateTime(ts);
 }
 
 export function itemMeta(item: OutputItem): string[] {
@@ -91,7 +92,7 @@ export function itemToHtml(item: OutputItem, opts: ReportOptions, counters: Coun
 export function reportToHtmlDocument(items: OutputItem[], opts: ReportOptions, chartHtml: (block: Extract<OutputBlock, { kind: 'chart' }>, itemIndex: number, blockIndex: number) => string | null, title = 'Analysis report'): string {
   const counters: Counters = { table: 0, figure: 0 };
   const datasets = [...new Set(items.map((i) => i.datasetName).filter(Boolean))] as string[];
-  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const date = formatLongDate(Date.now());
   const body = items.map((it, ii) => `<section class="item">${itemToHtml(it, opts, counters, (b, bi) => chartHtml(b, ii, bi))}</section>`).join('\n');
   return `<!doctype html>
 <html lang="en">

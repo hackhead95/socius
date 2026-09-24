@@ -2,13 +2,13 @@
 id: "src/features/coding/CodingWorkspace.tsx#Welcome"
 type: component
 file: src/features/coding/CodingWorkspace.tsx
-line: 196
+line: 238
 area: features/coding
 ---
 
 # <Welcome>
 
-*React component* · defined in [[CodingWorkspace.tsx]] (line 196) · area [[features - coding|features/coding]]
+*React component* · defined in [[CodingWorkspace.tsx]] (line 238) · area [[features - coding|features/coding]]
 
 ## Calls
 - [[uiStore.ts#openLocalDialog|openLocalDialog()]]

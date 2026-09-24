@@ -1,9 +1,11 @@
 // Multinomial Logistic Regression (SPSS NOMREG): baseline-category logit for an unordered outcome.
 
+import { ciOption, confLevel, labelOf, levelText } from '../text';
 import type { Dataset, Variable } from '../../core/types';
 import type { OptionValues, ProcedureDef, SlotValues } from '../../core/procedure';
 import type { Cell, OutputBlock, OutputTable } from '../../core/output';
-import { categoryLabel, requireVariable } from '../../core/data';
+import { selMissing } from '../core/common';
+import { requireVariable } from '../../core/data';
 import { chi2Sf } from '../../lib/stats/distributions';
 import { expCI, fitMultinomial, multinomialNullLogLik, pseudoR2, screenCollinear, type MultinomialFit } from '../../lib/stats/logistic';
 import { sum } from '../../lib/stats/models-util';
@@ -36,9 +38,9 @@ import {
   slot,
   syntaxPreamble,
   textBlock,
-  textName,
   type ReferenceChoice,
   type Term,
+  proseNamer,
 } from './common';
 import { oddsPhrase } from './binary';
 
@@ -88,7 +90,7 @@ export const multinomialLogistic: ProcedureDef = {
       group: 'Categorical predictors',
     },
     { key: 'classification', label: 'Classification table', type: 'checkbox', default: true, group: 'Output' },
-    { key: 'confLevel', label: 'Confidence level (%)', type: 'number', default: 95, min: 50, max: 99.9, step: 1, group: 'Output' },
+    ciOption('confLevel', 'Confidence level (%)', 'Output'),
     { key: 'maxIter', label: 'Maximum iterations', type: 'number', default: 100, min: 5, max: 1000, step: 5, group: 'Output' },
   ],
   validate: (ds, v) => {
@@ -113,7 +115,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const dummy = optBool(opts, 'dummy', true);
   const reference = optStr<ReferenceChoice>(opts, 'reference', 'first');
   const showClass = optBool(opts, 'classification', true);
-  const confPct = Math.min(Math.max(optNum(opts, 'confLevel', 95), 50), 99.9);
+  const confPct = confLevel(opts, 'confLevel', 'Confidence level (%)') * 100;
   const conf = confPct / 100;
   const maxIter = Math.round(optNum(opts, 'maxIter', 100));
 
@@ -132,7 +134,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   }
   const idxOf = new Map(depLevels.map((l, i) => [l.value, i]));
   const y = Int32Array.from(depVals, (v) => idxOf.get(v)!);
-  const catLabel = (j: number) => categoryLabel(depVar, depLevels[j].value);
+  const catLabel = (j: number) => labelOf(depVar, depLevels[j].value);
 
   const terms = buildTerms(ds, predIds, sel.rows, w, { dummy, reference });
   const allCols: Col[] = [];
@@ -149,7 +151,8 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   const fit = fitMultinomial(y, J, ref, X, w, { maxIter });
   const ll0 = multinomialNullLogLik(y, J, w);
-  const chi = -2 * ll0 - fit.m2ll;
+  // The likelihood-ratio statistic cannot be negative (the null model is nested); a tiny negative value is rounding.
+  const chi = Math.max(0, -2 * ll0 - fit.m2ll);
   const dfModel = (J - 1) * p;
   const pModel = chi2Sf(chi, dfModel);
   const pr = pseudoR2(ll0, fit.logLik, W);
@@ -160,7 +163,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   const blocks: OutputBlock[] = [heading(`Multinomial Logistic Regression: ${footName(depVar)}`)];
   const factorTerms = terms.filter((t) => t.kind === 'factor' && t.cols.length > 0);
-  blocks.push(tbl(marginalCaseSummary(depVar, depLevels, factorTerms, sel, countPatterns(X, y.length))));
+  blocks.push(tbl(marginalCaseSummary(depVar, depLevels, factorTerms, sel, countPatterns(X, y.length), selMissing(ds, sel))));
   blocks.push(
     tbl({
       title: 'Model Fitting Information',
@@ -215,7 +218,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   // Parameter Estimates
   {
     const header: Cell[][] = [
-      [hcell(depVar.name, { colSpan: 2, rowSpan: 2, mark: 'a' }), hcell('B', { rowSpan: 2 }), hcell('Std. Error', { rowSpan: 2 }), hcell('Wald', { rowSpan: 2 }), hcell('df', { rowSpan: 2 }), hcell('Sig.', { rowSpan: 2 }), hcell('Exp(B)', { rowSpan: 2 }), hcell(`${confPct.toFixed(0)}% Confidence Interval for Exp(B)`, { colSpan: 2 })],
+      [hcell(depVar.name, { colSpan: 2, rowSpan: 2, mark: 'a' }), hcell('B', { rowSpan: 2 }), hcell('Std. Error', { rowSpan: 2 }), hcell('Wald', { rowSpan: 2 }), hcell('df', { rowSpan: 2 }), hcell('Sig.', { rowSpan: 2 }), hcell('Exp(B)', { rowSpan: 2 }), hcell(`${levelText(confPct / 100)}% Confidence Interval for Exp(B)`, { colSpan: 2 })],
       [hcell('Lower Bound'), hcell('Upper Bound')],
     ];
     const rows: Cell[][] = [];
@@ -232,7 +235,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
           seCell.mark = 'c';
           anyMarked = true;
         }
-        const r: Cell[] = [cell(label, 'text'), coefCell(b), seCell, cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1))];
+        const r: Cell[] = [cell(label, 'text'), coefCell(b, 'coef', se), seCell, cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1))];
         if (j === 0) r.push(cell(null), cell(null), cell(null));
         else {
           const [lo, hi] = expCI(b, se, conf);
@@ -247,11 +250,11 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
           for (const lv of t.levels ?? []) {
             if (lv.value === t.refValue) {
               anyRedundant = true;
-              group.push([cell(`[${t.variable.name} = ${categoryLabel(t.variable, lv.value)}]`, 'text'), cell(0, 'coef', { mark: 'b' }), cell(null), cell(null), cell(0, 'int'), cell(null), cell(null), cell(null), cell(null)]);
+              group.push([cell(`[${t.variable.name} = ${labelOf(t.variable, lv.value)}]`, 'text'), cell(0, 'coef', { mark: 'b' }), cell(null), cell(null), cell(0, 'int'), cell(null), cell(null), cell(null), cell(null)]);
               continue;
             }
             const j = idx.find((jj) => cols[jj].term.levelValues[cols[jj].level] === lv.value);
-            if (j !== undefined) group.push(pr1(`[${t.variable.name} = ${categoryLabel(t.variable, lv.value)}]`, j + 1));
+            if (j !== undefined) group.push(pr1(`[${t.variable.name} = ${labelOf(t.variable, lv.value)}]`, j + 1));
           }
         } else for (const j of idx) group.push(pr1(cols[j].name, j + 1));
       }
@@ -312,16 +315,21 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   for (const t of notes) blocks.push(textBlock('note', t));
 
   // Interpretation
-  const depText = textName(depVar);
+  // One naming convention for every sentence: labels only if all the variables have usable labels.
+  const nm = proseNamer([depVar, ...terms.map((t) => t.variable)]);
+  const depText = nm(depVar);
   const refLab = catLabel(ref);
   const ip: string[] = [];
+  const modelTestable = dfModel > 0 && Number.isFinite(pModel);
   ip.push(
-    pModel < 0.05
+    !modelTestable
+      ? 'No predictor could be estimated (constant or collinear predictors are left out), so the model cannot be compared with a model with no predictors.'
+      : pModel < 0.05
       ? `The predictors together improve the prediction of ${depText} significantly compared with a model with no predictors (${fmtP(pModel)}); Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`
       : `The predictors together do not significantly improve the prediction of ${depText} compared with a model with no predictors (${fmtP(pModel)}).`,
   );
-  const sigT = usedTerms.filter((t) => (lrByTerm.get(t)?.p ?? 1) < 0.05).map((t) => t.variable.name);
-  const nsT = usedTerms.filter((t) => !((lrByTerm.get(t)?.p ?? 1) < 0.05)).map((t) => t.variable.name);
+  const sigT = usedTerms.filter((t) => (lrByTerm.get(t)?.p ?? 1) < 0.05).map((t) => nm(t.variable));
+  const nsT = usedTerms.filter((t) => !((lrByTerm.get(t)?.p ?? 1) < 0.05)).map((t) => nm(t.variable));
   if (sigT.length) ip.push(`According to the likelihood ratio tests, ${listText(sigT)} ${sigT.length === 1 ? 'is' : 'are'} significantly related to ${depText}.`);
   if (nsT.length) ip.push(sigT.length ? `The other predictor${nsT.length === 1 ? '' : 's'} (${listText(nsT)}) ${nsT.length === 1 ? 'is' : 'are'} not (p ≥ .05).` : `None of the predictors (${listText(nsT)}) is significantly related to ${depText} on its own (p ≥ .05).`);
   ip.push(`Each outcome category is compared with "${refLab}".`);
@@ -333,8 +341,8 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
       if (!(pv < 0.05) || !((lrByTerm.get(c.term)?.p ?? 1) < 0.05)) return;
       const or = Math.exp(b);
       const odds = `the odds of "${catLabel(cat)}" rather than "${refLab}"`;
-      if (c.term.kind === 'factor') details.push(`for ${c.term.variable.name} = ${c.term.levelLabels[c.level]} (compared with ${c.term.refLabel}), ${odds} are ${oddsPhrase(or)} (${fmtP(pv)})`);
-      else details.push(`each one-unit increase in ${textName(c.term.variable)} multiplies ${odds} by ${num(or, 2)} (${fmtP(pv)})`);
+      if (c.term.kind === 'factor') details.push(`for ${nm(c.term.variable)} = ${c.term.levelLabels[c.level]} (compared with ${c.term.refLabel}), ${odds} are ${oddsPhrase(or)} (${fmtP(pv)})`);
+      else details.push(`each one-unit increase in ${nm(c.term.variable)} multiplies ${odds} by ${num(or, 2)} (${fmtP(pv)})`);
     });
   });
   if (details.length) ip.push(`Holding the other predictors constant: ${details.slice(0, 8).join('; ')}${details.length > 8 ? '; see the Parameter Estimates table for the rest' : ''}.`);
@@ -343,12 +351,14 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   blocks.push(textBlock('interpretation', ip.join(' ')));
 
   const apa: string[] = [
-    `A multinomial logistic regression was conducted to predict ${depText} (reference category: ${refLab}) from ${listText(terms.map((t) => t.variable.name))}. ` +
-      `The model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the intercept-only model, χ²(${dfModel}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`,
+    `A multinomial logistic regression was conducted to predict ${depText} (reference category: ${refLab}) from ${listText(terms.map((t) => nm(t.variable)))}. ` +
+      (modelTestable
+        ? `The model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the intercept-only model, χ²(${dfModel}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`
+        : 'No predictor could be estimated, so the model was not tested against the intercept-only model.'),
   ];
   const lrApa = usedTerms.map((t) => {
     const r = lrByTerm.get(t)!;
-    return `${t.variable.name}, χ²(${r.df}) = ${num(r.chi, 2)}, ${fmtP(r.p)}`;
+    return `${nm(t.variable)}, χ²(${r.df}) = ${num(r.chi, 2)}, ${fmtP(r.p)}`;
   });
   if (lrApa.length) apa.push(`Likelihood ratio tests: ${lrApa.join('; ')}.`);
   blocks.push(textBlock('apa', apa.join(' ')));
@@ -430,7 +440,7 @@ function buildSyntax(ds: Dataset, depVar: Variable, terms: Term[], base: string 
   const baseText = typeof base === 'number' ? String(base) : base === 'FIRST' || base === 'LAST' ? base : `'${base}'`;
   lines.push(
     `NOMREG ${depVar.name} (BASE=${baseText} ORDER=ASCENDING) WITH ${terms.flatMap((t) => t.syntaxNames).join(' ')}`,
-    `  /CRITERIA CIN(${Number(confPct.toFixed(1))}) DELTA(0) MXITER(${maxIter}) MXSTEP(5) CHKSEP(20) LCONVERGE(0) PCONVERGE(0.000001) SINGULAR(0.00000001)`,
+    `  /CRITERIA CIN(${levelText(confPct / 100)}) DELTA(0) MXITER(${maxIter}) MXSTEP(5) CHKSEP(20) LCONVERGE(0) PCONVERGE(0.000001) SINGULAR(0.00000001)`,
     `  /MODEL`,
     '  /STEPWISE=PIN(.05) POUT(0.1) MINEFFECT(0) RULE(SINGLE) ENTRYMETHOD(LR) REMOVALMETHOD(LR)',
     '  /INTERCEPT=INCLUDE',

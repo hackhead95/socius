@@ -2,13 +2,13 @@
 id: "src/features/assistant/AssistantPanel.tsx#SeeMenu"
 type: component
 file: src/features/assistant/AssistantPanel.tsx
-line: 156
+line: 157
 area: features/assistant
 ---
 
 # <SeeMenu>
 
-*React component* · defined in [[AssistantPanel.tsx]] (line 156) · area [[features - assistant|features/assistant]]
+*React component* · defined in [[AssistantPanel.tsx]] (line 157) · area [[features - assistant|features/assistant]]
 
 ## Calls
 - [[useAssistantChat]]

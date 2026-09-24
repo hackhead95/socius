@@ -2,13 +2,13 @@
 id: "store-action:useUi.markClean"
 type: store-action
 file: src/app/ui-store.ts
-line: 35
+line: 41
 area: app
 ---
 
 # useUi.markClean()
 
-*Store action* · defined in [[ui-store.ts]] (line 35) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 41) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

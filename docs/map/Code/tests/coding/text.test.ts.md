@@ -33,21 +33,21 @@ area: tests
   - does not pair words across a comma, dash or bracket
 
 ## Imports
-- [[text.ts]] · value
+- [[coding/text.ts]] · value
 - [[vitest]] · value
 
 ## Calls
-- [[text.ts#bigramFrequencies|bigramFrequencies()]]
-- [[text.ts#charLength|charLength()]]
-- [[text.ts#kwic|kwic()]]
-- [[text.ts#searchRegex|searchRegex()]]
-- [[text.ts#splitParagraphs|splitParagraphs()]]
-- [[text.ts#splitSentences|splitSentences()]]
-- [[text.ts#tokenize|tokenize()]]
-- [[text.ts#wordFrequencies|wordFrequencies()]]
+- [[coding/text.ts#bigramFrequencies|bigramFrequencies()]]
+- [[coding/text.ts#charLength|charLength()]]
+- [[coding/text.ts#kwic|kwic()]]
+- [[coding/text.ts#searchRegex|searchRegex()]]
+- [[coding/text.ts#splitParagraphs|splitParagraphs()]]
+- [[coding/text.ts#splitSentences|splitSentences()]]
+- [[coding/text.ts#tokenize|tokenize()]]
+- [[coding/text.ts#wordFrequencies|wordFrequencies()]]
 
 ## Tests
-- [[text.ts]] · import
+- [[coding/text.ts]] · import
 
 ## Private helpers
 sentences() (line 4)

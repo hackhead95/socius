@@ -2,13 +2,13 @@
 id: "src/features/coding/ui.tsx#Segmented"
 type: component
 file: src/features/coding/ui.tsx
-line: 126
+line: 233
 area: features/coding
 ---
 
 # <Segmented>
 
-*React component* · defined in [[ui.tsx]] (line 126) · area [[features - coding|features/coding]]
+*React component* · defined in [[ui.tsx]] (line 233) · area [[features - coding|features/coding]]
 
 - **Exported:** yes
 

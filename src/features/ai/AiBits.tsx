@@ -1,8 +1,9 @@
 // Small pieces shown wherever AI help is offered: the set-up button ("Set up AI", the one wording for
 // every set-up prompt; it opens the same AI assistant settings dialog as AI > AI assistant settings), the "what will be sent where" note,
 // the privacy notice and the on-device download progress.
-import { useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { getAiSettings, providerPrivacy, type AiPrivacy, type AiProviderId, type AiStatus } from '../../platform/ai';
+import { getAiActivity, stageLabel, subscribeAiActivity, type AiActivity } from '../../platform/ai-timing';
 import { copyToClipboard } from '../../platform/host';
 import { webLlmChoice } from '../../platform/ai-webllm';
 import { openAiSettings, useAiStatus, useWebLlmState } from './hooks';
@@ -108,10 +109,51 @@ export function AiErrorDetails({ report }: { report?: string }) {
   );
 }
 
-/** Download / load progress of the on-device model, shown while a request is waiting for it. */
-export function AiLoadProgress({ onCancel }: { onCancel?: () => void }) {
+/** The current AI activity (the newest, or the newest of one kind: "assistant", "explain"...). */
+export function useAiActivity(op?: string): AiActivity | null {
+  return useSyncExternalStore(
+    subscribeAiActivity,
+    () => getAiActivity(op),
+    () => null,
+  );
+}
+
+const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+/**
+ * What the AI is doing right now, with the time so far: "Waiting for Google · 3 s", "Thinking · 2 s",
+ * or a countdown for a free-tier limit: "Waiting 11 s for Google's free limit...". Only the stage is
+ * announced to screen readers (not every second).
+ */
+export function AiActivityLine({ op, fallback }: { op?: string; fallback?: string }) {
+  const act = useAiActivity(op);
+  const [, tick] = useState(0);
+  const running = !!act?.active;
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(() => tick((n) => n + 1), 250);
+    return () => clearInterval(t);
+  }, [running, act?.id]);
+  if (!act || !act.active) return fallback ? <span className="help">{fallback}</span> : null;
+  const now = nowMs();
+  const secs = Math.max(0, Math.floor((now - act.startedAt) / 1000));
+  const left = act.stage === 'limit' && act.waitUntil ? Math.max(0, Math.ceil((act.waitUntil - now) / 1000)) : undefined;
+  const label = left !== undefined ? stageLabel('limit', act.provider, left) : act.label;
+  const spoken = act.stage === 'limit' ? (act.provider === 'gemini' ? "Waiting for Google's free limit" : "Waiting for the service's limit") : act.label;
+  return (
+    <span className="ai-activity help" data-stage={act.stage} data-testid="ai-activity">
+      <span className="spinner" aria-hidden="true" />
+      <span className="sr-only" role="status" aria-live="polite">{spoken}</span>
+      <span aria-hidden="true" className="ai-activity-label">{label}</span>
+      {act.stage !== 'limit' ? <span aria-hidden="true" className="ai-activity-time num">· {secs} s</span> : null}
+    </span>
+  );
+}
+
+/** Download / load progress of the on-device model, shown while a request is waiting for it; otherwise what the AI is doing. */
+export function AiLoadProgress({ onCancel, activity = true }: { onCancel?: () => void; activity?: boolean }) {
   const st = useWebLlmState();
-  if (st.phase !== 'loading') return null;
+  if (st.phase !== 'loading') return activity ? <AiActivityLine /> : null;
   const pct = Math.round(st.progress * 100);
   return (
     <div className="ai-progress" aria-live="polite">

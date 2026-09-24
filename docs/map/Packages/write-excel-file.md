@@ -12,3 +12,4 @@ type: package
 - [[exportXlsx.ts]] · value
 - [[fileActions.ts]] · dynamic
 - [[xlsx.ts]] · dynamic
+- [[codebook-roundtrip.test.ts]] · dynamic

@@ -7,7 +7,7 @@ area: features/data
 
 # src/features/data/VarDialogs.tsx
 
-*Module* · area [[features - data|features/data]] · 454 lines
+*Module* · area [[features - data|features/data]] · 456 lines
 
 > Variable View dialogs: Type, Value Labels, Missing Values, Copy Properties.
 
@@ -17,6 +17,8 @@ area: features/data
 - [[store.ts]] · value
 - [[core/types.ts]] · type-only
 - [[mutations.ts]] · value
+- [[transform/common.tsx]] · value
+- [[properties.ts]] · value
 - [[Icon.tsx]] · value
 - [[Modal.tsx]] · value
 - [[VarPicker.tsx]] · value
@@ -33,17 +35,17 @@ area: features/data
 - [[dataview.test.ts]] · value
 
 ## Private helpers
-DATE_FORMATS (line 15) · kindOf() (line 35) · textDecimals() (line 46)
+DATE_FORMATS (line 17) · kindOf() (line 37) · textDecimals() (line 48)
 
 ## Symbols
 
 ### typeName
-*function* · line 25 · exported
+*function* · line 27 · exported
 - Calls: [[core/data.ts#isDateFormat|isDateFormat()]]
 - Used in: [[VariableView.tsx]]
 
 ### TypeDialog
-*component* · line 57 · exported · note: [[TypeDialog|<TypeDialog>]]
+*component* · line 59 · exported · note: [[TypeDialog|<TypeDialog>]]
 - Renders: [[Modal|<Modal>]]
 - Calls: [[VarDialogs.tsx]], [[mutations.ts#changeType|changeType()]], [[useStore]]
 - Uses: [[VarDialogs.tsx]], [[useStore]]
@@ -51,39 +53,39 @@ DATE_FORMATS (line 15) · kindOf() (line 35) · textDecimals() (line 46)
 - Rendered by: [[VariableViewInner|<VariableViewInner>]]
 
 ### describeValueLabels
-*function* · line 156 · exported
+*function* · line 158 · exported
 > ---------- Value labels ----------
 - Used in: [[VariableView.tsx]]
 
 ### parseLabelLines
-*function* · line 164 · exported
+*function* · line 166 · exported
 > Parse pasted lines like "1=Male", "2 Female", "3<TAB>Other", "'a' = Yes".
 - Used in: [[dataview.test.ts]]
 
 ### ValueLabelsDialog
-*component* · line 191 · exported · note: [[ValueLabelsDialog|<ValueLabelsDialog>]]
+*component* · line 193 · exported · note: [[ValueLabelsDialog|<ValueLabelsDialog>]]
 - Renders: [[Icon|<Icon>]], [[Modal|<Modal>]]
-- Calls: [[VarDialogs.tsx#parseLabelLines|parseLabelLines()]], [[core/data.ts#isUserMissing|isUserMissing()]], [[useStore]]
-- Store actions: [[updateVariable()|useStore.updateVariable()]]
+- Calls: [[VarDialogs.tsx#parseLabelLines|parseLabelLines()]], [[core/data.ts#isUserMissing|isUserMissing()]], [[mutations.ts#patchVariable|patchVariable()]], [[useStore]]
+- Store actions: [[mutateDataset()|useStore.mutateDataset()]]
 - Rendered by: [[VariableViewInner|<VariableViewInner>]]
 
 ### describeMissing
-*function* · line 300 · exported
+*function* · line 302 · exported
 > ---------- Missing values ----------
 - Used in: [[VariableView.tsx]]
 
 ### MissingDialog
-*component* · line 308 · exported · note: [[MissingDialog|<MissingDialog>]]
+*component* · line 310 · exported · note: [[MissingDialog|<MissingDialog>]]
 - Renders: [[Modal|<Modal>]]
-- Calls: [[useStore]]
-- Store actions: [[updateVariable()|useStore.updateVariable()]]
+- Calls: [[mutations.ts#patchVariable|patchVariable()]], [[useStore]]
+- Store actions: [[mutateDataset()|useStore.mutateDataset()]]
 - Rendered by: [[VariableViewInner|<VariableViewInner>]]
 
 ### CopyPropertiesDialog
-*component* · line 401 · exported · note: [[CopyPropertiesDialog|<CopyPropertiesDialog>]]
+*component* · line 403 · exported · note: [[CopyPropertiesDialog|<CopyPropertiesDialog>]]
 > ---------- Copy properties ----------
 - Renders: [[Modal|<Modal>]], [[VarPicker|<VarPicker>]]
-- Calls: [[mutations.ts#copyProperties|copyProperties()]], [[useStore]]
-- Uses: [[mutations.ts#COPY_PROPS|COPY_PROPS]]
-- Store actions: [[mutateDataset()|useStore.mutateDataset()]], [[toast()|useStore.toast()]]
+- Calls: [[properties.ts#copyPropertiesTransform|copyPropertiesTransform()]], [[transform/common.tsx#applyTransform|applyTransform()]]
+- Uses: [[properties.ts#COPY_PROPS|COPY_PROPS]], [[useStore]]
+- Reads: [[dataset|useStore.dataset]]
 - Rendered by: [[DialogHost|<DialogHost>]], [[VariableViewInner|<VariableViewInner>]]

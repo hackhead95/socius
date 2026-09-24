@@ -23,7 +23,7 @@ area: features/coding
 - [[coding/analysis.ts]] · value
 - [[exports.ts]] · value
 - [[segments.ts]] · value
-- [[text.ts]] · value
+- [[coding/text.ts]] · value
 - [[tree.ts]] · value
 
 ## Imported by
@@ -42,7 +42,7 @@ EMPTY (line 20) · ZWSP (line 21) · LANE_W (line 22) · MAX_LANES (line 23) · 
 ### Reader
 *component* · line 183 · exported · note: [[Reader|<Reader>]]
 - Renders: [[CodeChip|<CodeChip>]], [[Floating|<Floating>]], [[Para|<Para>]], [[QuickCode|<QuickCode>]], [[Swatch|<Swatch>]]
-- Calls: [[Reader.tsx]], [[coding/actions.ts#applyCode|applyCode()]], [[coding/actions.ts#createCode|createCode()]], [[coding/actions.ts#createMemo|createMemo()]], [[coding/actions.ts#removeSegment|removeSegment()]], [[coding/actions.ts#setSegmentMemo|setSegmentMemo()]], [[coding/actions.ts#uncodeRange|uncodeRange()]], [[coding/analysis.ts#constantAttributeKeys|constantAttributeKeys()]], [[coding/analysis.ts#orderedAttributes|orderedAttributes()]], [[coding/hooks.ts#plural|plural()]], [[exports.ts#originLabel|originLabel()]], [[segments.ts#assignLanes|assignLanes()]], [[segments.ts#splitLines|splitLines()]], [[segments.ts#trimRange|trimRange()]], [[text.ts#tokenize|tokenize()]], [[tree.ts#codePath|codePath()]], [[uiStore.ts#openLocalDialog|openLocalDialog()]], [[useCodeMap|useCodeMap()]], [[useCodingUi]], [[useSegmentIndex|useSegmentIndex()]], [[useStore]]
+- Calls: [[Reader.tsx]], [[coding/actions.ts#applyCode|applyCode()]], [[coding/actions.ts#createCode|createCode()]], [[coding/actions.ts#createMemo|createMemo()]], [[coding/actions.ts#removeSegment|removeSegment()]], [[coding/actions.ts#setSegmentMemo|setSegmentMemo()]], [[coding/actions.ts#uncodeRange|uncodeRange()]], [[coding/analysis.ts#constantAttributeKeys|constantAttributeKeys()]], [[coding/analysis.ts#orderedAttributes|orderedAttributes()]], [[coding/hooks.ts#plural|plural()]], [[coding/text.ts#tokenize|tokenize()]], [[exports.ts#originLabel|originLabel()]], [[segments.ts#assignLanes|assignLanes()]], [[segments.ts#splitLines|splitLines()]], [[segments.ts#trimRange|trimRange()]], [[tree.ts#codePath|codePath()]], [[uiStore.ts#openLocalDialog|openLocalDialog()]], [[useCodeMap|useCodeMap()]], [[useCodingUi]], [[useSegmentIndex|useSegmentIndex()]], [[useStore]]
 - Uses: [[Reader.tsx]], [[useCodingUi]]
 - Reads: [[jump|useCodingUi.jump]], [[pending|useCodingUi.pending]], [[useStore/coding|useStore.coding]]
 - Writes: [[pending|useCodingUi.pending]]

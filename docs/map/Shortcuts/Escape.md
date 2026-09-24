@@ -21,3 +21,4 @@ area: shortcuts
 - [[MenuSheetButton|<MenuSheetButton>]]
 - [[Modal|<Modal>]]
 - [[StatsPopover|<StatsPopover>]]
+- [[VariableDrawer|<VariableDrawer>]]

@@ -45,4 +45,4 @@ MeasureKind (line 4)
 - Renders: [[MeasureIcon|<MeasureIcon>]]
 - Calls: [[MeasureIcon.tsx#measureKind|measureKind()]]
 - Uses: [[MeasureIcon.tsx#MEASURE_LABEL|MEASURE_LABEL]]
-- Rendered by: [[CommandPalette|<CommandPalette>]], [[DefinePropertiesDialog|<DefinePropertiesDialog>]], [[ExpressionHelper|<ExpressionHelper>]], [[ImportDialog (features-project-FileDialogs)|<ImportDialog>]], [[Sidebar|<Sidebar>]], [[VarPicker|<VarPicker>]]
+- Rendered by: [[CommandPalette|<CommandPalette>]], [[DefinePropertiesDialog|<DefinePropertiesDialog>]], [[ExpressionHelper|<ExpressionHelper>]], [[ImportDialog (features-project-FileDialogs)|<ImportDialog>]], [[VarPicker|<VarPicker>]], [[VariableList|<VariableList>]]

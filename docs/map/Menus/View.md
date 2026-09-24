@@ -19,7 +19,7 @@ area: app
 - [[Variable View|View > Variable View]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

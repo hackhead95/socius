@@ -7,7 +7,7 @@ area: features/transform
 
 # src/features/transform/RecodeDialog.tsx
 
-*Module* · area [[features - transform|features/transform]] · 208 lines
+*Module* · area [[features - transform|features/transform]] · 223 lines
 
 > Transform > Recode into Same Variables / Recode into Different Variables.
 

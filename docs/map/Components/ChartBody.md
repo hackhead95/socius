@@ -2,13 +2,13 @@
 id: "src/features/charts/Chart.tsx#ChartBody"
 type: component
 file: src/features/charts/Chart.tsx
-line: 34
+line: 41
 area: features/charts
 ---
 
 # <ChartBody>
 
-*React component* · defined in [[Chart.tsx]] (line 34) · area [[features - charts|features/charts]]
+*React component* · defined in [[Chart.tsx]] (line 41) · area [[features - charts|features/charts]]
 
 ## Renders
 - [[BarChart|<BarChart>]]

@@ -35,7 +35,10 @@ area: procedures
 
 ## Uses
 - [[stats.ts#binCounts|binCounts()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[stats.ts#histogramEdges|histogramEdges()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#vprose|vprose()]] · procedure helper
 - [[stats.ts#wMoments|wMoments()]] · procedure helper
 - [[stats.ts#wPercentile|wPercentile()]] · procedure helper

@@ -19,5 +19,5 @@ area: dialogs
 - [[custom dialogs]]
 
 ## Opened by
+- [[menus.ts#buildMenus|buildMenus()]]
 - [[Keyboard shortcuts|Help > Keyboard shortcuts]]
-- [[useMenus|useMenus()]]

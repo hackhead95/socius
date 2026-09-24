@@ -1,7 +1,7 @@
 // Shared pieces for the SVG chart renderers: sizing, text measurement, colours, the frame (title,
 // legend, accessible title/desc) and the hover tooltip.
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { approxTextWidth, legendLayout, truncateLabel } from './scale';
 
 export const FONT_UI = 'var(--font-ui)';
@@ -67,27 +67,43 @@ export interface Tip {
 
 export type SetTip = (t: Tip | null) => void;
 
+/**
+ * Whether charts draw their title inside the image. The Output view (APA style) and the Word/HTML
+ * exports print "Figure N" and the italic title above the chart instead, so the title is not
+ * repeated inside it; stand-alone PNG/SVG files keep it. The accessible name always has it.
+ */
+export const ChartTitleShown = createContext(true);
+
 /** Top-of-chart header layout: title + wrapped legend. Returns the y where the plot may start. */
 export function headerLayout(title: string, legend: LegendItem[], width: number) {
   const pad = 4;
+  const hasTitle = title.trim() !== '';
   // The title is drawn semi-bold, and the page font may differ slightly from the measuring font:
   // measure at weight 600 and keep a small safety margin so long titles never run off the edge.
-  const titleText = fit(title, (width - pad * 2) * 0.96, FS_TITLE, 600);
-  let y = pad + FS_TITLE + 2;
+  const titleText = hasTitle ? fit(title, (width - pad * 2) * 0.96, FS_TITLE, 600) : '';
+  let y = hasTitle ? pad + FS_TITLE + 2 : pad;
   const titleY = y;
   const lay = legend.length >= 2 ? legendLayout(legend.map((l) => l.label), width - pad * 2, FS_LEGEND, 12, 16, (t, f) => measureText(t, f)) : { items: [], rows: 0 };
-  const legendY = y + 12;
+  const legendY = hasTitle ? y + 12 : y + FS_LEGEND;
   if (lay.rows) y = legendY + lay.rows * 18 - 4;
-  return { titleText, titleY, legendY, legend: lay, top: y + 14 };
+  return { titleText, titleY, legendY, legend: lay, top: y + (hasTitle || lay.rows ? 14 : 10) };
+}
+
+/** headerLayout for a chart component: leaves the title out when the caption above shows it. */
+export function useHeaderLayout(title: string, legend: LegendItem[], width: number) {
+  const shown = useContext(ChartTitleShown);
+  return headerLayout(shown ? title : '', legend, width);
 }
 
 export function ChartHeader(props: { layout: ReturnType<typeof headerLayout>; legend: LegendItem[] }) {
   const { layout, legend } = props;
   return (
     <g className="chart-header">
-      <text x={4} y={layout.titleY} fontSize={FS_TITLE} fontWeight={600} fill="var(--text)" style={{ fontFamily: FONT_UI }}>
-        {layout.titleText}
-      </text>
+      {layout.titleText ? (
+        <text x={4} y={layout.titleY} fontSize={FS_TITLE} fontWeight={600} fill="var(--text)" style={{ fontFamily: FONT_UI }}>
+          {layout.titleText}
+        </text>
+      ) : null}
       {layout.legend.items.map((it, i) => {
         const y = layout.legendY + it.row * 18;
         const l = legend[i];
@@ -140,18 +156,6 @@ export function ChartSvg(props: { transparent?: boolean; width: number; height: 
       {props.children}
     </svg>
   );
-}
-
-/** Pointer position relative to the chart container (for tooltip placement). */
-export function localPoint(e: { clientX: number; clientY: number; currentTarget: Element }): { x: number; y: number; sx: number; sy: number } {
-  const svg = (e.currentTarget as Element).closest('svg') as SVGSVGElement | null;
-  const rect = svg?.getBoundingClientRect();
-  if (!svg || !rect) return { x: 0, y: 0, sx: 0, sy: 0 };
-  const vb = svg.viewBox.baseVal;
-  const scale = vb && vb.width ? rect.width / vb.width : 1;
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  return { x, y, sx: x / scale, sy: y / scale };
 }
 
 /** Tooltip positioned inside the chart container; flips to stay visible. */

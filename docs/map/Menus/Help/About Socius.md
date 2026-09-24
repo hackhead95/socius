@@ -23,3 +23,4 @@ area: app
 
 ## Tested by
 - [[ai.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label

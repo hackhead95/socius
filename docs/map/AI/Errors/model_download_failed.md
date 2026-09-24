@@ -18,3 +18,4 @@ area: platform
 
 ## Checked by
 - [[platform/ai.ts#aiErrorText|aiErrorText()]]
+- [[ai-webllm.ts#ensureEngine|ensureEngine()]]

@@ -4,6 +4,7 @@ import { FEEDBACK_URL, GUIDE_URL, SITE_URL } from './links';
 import { BUILD_INFO } from '../platform/buildInfo';
 import { openErrorLog, openFeedback } from '../features/errorlog/actions';
 import { isMac } from './shortcuts';
+import { StorageManager } from '../features/ai/StorageManager';
 
 export function GettingStartedDialog({ onClose }: { onClose: () => void }) {
   return (
@@ -125,7 +126,56 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function AboutDialog({ onClose }: { onClose: () => void }) {
+/**
+ * The host whose websites all share Socius's storage, when Socius runs on GitHub Pages
+ * ("hackhead95.github.io"): every Pages site of one account has the same origin. Null elsewhere.
+ */
+export function sharedPagesHost(hostname: string): string | null {
+  const h = String(hostname ?? '').toLowerCase();
+  return /^[a-z0-9-]+\.github\.io$/.test(h) ? h : null;
+}
+
+function currentHostname(): string {
+  try {
+    return typeof location !== 'undefined' ? location.hostname : '';
+  } catch {
+    return '';
+  }
+}
+
+/** Help > About: what Socius keeps in this browser, who else could read it, and how to stay safe. */
+export function BrowserStorageNote({ host = currentHostname() }: { host?: string }) {
+  const shared = sharedPagesHost(host);
+  return (
+    <section className="about-storage" aria-label="What Socius stores in this browser">
+      <h3 className="eyebrow">What Socius stores in this browser</h3>
+      <ul>
+        <li><b>Autosave</b>: the data, output and text-coding project you have open, and your recent projects, so you can pick up where you left off.</li>
+        <li><b>Preferences</b>: theme, view settings and the search history.</li>
+        <li><b>Error log</b>: technical messages only, without data values, names or keys (Help &gt; Error log).</li>
+        <li><b>AI assistant settings</b>: the provider and model you chose, and your API key only if you ticked the remember option.</li>
+      </ul>
+      {shared ? (
+        <p>
+          Socius is published at <b>{shared}</b>. Browsers treat every website published on that github.io account as one site, so another website hosted
+          there could read what Socius stores in this browser.
+        </p>
+      ) : (
+        <p>Anything else that runs on this same web address could read what Socius stores in this browser.</p>
+      )}
+      <p>To keep confidential work safe:</p>
+      <ul>
+        <li>Save confidential projects to files (File &gt; Save project) instead of relying on the browser's autosave.</li>
+        <li>On a shared or public computer, use <b>File &gt; Close data and start fresh</b> when you finish.</li>
+        <li>
+          Leave the remember option for your API key off. It is in <b>AI &gt; AI assistant settings</b>, the one place where AI is set up.
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+export function AboutDialog({ onClose, host }: { onClose: () => void; host?: string }) {
   return (
     <Modal title="About Socius" subtitle={`Version ${BUILD_INFO.label}`} onClose={onClose} footer={<button className="btn btn-primary" onClick={onClose}>Close</button>}>
       <div className="stack about">
@@ -136,6 +186,11 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
           <p>
             AI help is optional and off until you set it up in <b>AI &gt; AI assistant settings</b>. It only sends what you choose, when you click, to the provider you choose. With the on-device option nothing leaves your computer.
           </p>
+        </section>
+        <BrowserStorageNote host={host} />
+        <section className="about-storage-use" aria-label="Storage used">
+          <h3 className="eyebrow">Storage used</h3>
+          <StorageManager compact />
         </section>
         <section>
           <h3 className="eyebrow">Help and feedback</h3>

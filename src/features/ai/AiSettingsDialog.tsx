@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal } from '../../ui/Modal';
 import {
-  GEMINI_AUTO_FLASH, GEMINI_KEY_URL, OPENAI_PRESETS, claudePresent, effectiveProvider, forgetAiKey, getAiSettings, refreshAiStatus, saveAiSettings, subscribeAiSettings,
+  GEMINI_AUTO_FLASH, GEMINI_KEY_URL, OPENAI_PRESETS, claudePresent, dismissAiNotice, effectiveProvider, forgetAiKey, getAiSettings, refreshAiStatus, saveAiSettings, setRememberKey, subscribeAiSettings,
   type AiProviderId, type OpenAiPreset,
 } from '../../platform/ai';
 import { runConnectionCheck, type ConnectionCheck } from '../../platform/ai-diagnose';
@@ -14,10 +14,12 @@ import { WEBLLM_IN_BUILD } from '../../platform/ai-webllm';
 import { isLocalServiceUrl } from '../../platform/ai-local';
 import { geminiKeyWarning, geminiModelName, geminiPreference, lastResolvedGeminiModel, normaliseBaseUrl, sanitizeApiKey } from '../../platform/ai-http';
 import { ConnectionChecklist } from './ConnectionChecklist';
-import { AiPrivacyNotice } from './AiBits';
+import { AiActivityLine, AiPrivacyNotice } from './AiBits';
 import { useAiSettingsDialog, useAiStatus } from './hooks';
 import { LocalSetup } from './LocalSetup';
 import { WebLlmSetup } from './WebLlmSetup';
+import { StorageDialogHost } from './StorageManager';
+import { StorageFullBanner } from './StorageBanner';
 import { AI_FEATURES, aiFeature, isAiFeatureId, runAiFeature, type AiFeatureId } from './features';
 import { useExplain } from './explainStore';
 import './ai.css';
@@ -41,11 +43,21 @@ function choices(): Choice[] {
   return list;
 }
 
+/**
+ * Rendered once by the app shell: the AI settings dialog, the Browser storage dialog and the
+ * "storage is full, autosave is paused" banner (all three are about this browser's AI and storage set-up).
+ */
 export function AiSettingsHost() {
   const open = useAiSettingsDialog((s) => s.open);
   const intent = useAiSettingsDialog((s) => s.intent);
   const set = useAiSettingsDialog((s) => s.set);
-  return open ? <AiSettingsDialog intent={isAiFeatureId(intent) ? intent : null} onClose={() => set(false)} /> : null;
+  return (
+    <>
+      {open ? <AiSettingsDialog intent={isAiFeatureId(intent) ? intent : null} onClose={() => set(false)} /> : null}
+      <StorageDialogHost />
+      <StorageFullBanner />
+    </>
+  );
 }
 
 // 'running' / 'done': the step-by-step check (ConnectionChecklist); 'ok': a program on this computer
@@ -64,7 +76,7 @@ export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => vo
   // Any change to the settings makes an earlier test result stale.
   // Clear an old test result when the set-up changes (but not when the model switches to automatic
   // on its own after a retired model name, which happens during a successful test).
-  const setupKey = JSON.stringify({ ...settings, gemini: { apiKey: settings.gemini.apiKey } });
+  const setupKey = JSON.stringify({ ...settings, gemini: { apiKey: settings.gemini.apiKey }, remember: null, notice: null });
   // Set when a change should be tested at once (a model chosen from the service's list).
   const retestOnChange = useRef(false);
   useEffect(() => {
@@ -156,7 +168,7 @@ export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => vo
             </button>
             {test.phase === 'running' ? <button className="btn btn-ghost btn-sm" onClick={() => testAbort.current?.abort()}>Stop</button> : null}
             <span className="ai-test-result" role="status" aria-live="polite">
-              {test.phase === 'running' ? <span className="help">Checking step by step…</span> : null}
+              {test.phase === 'running' ? <AiActivityLine op="test-connection" fallback="Checking step by step…" /> : null}
               {test.phase === 'ok' ? <span className="ai-ok">Connected. The AI answered{test.reply ? `: "${test.reply.slice(0, 40)}"` : ''}.</span> : null}
               {test.phase === 'done' && test.check.ok ? (
                 <span className="ai-ok">
@@ -216,6 +228,23 @@ function hostLabel(url: string): string {
   }
 }
 
+/** "Remember this key on this computer" (off: the key lasts until this tab closes). */
+function RememberKey({ which, id }: { which: 'gemini' | 'openai'; id: string }) {
+  const s = getAiSettings();
+  return (
+    <div className="ai-remember">
+      <label htmlFor={id}>
+        <input id={id} type="checkbox" checked={s.remember[which]} onChange={(e) => setRememberKey(which, e.target.checked)} />
+        Remember this key on this computer
+      </label>
+      <span className="help">
+        {s.remember[which] ? 'Kept in this browser until you click Forget key. ' : 'Off: the key is forgotten when you close this tab. '}
+        Anyone using this browser profile, and other sites hosted on hackhead95.github.io, could read a remembered key. Leave it off on shared computers.
+      </span>
+    </div>
+  );
+}
+
 function KeyField({ id, value, onChange, placeholder, optional }: { id: string; value: string; onChange: (v: string) => void; placeholder?: string; optional?: boolean }) {
   const [show, setShow] = useState(false);
   return (
@@ -251,7 +280,7 @@ function GeminiSection({ onChoiceChange }: { onChoiceChange?: () => void }) {
   const now = lastResolvedGeminiModel(s.gemini.apiKey, geminiPreference(s.gemini.model));
   const setChoice = (c: GeminiChoice) => {
     setCustomOpen(c === 'custom');
-    if (c !== 'custom') saveAiSettings({ gemini: { ...s.gemini, model: c === 'auto-flash' ? GEMINI_AUTO_FLASH : '' } });
+    if (c !== 'custom') saveAiSettings({ gemini: { ...s.gemini, model: c === 'auto-flash' ? GEMINI_AUTO_FLASH : '' }, notice: null });
     onChoiceChange?.();
   };
   return (
@@ -272,12 +301,13 @@ function GeminiSection({ onChoiceChange }: { onChoiceChange?: () => void }) {
         <div className="stack" style={{ gap: 4 }}>
           <KeyField id="ai-gemini-key" value={s.gemini.apiKey} onChange={(v) => saveAiSettings({ gemini: { ...s.gemini, apiKey: sanitizeApiKey(v) } })} placeholder="Paste your key" />
           {warning ? <span className="help ai-key-warn" role="note">{warning}</span> : null}
+          <RememberKey which="gemini" id="ai-gemini-remember" />
         </div>
         <div className="field">
           <label htmlFor="ai-gemini-choice">Model</label>
           <select id="ai-gemini-choice" className="select" value={choice} onChange={(e) => setChoice(e.target.value as GeminiChoice)}>
-            <option value="">Automatic: Flash-Lite (most free requests per day)</option>
-            <option value="auto-flash">Automatic: Flash (better answers, fewer free requests)</option>
+            <option value="">Automatic: Flash-Lite (fastest, most free requests)</option>
+            <option value="auto-flash">Automatic: Flash (slower, 5 requests a minute on the free tier)</option>
             <option value="custom">A model I type…</option>
           </select>
           {choice === 'custom' ? (
@@ -286,8 +316,18 @@ function GeminiSection({ onChoiceChange }: { onChoiceChange?: () => void }) {
           <span className="help">
             {choice === 'custom'
               ? 'Google retires old model names; if this one stops working, Socius switches to automatic.'
-              : `Socius picks the newest ${choice === 'auto-flash' ? 'Flash' : 'Flash-Lite'} model your key can use${now ? ` (now ${now})` : ''}, and another if that one is not available. Flash-Lite allows many more free requests per day; the Socius assistant and coding suggestions always use it.`}
+              : `Socius picks the newest ${choice === 'auto-flash' ? 'Flash' : 'Flash-Lite'} model your key can use${now ? ` (now ${now})` : ''}, and another if that one is not available. ${
+                  choice === 'auto-flash'
+                    ? 'Flash writes somewhat better answers but starts slower, and the free tier allows only about 5 requests a minute; the assistant still uses Flash-Lite for its tool steps and coding suggestions always use Flash-Lite.'
+                    : 'Flash-Lite answers fastest and allows many more free requests; recommended.'
+                }`}
           </span>
+          {s.notice === 'flash-to-lite' ? (
+            <div className="callout callout-info ai-flash-note" role="note">
+              Socius now uses <b>Flash-Lite</b> automatically: it answers much faster and allows many more free requests. You had chosen Flash; choose it again above if you prefer it.{' '}
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => dismissAiNotice()}>OK</button>
+            </div>
+          ) : null}
         </div>
       </div>
       {s.gemini.apiKey ? (
@@ -326,7 +366,10 @@ function OpenAiSection({ onLocalConnected }: { onLocalConnected?: (reply: string
           <label htmlFor="ai-oa-url">Base URL</label>
           <input id="ai-oa-url" className="input mono" value={o.baseUrl} onChange={(e) => saveAiSettings({ openai: { ...o, baseUrl: e.target.value.trim() } })} placeholder="https://.../v1" spellCheck={false} />
         </div>
-        <KeyField id="ai-oa-key" value={o.apiKey} onChange={(v) => saveAiSettings({ openai: { ...o, apiKey: v } })} optional={local} />
+        <div className="stack" style={{ gap: 4 }}>
+          <KeyField id="ai-oa-key" value={o.apiKey} onChange={(v) => saveAiSettings({ openai: { ...o, apiKey: v } })} optional={local} />
+          {o.apiKey ? <RememberKey which="openai" id="ai-oa-remember" /> : null}
+        </div>
         <div className="field">
           <label htmlFor="ai-oa-model">Model</label>
           <input id="ai-oa-model" className="input mono" value={o.model} onChange={(e) => saveAiSettings({ openai: { ...o, model: e.target.value.trim() } })} placeholder="model name" spellCheck={false} />

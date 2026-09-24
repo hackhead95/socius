@@ -2,7 +2,7 @@
 // so both themes work; each chart has an accessible name/description and a hover/focus tooltip.
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
-import { Tooltip, useChartWidth, type Tip } from './common';
+import { ChartTitleShown, Tooltip, useChartWidth, type Tip } from './common';
 import { BarChart } from './BarChart';
 import { HistogramChart } from './HistogramChart';
 import { BoxChart } from './BoxChart';
@@ -17,15 +17,22 @@ export interface ChartProps {
   spec: ChartSpec;
   /** Fixed pixel width (exports). Omit to fill the container. */
   width?: number;
+  /**
+   * Draw the title inside the chart (default). False when a caption above the chart already shows
+   * it (APA "Figure N" + italic title), so the title is not printed twice.
+   */
+  showTitle?: boolean;
 }
 
-export function Chart({ spec, width: fixedWidth }: ChartProps) {
+export function Chart({ spec, width: fixedWidth, showTitle = true }: ChartProps) {
   const [ref, width] = useChartWidth(fixedWidth);
   const [tip, setTip] = useState<Tip | null>(null);
   const w = Math.max(260, width);
   return (
     <div ref={ref} className="chart" data-chart-type={spec.type} style={fixedWidth ? { width: fixedWidth } : undefined}>
-      <ChartBody spec={spec} width={w} setTip={setTip} />
+      <ChartTitleShown.Provider value={showTitle}>
+        <ChartBody spec={spec} width={w} setTip={setTip} />
+      </ChartTitleShown.Provider>
       <Tooltip tip={tip} width={w} />
     </div>
   );

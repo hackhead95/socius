@@ -39,14 +39,20 @@ area: procedures
 
 ## Uses
 - [[stats.ts#betacf|betacf()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[stats.ts#ibeta|ibeta()]] · procedure helper
+- [[procedures/text.ts#labelOf|labelOf()]] · procedure helper
 - [[stats.ts#lgamma|lgamma()]] · procedure helper
 - [[stats.ts#linearFit|linearFit()]] · procedure helper
+- [[procedures/text.ts#nonEmpty|nonEmpty()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[stats.ts#tTwoSidedP|tTwoSidedP()]] · procedure helper
 - [[core/common.ts#vprose|vprose()]] · procedure helper
 
 ## Tested by
 - [[graphs.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 
 ## Generates SPSS syntax

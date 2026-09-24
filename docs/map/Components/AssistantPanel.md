@@ -2,13 +2,13 @@
 id: "src/features/assistant/AssistantPanel.tsx#AssistantPanel"
 type: component
 file: src/features/assistant/AssistantPanel.tsx
-line: 21
+line: 22
 area: features/assistant
 ---
 
 # <AssistantPanel>
 
-*React component* · defined in [[AssistantPanel.tsx]] (line 21) · area [[features - assistant|features/assistant]]
+*React component* · defined in [[AssistantPanel.tsx]] (line 22) · area [[features - assistant|features/assistant]]
 
 - **Exported:** yes
 

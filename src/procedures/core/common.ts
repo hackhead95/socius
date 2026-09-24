@@ -14,6 +14,9 @@ import {
 import { newId, type Dataset, type Variable } from '../../core/types';
 import { cell, hcell, type Cell, type CellFormat, type OutputBlock, type OutputItem, type OutputTable } from '../../core/output';
 import type { OptionValues, SlotValues } from '../../core/procedure';
+import { cleanBlocks, countText, numText } from '../text';
+
+export { allFinite, countText, nonEmpty, numText } from '../text';
 
 // ---------------------------------------------------------------------------------------------
 // Options
@@ -35,8 +38,12 @@ export function optStr(o: OptionValues, key: string, dflt: string): string {
   return typeof v === 'string' && v !== '' ? v : dflt;
 }
 
-/** Parse "10, 90" / "10 90" into numbers; throws a readable error on bad input. */
-export function parseNumberList(text: string, what: string, lo = -Infinity, hi = Infinity): number[] {
+/**
+ * Parse "10, 90" / "10 90" into numbers; throws a readable error on bad input. With `positive`, every
+ * value must be greater than zero (SPSS expected values); otherwise values must lie in lo..hi, and an
+ * open end is described in words, never as "Infinity".
+ */
+export function parseNumberList(text: string, what: string, lo = -Infinity, hi = Infinity, positive = false): number[] {
   const parts = text
     .split(/[\s,;]+/)
     .map((s) => s.trim())
@@ -44,7 +51,11 @@ export function parseNumberList(text: string, what: string, lo = -Infinity, hi =
   return parts.map((p) => {
     const n = Number(p);
     if (!Number.isFinite(n)) throw new Error(`${what}: "${p}" is not a number.`);
-    if (n < lo || n > hi) throw new Error(`${what}: ${p} is outside the allowed range ${lo} to ${hi}.`);
+    if (positive && !(n > 0)) throw new Error(`${what}: ${p} is not allowed; every value must be greater than 0.`);
+    if (n < lo || n > hi) {
+      const range = Number.isFinite(lo) && Number.isFinite(hi) ? `must be between ${lo} and ${hi}` : Number.isFinite(lo) ? `must be at least ${lo}` : `must be at most ${hi}`;
+      throw new Error(`${what}: ${p} is not allowed; every value ${range}.`);
+    }
     return n;
   });
 }
@@ -103,8 +114,8 @@ export function coerceValue(v: Variable, x: unknown): number | string | null {
 
 export function valueText(v: Variable, x: number | string): string {
   const t = categoryLabel(v, typeof x === 'string' ? x.trimEnd() : x);
-  // An empty string answer is a valid (non-missing) value in SPSS; show it visibly.
-  return typeof x === 'string' && t === '' ? '(blank)' : t;
+  // An empty string answer is a valid (non-missing) value in SPSS; show it visibly (also a blank value label).
+  return t.trim() === '' ? '(blank)' : t;
 }
 
 /** Sorted distinct valid values of a variable among `rows`. */
@@ -150,8 +161,7 @@ export function filterVar(ds: Dataset): Variable | undefined {
 }
 
 export function fmtCount(n: number): string {
-  if (Number.isInteger(n)) return n.toLocaleString('en-US');
-  return n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  return countText(n);
 }
 
 /** Counts cases removed by the filter (and zero/missing weights) separately. */
@@ -167,11 +177,14 @@ export function filterCounts(ds: Dataset): { filtered: number; zeroWeight: numbe
   return { filtered, zeroWeight };
 }
 
-/** "N = 1,204 (weighted by wt); 12 excluded for missing values; 30 filtered out." */
+/**
+ * "N = 1,204 (weighted by wt); 12 excluded for missing values; 30 filtered out." N and nMissing are
+ * both weighted when a weight is on (use `selMissing`, not `sel.nMissing`).
+ */
 export function caseNote(ds: Dataset, N: number, nMissing: number, extra?: string): string {
   const wv = weightVar(ds);
   const parts: string[] = [`N = ${fmtCount(N)}${wv ? ` (weighted by ${wv.name})` : ''}`];
-  if (nMissing > 0) parts.push(`${fmtCount(nMissing)} case${nMissing === 1 ? '' : 's'} excluded for missing values`);
+  if (nMissing > 0) parts.push(wv ? `${fmtCount(nMissing)} (weighted) excluded for missing values` : `${fmtCount(nMissing)} case${nMissing === 1 ? '' : 's'} excluded for missing values`);
   return caseNoteTail(ds, parts, extra);
 }
 
@@ -206,6 +219,23 @@ export function selN(sel: CaseSelection): number {
   return s;
 }
 
+/**
+ * Weighted number of cases a selection excluded for missing values: cases that pass the filter and
+ * have a positive weight but are not in `sel`. `sel.nMissing` counts cases, not weights, so it must
+ * not be combined with a weighted N (SPSS shows weighted Missing and Total N when WEIGHT is on).
+ * Without a weight variable this equals `sel.nMissing`.
+ */
+export function selMissing(ds: Dataset, sel: CaseSelection): number {
+  if (!ds.weightVarId) return sel.nMissing;
+  const mask = activeCaseMask(ds);
+  const w = caseWeights(ds);
+  const used = new Uint8Array(ds.nCases);
+  for (const r of sel.rows) used[r] = 1;
+  let s = 0;
+  for (let i = 0; i < ds.nCases; i++) if (mask[i] && w[i] > 0 && !used[i]) s += w[i];
+  return s;
+}
+
 export function syntaxPrefix(ds: Dataset): string {
   const lines: string[] = [];
   const wv = weightVar(ds);
@@ -229,7 +259,7 @@ export function syntaxValue(x: number | string): string {
 // ---------------------------------------------------------------------------------------------
 
 export function item(procedure: string, title: string, ds: Dataset, blocks: OutputBlock[], syntax: string, note: string): OutputItem {
-  return { id: newId('out'), procedure, title, createdAt: Date.now(), datasetName: ds.name, syntax: syntaxPrefix(ds) + syntax, caseNote: note, blocks };
+  return { id: newId('out'), procedure, title, createdAt: Date.now(), datasetName: ds.name, syntax: syntaxPrefix(ds) + syntax, caseNote: note, blocks: cleanBlocks(blocks) };
 }
 
 export const tableBlock = (table: OutputTable): OutputBlock => ({ kind: 'table', table });
@@ -253,11 +283,9 @@ export const blank = (): Cell => cell(null);
 
 /** APA number: 2 decimals by default, leading zero dropped for bounded statistics. */
 export function apaNum(x: number, decimals = 2, bounded = false): string {
+  // Prose builders check allFinite() first; "n/a" here would be caught by the text fuzz test.
   if (!Number.isFinite(x)) return 'n/a';
-  let s = Math.abs(x) >= 1000 ? x.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : x.toFixed(decimals);
-  if (/^-?0\.0*$/.test(s)) s = s.replace('-', '');
-  if (bounded) s = s.replace(/^(-?)0\./, '$1.');
-  return s;
+  return numText(x, decimals, bounded);
 }
 
 /** "p = .032" or "p < .001". */
@@ -273,7 +301,7 @@ export function fmtDf(df: number): string {
 }
 
 export function fmtN(n: number): string {
-  return Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  return countText(n);
 }
 
 export function pct(x: number, d = 1): string {

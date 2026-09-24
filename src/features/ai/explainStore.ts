@@ -60,7 +60,7 @@ export const useExplain = create<ExplainStore>((set, get) => {
       const provider = getAiStatus().label;
       set((s) => ({ panels: { ...s.panels, [item.id]: { phase: 'running', text: '', provider } } }));
       try {
-        const text = await askAI(prompt, { signal: ctrl.signal, modelTier: 'default', onText: (t) => patch(item.id, { text: t }) });
+        const text = await askAI(prompt, { signal: ctrl.signal, modelTier: 'default', op: 'explain', onText: (t) => patch(item.id, { text: t }) });
         if (controllers.get(item.id) !== ctrl) return;
         patch(item.id, { phase: 'done', text: text.trim() });
       } catch (e) {

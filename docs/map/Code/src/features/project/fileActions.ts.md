@@ -41,12 +41,14 @@ area: features/project
 
 ## Imported by
 - [[App.tsx]] · value
+- [[CommandPalette.tsx]] · value
 - [[menus.ts]] · value
 - [[Overlays.tsx]] · value
 - [[shortcuts.ts]] · value
 - [[TopBar.tsx]] · value
 - [[Welcome.tsx]] · value
 - [[AiFeatureDialogs.tsx]] · value
+- [[StorageBanner.tsx]] · value
 - [[FileDialogs.tsx]] · value
 - [[MergeDialogs.tsx]] · value
 
@@ -114,7 +116,7 @@ TEXT_EXT (line 19) · stripExt() (line 51) · plural() (line 84) · readBytes() 
 - Uses: [[fileActions.ts#DATA_ACCEPT|DATA_ACCEPT]], [[fileActions.ts#isEncodingGuess|isEncodingGuess()]], [[fileActions.ts]], [[useStore]]
 - Store actions: [[openDialog()|useStore.openDialog()]], [[toast()|useStore.toast()]]
 - Opens: [[file/import|file: import]]
-- Used in: [[Welcome.tsx]], [[menus.ts]], [[shortcuts.ts]]
+- Used in: [[CommandPalette.tsx]], [[Welcome.tsx]], [[menus.ts]], [[shortcuts.ts]]
 
 ### currentProjectState
 *function* · line 180 · exported
@@ -150,7 +152,7 @@ TEXT_EXT (line 19) · stripExt() (line 51) · plural() (line 84) · readBytes() 
 - Uses: [[useStore]], [[useUi]]
 - Reads: [[dataset|useStore.dataset]]
 - Store actions: [[markClean()|useUi.markClean()]], [[toast()|useStore.toast()]]
-- Used in: [[menus.ts]], [[shortcuts.ts]]
+- Used in: [[menus.ts]], [[shortcuts.ts]], [[StorageBanner.tsx]]
 
 ### exportSavFile
 *function* · line 305 · exported
@@ -186,7 +188,7 @@ TEXT_EXT (line 19) · stripExt() (line 51) · plural() (line 84) · readBytes() 
 - Calls: [[errorlog.ts#logFailure|logFailure()]], [[fileActions.ts#activateDataset|activateDataset()]], [[fileActions.ts#confirmReplace|confirmReplace()]], [[samples/index.ts#loadSampleDataset|loadSampleDataset()]]
 - Uses: [[samples/index.ts#samples|samples]], [[useStore]], [[useUi]]
 - Store actions: [[setBusy()|useUi.setBusy()]], [[toast()|useStore.toast()]]
-- Used in: [[Welcome.tsx]], [[menus.ts]], [[AiFeatureDialogs.tsx]]
+- Used in: [[CommandPalette.tsx]], [[Welcome.tsx]], [[menus.ts]], [[AiFeatureDialogs.tsx]]
 
 ### newDataset
 *function* · line 404 · exported

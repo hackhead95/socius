@@ -20,3 +20,7 @@ area: app
 
 ## Part of
 - [[File]]
+
+## Tested by
+- [[ui-overlays-focus.spec.ts]] · menu label
+- [[menu-knowledge.test.ts]] · menu label

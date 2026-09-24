@@ -337,7 +337,7 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
   const duplicate = () => {
     const ids = selectedIds();
     if (!ids.length) return;
-    mutate((cur) => duplicateVariables(cur, ids));
+    mutate((cur) => duplicateVariables(cur, ids), { label: ids.length === 1 ? 'Duplicate variable' : 'Duplicate variables' });
     toast(`Duplicated ${ids.length} variable${ids.length === 1 ? '' : 's'}.`, 'success');
   };
   const moveSelected = (dir: -1 | 1) => {
@@ -354,7 +354,7 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
         [vars[i], vars[j]] = [vars[j], vars[i]];
       }
       return { ...cur, variables: vars, version: cur.version + 1 };
-    });
+    }, { label: ids.length === 1 ? 'Move variable' : 'Move variables' });
     setActive((a) => ({ r: Math.max(0, Math.min(n - 1, a.r + dir)), c: a.c }));
   };
   const moveTo = (from: number, to: number) => {
@@ -455,7 +455,7 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
           <Icon name="copy" size={14} /> Copy properties
         </button>
         <span className="spacer" />
-        <span className="toolbar-status">{n} variable{n === 1 ? '' : 's'}{selRows.size > 1 ? ` · ${selRows.size} selected` : ''}</span>
+        <span className="toolbar-status" title={`${n} variable${n === 1 ? '' : 's'}${selRows.size > 1 ? ` · ${selRows.size} selected` : ''}`}>{n} variable{n === 1 ? '' : 's'}{selRows.size > 1 ? ` · ${selRows.size} selected` : ''}</span>
       </div>
       <div
         ref={scrollRef}

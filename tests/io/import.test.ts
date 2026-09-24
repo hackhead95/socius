@@ -73,7 +73,8 @@ describe('codebookRows', () => {
     expect(rows[1]['Missing values']).toBe('LO THRU 0, -1');
     expect(rows[2]['Missing values']).toBe('100 THRU HI');
     expect(rows[3].Type).toBe('Date');
-    expect(rows[4]).toMatchObject({ Type: 'String', Width: '20', 'Value labels': 'KOL = Kolkata', 'Missing values': 'NA, DK', Format: 'A20', Measure: 'Nominal' });
+    // String codes are quoted as in SPSS syntax, so values with ", " or "; " (or '') read back exactly.
+    expect(rows[4]).toMatchObject({ Type: 'String', Width: '20', 'Value labels': "'KOL' = Kolkata", 'Missing values': "'NA', 'DK'", Format: 'A20', Measure: 'Nominal' });
     expect(rows[5].Measure).toBe('Ordinal');
     expect(Object.keys(rows[0])).toEqual(['Position', 'Name', 'Label', 'Type', 'Width', 'Decimals', 'Measure', 'Value labels', 'Missing values', 'Format']);
   });

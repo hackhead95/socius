@@ -5,6 +5,8 @@
 import { binomialCdf, chi2Sf, hypergeomLogPmf, lnGamma, normalPpf, normalSf, twoSidedP } from './distributions';
 import { seededRandom } from './util';
 
+const lnChoose = (n: number, k: number): number => lnGamma(n + 1) - lnGamma(k + 1) - lnGamma(n - k + 1);
+
 export type Table = number[][];
 
 export interface Margins {
@@ -189,10 +191,17 @@ function logTableProb(t: number[][], rows: number[], cols: number[], N: number):
  * margins (column by column) when that is cheap enough; otherwise estimates the p-value from
  * 10,000 Monte Carlo tables (fixed seed 2000000, as SPSS's default) and reports a 99% CI.
  */
-export function fisherRxC(t: number[][], maxNodes = 2_000_000): FisherResult {
+export function fisherRxC(t: number[][], maxNodes = 2_000_000, budgetMs = 400): FisherResult {
   const r = t.length;
   const c = t[0].length;
   const { rows, cols, N } = margins(t);
+  // Skip enumeration that cannot finish: an upper bound on the number of tables (compositions of each
+  // column total into r parts, ignoring row totals) far beyond the node limit means Monte Carlo anyway,
+  // and trying first would only waste the time budget (e.g. 10 x 2 tables with thousands of cases).
+  let logBound = 0;
+  for (let j = 0; j < c - 1; j++) logBound += lnChoose(cols[j] + r - 1, r - 1);
+  if (logBound > Math.log(maxNodes) + Math.log(1e4)) return fisherMonteCarlo(t, 10000, 2000000);
+  const deadline = performance.now() + budgetMs;
   const lpObs = logTableProb(t, rows, cols, N);
   const tol = 1e-7;
   // log factorials table
@@ -217,7 +226,7 @@ export function fisherRxC(t: number[][], maxNodes = 2_000_000): FisherResult {
     }
     const fill = (i: number, left: number, acc2: number) => {
       if (aborted) return;
-      if (++nodes > maxNodes) {
+      if (++nodes > maxNodes || ((nodes & 0xffff) === 0 && performance.now() > deadline)) {
         aborted = true;
         return;
       }
@@ -249,36 +258,78 @@ export function fisherRxC(t: number[][], maxNodes = 2_000_000): FisherResult {
   return fisherMonteCarlo(t, 10000, 2000000);
 }
 
-/** Monte Carlo estimate of the Fisher-Freeman-Halton p-value (random tables with fixed margins). */
+/**
+ * One draw from the hypergeometric distribution: successes in `n` draws from `N` items of which `K`
+ * are successes. Inversion by "chop-down" search from the mode, so the cost is about one standard
+ * deviation of steps whatever N is. `lf` holds log factorials up to N.
+ */
+function rhyper(n: number, K: number, N: number, lf: Float64Array, rand: () => number): number {
+  const lo = Math.max(0, n - (N - K));
+  const hi = Math.min(n, K);
+  if (lo >= hi) return lo;
+  const mode = Math.min(hi, Math.max(lo, Math.floor(((n + 1) * (K + 1)) / (N + 2))));
+  const lpm = lf[K] - lf[mode] - lf[K - mode] + lf[N - K] - lf[n - mode] - lf[N - K - n + mode] - (lf[N] - lf[n] - lf[N - n]);
+  const pm = Math.exp(lpm);
+  let u = rand() - pm;
+  if (u <= 0) return mode;
+  let up = mode;
+  let dn = mode;
+  let pu = pm;
+  let pd = pm;
+  for (;;) {
+    if (up < hi) {
+      pu *= ((K - up) * (n - up)) / ((up + 1) * (N - K - n + up + 1));
+      up++;
+      u -= pu;
+      if (u <= 0) return up;
+    }
+    if (dn > lo) {
+      pd *= (dn * (N - K - n + dn)) / ((K - dn + 1) * (n - dn + 1));
+      dn--;
+      u -= pd;
+      if (u <= 0) return dn;
+    }
+    if (up >= hi && dn <= lo) return mode; // rounding left a sliver of probability
+  }
+}
+
+/**
+ * Monte Carlo estimate of the Fisher-Freeman-Halton p-value: random tables with the observed margins,
+ * drawn column by column as sequential hypergeometric draws (Patefield 1981), so each table costs
+ * O(r x c) draws instead of a shuffle of all N cases.
+ */
 export function fisherMonteCarlo(t: number[][], samples: number, seed: number): FisherResult {
   const r = t.length;
   const c = t[0].length;
   const { rows, cols, N } = margins(t);
   const lpObs = logTableProb(t, rows, cols, N);
   const rand = seededRandom(seed);
-  // Individuals labelled by row; shuffle column labels.
-  const colLabels = new Int32Array(N);
-  let k = 0;
-  for (let j = 0; j < c; j++) for (let q = 0; q < cols[j]; q++) colLabels[k++] = j;
-  const rowLabels = new Int32Array(N);
-  k = 0;
-  for (let i = 0; i < r; i++) for (let q = 0; q < rows[i]; q++) rowLabels[k++] = i;
   const lf = new Float64Array(N + 2);
   for (let i = 2; i <= N + 1; i++) lf[i] = lf[i - 1] + Math.log(i);
   const base = -lf[N] + rows.reduce((s, v) => s + lf[v], 0) + cols.reduce((s, v) => s + lf[v], 0);
-  const cells = new Int32Array(r * c);
+  const rem = new Int32Array(r);
   let hits = 0;
   for (let s = 0; s < samples; s++) {
-    for (let i = N - 1; i > 0; i--) {
-      const jx = Math.floor(rand() * (i + 1));
-      const tmp = colLabels[i];
-      colLabels[i] = colLabels[jx];
-      colLabels[jx] = tmp;
-    }
-    cells.fill(0);
-    for (let i = 0; i < N; i++) cells[rowLabels[i] * c + colLabels[i]]++;
+    for (let i = 0; i < r; i++) rem[i] = rows[i];
     let lp = base;
-    for (let q = 0; q < cells.length; q++) lp -= lf[cells[q]];
+    let totalLeft = N;
+    for (let j = 0; j < c - 1; j++) {
+      let left = cols[j];
+      let pool = totalLeft; // sum of rem[i..r-1]
+      for (let i = 0; i < r - 1 && left > 0; i++) {
+        const x = rhyper(left, rem[i], pool, lf, rand);
+        pool -= rem[i];
+        rem[i] -= x;
+        left -= x;
+        lp -= lf[x];
+      }
+      if (left > 0) {
+        rem[r - 1] -= left;
+        lp -= lf[left];
+      }
+      totalLeft -= cols[j];
+    }
+    for (let i = 0; i < r; i++) lp -= lf[rem[i]]; // last column
     if (lp <= lpObs + 1e-7 * Math.abs(lpObs) + 1e-12) hits++;
   }
   const p = hits / samples;

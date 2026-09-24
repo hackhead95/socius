@@ -21,7 +21,6 @@ area: procedures
 | key | type | label | group | default |
 |---|---|---|---|---|
 | testValue | number | Test value |  | 0 |
-| ciLevel | number | Confidence interval (%) | Options | 95 |
 | effectSizes | checkbox | Estimate effect sizes | Options | true |
 | missing | select | Missing values | Options | "analysis" |
 
@@ -41,7 +40,13 @@ area: procedures
 - [[core/common.ts#apaP|apaP()]] · procedure helper
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
+- [[procedures/text.ts#CI_MAX|CI_MAX]] · procedure helper
+- [[procedures/text.ts#CI_MIN|CI_MIN]] · procedure helper
+- [[procedures/text.ts#ciOption|ciOption()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
 - [[core/common.ts#COHEN_NOTE|COHEN_NOTE]] · procedure helper
+- [[procedures/text.ts#confLevel|confLevel()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#decFmt|decFmt()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
@@ -50,12 +55,16 @@ area: procedures
 - [[core/common.ts#fmtN|fmtN()]] · procedure helper
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#labelD|labelD()]] · procedure helper
+- [[procedures/text.ts#levelText|levelText()]] · procedure helper
 - [[core/common.ts#numericValues|numericValues()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#optBool|optBool()]] · procedure helper
 - [[core/common.ts#optNum|optNum()]] · procedure helper
 - [[core/common.ts#optStr|optStr()]] · procedure helper
 - [[core/common.ts#pcell|pcell()]] · procedure helper
+- [[procedures/text.ts#rangeMessage|rangeMessage()]] · procedure helper
 - [[core/common.ts#requireNumeric|requireNumeric()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
 - [[core/common.ts#tableBlock|tableBlock()]] · procedure helper
@@ -67,7 +76,9 @@ area: procedures
 
 ## Tested by
 - [[search.test.ts]] · menu label
+- [[findings-repro.test.ts]] · procedure id
 - [[procedures-oracle.fuzz.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 

@@ -61,6 +61,9 @@ export interface LogEntry {
   count?: number;
   /** The browser session (page load) that logged it. */
   session: string;
+  /** Same problem in earlier sessions too: when it was first seen, and in how many sessions. */
+  first?: string;
+  sessions?: number;
 }
 
 export const ERROR_LOG_KEY = 'socius.errorlog';
@@ -101,6 +104,20 @@ const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 const QUOTED_RE = /(^|[\s(\[{:=,])(["'“‘`«])([^\n"“”`«»]{1,400}?)(["'”’`»])(?=$|[\s)\]}:;,.!?])/g;
 const FILE_RE = /(?<![\w.-])[\w\-()[\]]+(?:\.[\w\-()[\]]+)*?\.(sav|zsav|por|sps|csv|tsv|txt|tab|dat|psv|xlsx|xlsm|xls|ods|json|zip|docx|doc|odt|pdf|rtf|md|html?)\b/gi;
 const TOKEN_RE = /[A-Za-z0-9+/_=-]{24,}/g;
+// Numbers that identify people, from pasted field data: Indian mobile numbers (+91 / 0091 / 0 prefix,
+// 10 digits starting 6-9, optionally split 5+5), Aadhaar-like 12-digit numbers (optionally in groups
+// of four), and any other run of 9 or more digits in free text (in any script's digits). Short
+// numbers stay: HTTP statuses, counts, line:column positions, sizes.
+const PHONE_CC_RE = /(?:\+|(?<![\w+])00)\s?91[\s.-]?[6-9]\d{4}[\s.-]?\d{5}(?!\d)/g;
+const PHONE_RE = /(?<![\w+.])0?[6-9]\d{4}[\s.-]?\d{5}(?![\w])/g;
+const AADHAAR_RE = /(?<![\w.])\d{4}([\s-]?)\d{4}\1\d{4}(?![\w])/g;
+const LONG_DIGITS_RE = /(?<![\p{L}\p{N}_])\p{Nd}{9,}(?![\p{L}\p{N}_])/gu;
+export const NUMBER_REMOVED = '[number removed]';
+
+/** Replace phone numbers, Aadhaar-like numbers and long digit runs (see the patterns above). */
+export function removeLongNumbers(s: string): string {
+  return s.replace(PHONE_CC_RE, NUMBER_REMOVED).replace(AADHAAR_RE, NUMBER_REMOVED).replace(PHONE_RE, NUMBER_REMOVED).replace(LONG_DIGITS_RE, NUMBER_REMOVED);
+}
 
 /** A long string that looks random (a key, token or hash) rather than a word or a code identifier. */
 export function looksSecret(t: string): boolean {
@@ -173,6 +190,7 @@ export function redact(input: unknown, max = MAX_MESSAGE, terms: readonly string
     });
     s = removeSecrets(s);
     s = s.replace(EMAIL_RE, '[email]');
+    s = removeLongNumbers(s);
     s = removeTerms(s, terms);
     s = s.replace(QUOTED_RE, (_m, pre: string, open: string, _body: string, close: string) => `${pre}${open}…${close}`);
     s = s.replace(FILE_RE, (_m, ext: string) => `[file].${ext.toLowerCase()}`);
@@ -191,6 +209,27 @@ export function fileKind(name: string): string {
 }
 
 // ---------- describing errors ----------
+
+/**
+ * React's component stack reduced to component names ("at DataGrid"), without file URLs, query
+ * hashes or line numbers. At most `max` lines.
+ */
+export function componentStackText(stack: unknown, max = 10): string | undefined {
+  if (typeof stack !== 'string' || !stack.trim()) return undefined;
+  const names: string[] = [];
+  for (const raw of stack.split('\n')) {
+    const l = raw.trim();
+    if (!l) continue;
+    // Chrome/Node: "at Name (url:1:2)" or "at url:1:2"; Firefox/Safari: "Name@url:1:2".
+    const m = /^at\s+([^\s(]+)/.exec(l) ?? /^([^@\s]+)@/.exec(l);
+    const name = m?.[1] ?? '';
+    if (!name || /[/:]/.test(name)) continue;
+    names.push(`at ${name}`);
+  }
+  if (!names.length) return undefined;
+  const more = names.length - max;
+  return `Component stack:\n${names.slice(0, max).map((l) => `  ${l}`).join('\n')}${more > 0 ? `\n  (${more} more)` : ''}`;
+}
 
 function trimStack(stack: string): string {
   const frames = stack
@@ -290,6 +329,8 @@ let seenCount = 0;
 let lastRaw = '';
 const listeners = new Set<() => void>();
 const loggedErrors = new WeakSet<object>();
+/** Entries of earlier sessions merged into a newer one (not to be brought back from storage). */
+const absorbed = new Set<string>();
 
 function storage(): Storage | null {
   try {
@@ -336,7 +377,7 @@ function persistNow(): void {
   }
   // Merge with entries another tab saved, so two open tabs do not erase each other's log.
   const mine = new Set(entries.map((e) => e.id));
-  const others = readStored().filter((e) => !mine.has(e.id) && e.session !== SESSION_ID);
+  const others = readStored().filter((e) => !mine.has(e.id) && e.session !== SESSION_ID && !absorbed.has(e.id));
   let list = others.length ? [...others, ...entries].sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0)) : entries;
   list = capped(list);
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -431,9 +472,25 @@ function add(level: LogLevel, area: LogArea, err: unknown, ctx?: LogContext, ext
   };
   const detail = detailText ? redact(detailText, MAX_DETAIL, terms) : '';
   if (detail) entry.detail = detail;
+  // The same problem logged in an earlier session (page load): one entry with the total count, moved
+  // to now, instead of one entry per session (for example a storage error on every visit).
+  const prevIdx = level === 'info' ? -1 : entries.findIndex((e) => e.session !== SESSION_ID && sameProblem(e, entry));
+  if (prevIdx >= 0) {
+    const prev = entries[prevIdx];
+    entry.count = (prev.count ?? 1) + 1;
+    entry.first = prev.first ?? prev.time;
+    entry.sessions = (prev.sessions ?? 1) + 1;
+    absorbed.add(prev.id);
+    entries = entries.filter((_, i) => i !== prevIdx);
+  }
   entries = capped([...entries, entry]);
   persistNow();
   notify();
+}
+
+/** Two entries describe the same problem (level, area, message, details and operation). */
+function sameProblem(a: LogEntry, b: LogEntry): boolean {
+  return a.level === b.level && a.area === b.area && a.message === b.message && (a.detail ?? '') === (b.detail ?? '') && (a.context?.op ?? '') === (b.context?.op ?? '');
 }
 
 function safely(fn: () => void): void {
@@ -452,8 +509,8 @@ export function logError<T>(area: LogArea, err: T, context?: LogContext, extraDe
   return err;
 }
 
-export function logWarn(area: LogArea, err: unknown, context?: LogContext): void {
-  safely(() => add('warn', area, err, context));
+export function logWarn(area: LogArea, err: unknown, context?: LogContext, extraDetail?: string): void {
+  safely(() => add('warn', area, err, context, extraDetail));
 }
 
 export function logInfo(area: LogArea, message: string, context?: LogContext): void {
@@ -486,6 +543,7 @@ export function clearLog(): void {
     entries = [];
     lastRaw = '';
     seenCount = 0;
+    absorbed.clear();
     try {
       storage()?.removeItem(ERROR_LOG_KEY);
     } catch {
@@ -581,7 +639,8 @@ function contextText(c: LogContext | undefined): string {
 
 /** One entry as plain text (used by the report and the Error log dialog). */
 export function formatEntry(e: LogEntry, index?: number): string {
-  const head = `${index != null ? `${index}. ` : ''}${e.time}  ${e.level.toUpperCase()}  ${e.area}${e.count && e.count > 1 ? `  (x${e.count})` : ''}${e.session === SESSION_ID ? '  (this session)' : ''}`;
+  const times = e.count && e.count > 1 ? `  (x${e.count}${e.sessions && e.sessions > 1 ? ` in ${e.sessions} sessions, first ${e.first ?? '?'}` : ''})` : '';
+  const head = `${index != null ? `${index}. ` : ''}${e.time}  ${e.level.toUpperCase()}  ${e.area}${times}${e.session === SESSION_ID ? '  (this session)' : ''}`;
   const lines = [head, `   ${e.message}`];
   if (e.detail) lines.push(...e.detail.split('\n').map((l) => `   ${l}`));
   const ctx = contextText(e.context);

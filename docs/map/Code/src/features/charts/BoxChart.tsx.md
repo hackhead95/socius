@@ -30,6 +30,6 @@ star() (line 15)
 ### BoxChart
 *component* · line 26 · exported · note: [[BoxChart|<BoxChart>]]
 - Renders: [[ChartHeader|<ChartHeader>]], [[ChartSvg|<ChartSvg>]], [[TipRow|<TipRow>]], [[YAxis|<YAxis>]]
-- Calls: [[BoxChart.tsx#boxDesc|boxDesc()]], [[BoxChart.tsx]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#headerLayout|headerLayout()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[scale.ts#band|band()]], [[scale.ts#formatTick|formatTick()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#linear|linear()]], [[scale.ts#niceTicks|niceTicks()]]
+- Calls: [[BoxChart.tsx#boxDesc|boxDesc()]], [[BoxChart.tsx]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[scale.ts#band|band()]], [[scale.ts#formatTick|formatTick()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#linear|linear()]], [[scale.ts#niceTicks|niceTicks()]], [[useHeaderLayout|useHeaderLayout()]]
 - Uses: [[charts/common.tsx#FS_AXIS|FS_AXIS]], [[charts/common.tsx#FS_TICK|FS_TICK]]
 - Rendered by: [[ChartBody|<ChartBody>]]

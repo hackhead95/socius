@@ -17,6 +17,45 @@ export interface TableInput {
   /** Accept "1,5" as 1.5 (for files whose delimiter is not a comma). */
   decimalComma?: boolean;
   source: Dataset['source'];
+  /** 0-based columns to keep as text exactly as written ("Keep as text" in the import preview). */
+  textColumns?: ReadonlySet<number>;
+}
+
+/** How one column of a CSV or Excel sheet was read (for the import preview and its warnings). */
+export interface ImportColumnInfo {
+  /** 0-based column in the file. */
+  index: number;
+  name: string;
+  /** What the column became: numbers, dates or times (converted from the cells), or text. */
+  readAs: 'number' | 'date' | 'time' | 'text';
+  /** Read as text because the caller asked for it (textColumns). */
+  keptAsText: boolean;
+  /** Words such as "NA", "n/a" or "." that became system-missing, with how many cells held each. */
+  missingWords: Array<{ text: string; count: number }>;
+  /** Cells whose number lost leading zeros ("007" became 7), with one example. */
+  leadingZeros: { count: number; example: string } | null;
+}
+
+/** The import warning that lists the columns whose text changed when read as numbers, and how. */
+export function conversionWarning(columns: ImportColumnInfo[]): string | null {
+  const parts: string[] = [];
+  for (const c of columns) {
+    if (c.readAs !== 'number' || c.keptAsText) continue;
+    const how: string[] = [];
+    if (c.missingWords.length) {
+      const n = c.missingWords.reduce((s, w) => s + w.count, 0);
+      const words = c.missingWords.slice(0, 3).map((w) => `"${w.text}"`);
+      how.push(`${words.join(', ')}${c.missingWords.length > 3 ? ' and others' : ''} became system-missing in ${n.toLocaleString('en-US')} ${n === 1 ? 'case' : 'cases'}`);
+    }
+    if (c.leadingZeros) {
+      const n = c.leadingZeros.count;
+      how.push(`leading zeros were dropped in ${n.toLocaleString('en-US')} ${n === 1 ? 'case' : 'cases'} ("${c.leadingZeros.example}" became ${Number(c.leadingZeros.example.replace(/^\+/, ''))})`);
+    }
+    if (how.length) parts.push(`${c.name} (${how.join('; ')})`);
+  }
+  if (!parts.length) return null;
+  const shown = parts.length > 6 ? [...parts.slice(0, 6), `${parts.length - 6} more`] : parts;
+  return `Read as numbers: ${shown.join(', ')}. To keep a column exactly as written, tick "Keep as text" for it in the import preview.`;
 }
 
 const MISSING_TOKENS = new Set(['', 'na', 'n/a', '.', 'nan', 'null']);
@@ -205,7 +244,7 @@ function isEmptyRow(r: RawCell[]): boolean {
   return true;
 }
 
-export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: string[] } {
+export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: string[]; columns: ImportColumnInfo[] } {
   const warnings: string[] = [];
   const rows = t.rows.slice();
   while (rows.length && isEmptyRow(rows[rows.length - 1])) rows.pop();
@@ -230,8 +269,7 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
   const columns: Record<string, Column> = {};
   const nameDs = makeDataset({ name: t.name, variables });
   let renamed = 0;
-  /** Numeric columns where words like "NA" or "n/a" were read as system-missing. */
-  const tokenMissing: string[] = [];
+  const info: ImportColumnInfo[] = [];
   /** Text columns that hold numbers written with thousands separators. */
   const commaNumbers: string[] = [];
 
@@ -256,14 +294,27 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
     let col: Column;
     const numericKinds = counts.number + counts.bool;
     const dateKinds = counts.date + counts.datetime;
-    if (nonMissing === 0 || numericKinds === nonMissing) {
+    const keepText = !!t.textColumns?.has(j);
+    const ci: ImportColumnInfo = { index: j, name, readAs: 'text', keptAsText: keepText, missingWords: [], leadingZeros: null };
+    info.push(ci);
+    if (!keepText && (nonMissing === 0 || numericKinds === nonMissing)) {
+      ci.readAs = 'number';
       const values = new Float64Array(rows.length);
       let dec = 0;
+      const words = new Map<string, number>();
       for (let i = 0; i < rows.length; i++) {
         values[i] = parsed[i].value;
         if (parsed[i].decimals > dec) dec = parsed[i].decimals;
+        const raw = j < rows[i].length ? rows[i][j] : null;
+        if (typeof raw !== 'string') continue;
+        const txt = raw.trim();
+        if (parsed[i].kind === 'missing' && txt !== '') words.set(txt, (words.get(txt) ?? 0) + 1);
+        else if (parsed[i].kind === 'number' && /^[+-]?0\d/.test(txt)) {
+          if (ci.leadingZeros) ci.leadingZeros.count++;
+          else ci.leadingZeros = { count: 1, example: txt };
+        }
       }
-      if (nonMissing > 0 && rows.some((r) => j < r.length && typeof r[j] === 'string' && MISSING_TOKENS.has((r[j] as string).trim().toLowerCase()) && (r[j] as string).trim() !== '')) tokenMissing.push(name);
+      ci.missingWords = [...words].map(([text, count]) => ({ text, count }));
       const onlyBool = counts.bool > 0 && counts.number === 0;
       const valueLabels: ValueLabel[] = onlyBool ? [{ value: 0, label: 'FALSE' }, { value: 1, label: 'TRUE' }] : [];
       const decimals = nonMissing === 0 ? 2 : dec;
@@ -273,14 +324,15 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
         measure: onlyBool ? 'nominal' : guessMeasure(values), valueLabels,
       });
       col = values;
-    } else if (dateKinds === nonMissing || counts.time === nonMissing) {
+    } else if (!keepText && (dateKinds === nonMissing || counts.time === nonMissing)) {
+      ci.readAs = counts.time ? 'time' : 'date';
       const values = new Float64Array(rows.length);
       for (let i = 0; i < rows.length; i++) values[i] = parsed[i].value;
       const fmt = counts.time ? { f: 'TIME8', w: 8 } : counts.datetime ? { f: 'DATETIME20', w: 20 } : { f: 'DATE11', w: 11 };
       v = makeVariable({ name, label, type: 'numeric', width: fmt.w, decimals: 0, format: fmt.f, measure: 'scale', columns: fmt.w });
       col = values;
     } else {
-      if (counts.text > 0 && parsed.every((p, i) => p.kind === 'missing' || p.kind === 'number' || (p.kind === 'text' && NUM_THOUSANDS.test(cellText(rows[i][j]).trim())))) commaNumbers.push(name);
+      if (!keepText && counts.text > 0 && parsed.every((p, i) => p.kind === 'missing' || p.kind === 'number' || (p.kind === 'text' && NUM_THOUSANDS.test(cellText(rows[i][j]).trim())))) commaNumbers.push(name);
       const values = new Array<string>(rows.length);
       let width = 1;
       for (let i = 0; i < rows.length; i++) {
@@ -303,7 +355,8 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
     columns[v.id] = col;
   }
   const list = (names: string[]) => (names.length > 5 ? `${names.slice(0, 5).join(', ')} and ${names.length - 5} more` : names.join(', '));
-  if (tokenMissing.length) warnings.push(`Entries such as "NA", "n/a" or "." were read as missing values in ${list(tokenMissing)}.`);
+  const conv = conversionWarning(info);
+  if (conv) warnings.push(conv);
   if (commaNumbers.length) {
     warnings.push(
       `${list(commaNumbers)} ${commaNumbers.length === 1 ? 'holds' : 'hold'} numbers written with thousands separators (such as "1,234") and ${commaNumbers.length === 1 ? 'was' : 'were'} kept as text. To use ${commaNumbers.length === 1 ? 'it' : 'them'} as numbers, change the type to Numeric in Variable View.`,
@@ -312,5 +365,5 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
   if (renamed) warnings.push(`${renamed} column name(s) were not valid SPSS variable names and were changed; the original names were kept as variable labels.`);
 
   const dataset = makeDataset({ name: t.name, variables, columns, nCases: rows.length, source: t.source });
-  return { dataset, warnings };
+  return { dataset, warnings, columns: info };
 }

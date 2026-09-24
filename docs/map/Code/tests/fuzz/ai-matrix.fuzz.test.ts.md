@@ -7,7 +7,7 @@ area: tests
 
 # tests/fuzz/ai-matrix.fuzz.test.ts
 
-*Test file* · area [[tests]] · 365 lines
+*Test file* · area [[tests]] · 368 lines
 
 > AI provider error matrix (pure, mocked fetch): providers {Gemini AIza key, Gemini AQ. key, OpenAI-compatible (Groq), local (Ollama)} x responses {200 text, 200 with thought parts, 200 empty (MAX_TOKENS), 400 invalid key, 401 ACCESS_TOKEN_TYPE_UNSUPPORTED, 403 referrer blocked, 403 service disabled, 404 model, 429 per minute, 429 per day / limit 0, 500, 503, network TypeError, abort, malformed J...
 
@@ -44,4 +44,4 @@ area: tests
 - [[claude.ts]] · import
 
 ## Private helpers
-col (line 21) · out() (line 22) · memoryStorage() (line 25) · PROVIDERS (line 41) · SCENARIOS (line 52) · MODES (line 54) · googleError() (line 56) · ERRORS (line 60) · EXPECT_TEXT (line 94) · enc (line 107) · sse() (line 108) · json() (line 117) · splitEvery() (line 118) · apiOf() (line 121) · wantsStream() (line 129) · replyFor() (line 139) · respond() (line 141) · knownCodes (line 232) · RAW_TEXT (line 237) · runMode() (line 239) · resetAi() (line 255)
+col (line 21) · out() (line 22) · memoryStorage() (line 25) · PROVIDERS (line 41) · SCENARIOS (line 53) · MODES (line 55) · googleError() (line 57) · ERRORS (line 61) · EXPECT_TEXT (line 95) · enc (line 108) · sse() (line 109) · json() (line 118) · splitEvery() (line 119) · apiOf() (line 122) · wantsStream() (line 130) · replyFor() (line 140) · respond() (line 142) · knownCodes (line 235) · RAW_TEXT (line 240) · runMode() (line 242) · resetAi() (line 258)

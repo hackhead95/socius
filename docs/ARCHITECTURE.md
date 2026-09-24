@@ -23,9 +23,9 @@ A program on this computer (Ollama, LM Studio) gets a guided step-by-step check 
 allows this website / OLLAMA_ORIGINS? browser "Local network access" permission? model installed? answered?),
 shown by `src/features/ai/LocalSetup.tsx`; `scripts/diagnostics/fake-ollama.mjs` is a dev-only fake Ollama
 used by `e2e/ai-local.spec.ts`. The on-device section is `src/features/ai/WebLlmSetup.tsx`.
-Settings and keys live in localStorage only. The settings dialog is `src/features/ai/`. App-wide AI entry points (AI menu, top-bar AI chip, "AI is ready. Try it") start features through `runAiFeature` in `src/features/ai/features.ts`; "Explain with AI" on Output items builds its prompt in `explainPrompt.ts` (aggregate tables only, never case-level values).
+Settings live in localStorage; API keys only in memory and this tab's sessionStorage unless the user ticks "Remember this key on this computer" (every site on hackhead95.github.io shares one origin). Speed: `ai-timing.ts` times every AI action (stage labels and countdowns for the UI via `getAiActivity`, one info entry per action in the error log, lines in Copy details); `ai-pace.ts` learns each Gemini model's per-minute limit from 429 replies and paces requests; the key's model list is cached for a day per key hash; `tests/perf/ai-latency.test.ts` is the timing harness (simulated Gemini on a fake clock). Browser storage: `ai-storage.ts` (usage, web-llm's Cache Storage per model, deleting models, the space check before a download); `features/project/persistence.ts` pauses autosave on QuotaExceededError (one banner, `features/ai/StorageBanner.tsx`; manager in `features/ai/StorageManager.tsx`). The top-bar chip shows the last connection result per set-up (`recordAiConnection`); expected AI failures are logged as warnings (`logAiError`). The settings dialog is `src/features/ai/`. App-wide AI entry points (AI menu, top-bar AI chip, "AI is ready. Try it") start features through `runAiFeature` in `src/features/ai/features.ts`; "Explain with AI" on Output items builds its prompt in `explainPrompt.ts` (aggregate tables only, never case-level values).
 
-Every command has exactly one menu home; toolbars, the top bar and set-up prompts are contextual shortcuts with the menu's wording (`docs/NAVIGATION.md`, checked by `tests/app/navigation-audit.test.tsx`). The search palette (`src/app/CommandPalette.tsx`, Ctrl+K) searches the menu model from `menus.ts` (so a command is defined once), variables, Output results, guide sections (`helpTopics.ts`, checked against `public/guide/index.html` by a test) and coded text; matching and ranking are in `src/app/search.ts`.
+Every command has exactly one menu home; toolbars, the top bar and set-up prompts are contextual shortcuts with the menu's wording (`docs/NAVIGATION.md`, checked by `tests/app/navigation-audit.test.tsx`). The search palette (`src/app/CommandPalette.tsx`, Ctrl+K) searches the menu model from `menus.ts` (so a command is defined once), variables, Output results, guide sections (`helpTopics.ts`, checked against `public/guide/index.html` by a test) and coded text; matching and ranking are in `src/app/search.ts`. The menus are built by `buildMenus(state)` (`useMenus()` for the live UI, `allMenus()` for every command); the Socius assistant's menu knowledge is generated from `allMenus()` at run time (`src/app/menuKnowledge.ts`, registered from `main.tsx`), so new commands never go stale in its prompt. Keys bound both globally and by a view (`/`, Ctrl/Cmd+F, Ctrl/Cmd+K): the view's handler calls `preventDefault()` and wins while it has focus; `handleGlobalKey` ignores handled keys (`src/app/shortcuts.ts`).
 
 ## Stack
 
@@ -64,7 +64,14 @@ There is no server, so problems are logged in the user's browser and sent by the
 feedback (Help > Error log > Copy report; Help > Send feedback also fills a short summary into the
 GitHub form). `src/platform/errorlog.ts` keeps a ring buffer (300 entries, 200 KB) in localStorage
 (`socius.errorlog`), in memory only when storage is blocked or full. `src/features/errorlog/install.ts`
-(called from `main.tsx`) adds context to each entry and logs `window` errors and unhandled rejections;
+(called from `main.tsx`) adds context to each entry and logs `window` errors and unhandled rejections,
+resources that fail to load (capture-phase `error`: scripts and stylesheets as warnings, images as info)
+and code files missing after a redeploy (`vite:preloadError`, "Failed to fetch dynamically imported
+module"): a warning plus the calm "Socius was updated. Reload to get the new version." banner
+(`src/features/errorlog/update.ts`, `UpdateBanner.tsx`; a reload is remembered in sessionStorage so it
+cannot loop). `main.tsx` passes `reactRootErrorOptions` to `createRoot` (`onCaughtError` for boundaries
+other than Socius's own, `onUncaughtError`, `onRecoverableError`), with component stacks reduced to
+component names (`componentStackText`);
 `src/app/ErrorBoundary.tsx` catches render errors (whole app: "Something went wrong" screen; each main
 tab; dialogs, which close; the assistant panel). Already logged: AI errors where `askAI`/`askAIJson`
 convert them, assistant turns, file import/export, analysis `run()` (and runs over 5 s as info),
@@ -95,7 +102,9 @@ Redaction rules (in `redact`, applied to every message, detail and context value
   tokens. Do not build messages from them yourself either: pass the error, not a description of the data.
 - Removed automatically: Google keys (`AIza...`, `AQ....`), `sk-...`, `gsk_...` and similar tokens, JWTs,
   `Bearer`/`Basic` credentials, `key=`/`token=`-style parameters and headers, long random-looking strings,
-  e-mail addresses, `data:` URLs, quoted text, file names, and every name and label of the open dataset
+  e-mail addresses, `data:` URLs, quoted text, file names, Indian mobile numbers (+91, 0091, 0 or no
+  prefix, optionally split 5+5), Aadhaar-like 12-digit numbers and any other run of 9 or more digits
+  (in any script's digits) (`[number removed]`), and every name and label of the open dataset
   and coding project (`setSensitiveTermsProvider`). URLs keep host and path only (no query or fragment).
 - Unknown objects are never serialised: only an Error's name, message, `code`, HTTP status, the service's
   `detail` and a stack trimmed to 8 frames. Strings are truncated (300 characters for messages).

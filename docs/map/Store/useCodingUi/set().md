@@ -2,13 +2,13 @@
 id: "store-action:useCodingUi.set"
 type: store-action
 file: src/features/coding/uiStore.ts
-line: 53
+line: 58
 area: features/coding
 ---
 
 # useCodingUi.set()
 
-*Store action* · defined in [[uiStore.ts]] (line 53) · area [[features - coding|features/coding]]
+*Store action* · defined in [[uiStore.ts]] (line 58) · area [[features - coding|features/coding]]
 
 - **Store:** useCodingUi
 

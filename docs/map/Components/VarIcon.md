@@ -2,13 +2,13 @@
 id: "src/features/analysis/ProcedureDialog.tsx#VarIcon"
 type: component
 file: src/features/analysis/ProcedureDialog.tsx
-line: 52
+line: 53
 area: features/analysis
 ---
 
 # <VarIcon>
 
-*React component* · defined in [[ProcedureDialog.tsx]] (line 52) · area [[features - analysis|features/analysis]]
+*React component* · defined in [[ProcedureDialog.tsx]] (line 53) · area [[features - analysis|features/analysis]]
 
 > ---------- icons for variables ----------
 

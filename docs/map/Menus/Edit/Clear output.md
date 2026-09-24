@@ -20,3 +20,6 @@ area: app
 
 ## Part of
 - [[Edit]]
+
+## Tested by
+- [[menu-knowledge.test.ts]] · menu label

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChartSpec } from '../../core/output';
 import { barPath, formatTick, formatValue, linear, niceTicks, normalCurvePoints } from './scale';
-import { ChartHeader, ChartSvg, FS_TICK, TipRow, XAxisNumeric, YAxis, headerLayout, maxLabelWidth, measureText, type SetTip } from './common';
+import { ChartHeader, ChartSvg, FS_TICK, TipRow, XAxisNumeric, YAxis, useHeaderLayout, maxLabelWidth, measureText, type SetTip } from './common';
 
 type HistSpec = Extract<ChartSpec, { type: 'histogram' }>;
 
@@ -18,7 +18,7 @@ export function histogramDesc(spec: HistSpec): string {
 
 export function HistogramChart({ spec, width, setTip }: { spec: HistSpec; width: number; setTip: SetTip }) {
   const [hover, setHover] = useState(-1);
-  const head = headerLayout(spec.title, [], width);
+  const head = useHeaderLayout(spec.title, [], width);
   const curve = spec.normal && spec.normal.sd > 0 ? normalCurvePoints(spec.edges, spec.normal) : [];
   let hi = 0;
   for (const c of spec.counts) hi = Math.max(hi, c);

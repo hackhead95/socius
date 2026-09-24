@@ -10,5 +10,7 @@ area: platform
 *AI provider* · defined in [[platform/ai.ts]] · area [[platform]]
 
 ## Implemented in
+- [[ai-storage.ts]]
+- [[ai-webllm-models.ts]]
 - [[ai-webllm.ts]]
 - [[webllm-stub.ts]]

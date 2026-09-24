@@ -8,6 +8,22 @@ import { openWithSample } from './helpers';
 const KEY = 'AIzaSyE2eSecretKey_0123456789abcdefXYZ';
 const GEMINI = 'https://generativelanguage.googleapis.com/**';
 
+/** The calm dot on the Help menu button (not the Help menu's items, not the phone menu sheet). */
+function helpDot(page: Page) {
+  return page.locator('.menubar').getByRole('menuitem', { name: 'Help', exact: true }).locator('.menu-dot');
+}
+
+/** Error-level entries in the stored log (the dot follows them). */
+async function storedErrors(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    try {
+      return ((JSON.parse(localStorage.getItem('socius.errorlog') ?? '{}').entries ?? []) as Array<{ level: string }>).filter((e) => e.level === 'error').length;
+    } catch {
+      return 0;
+    }
+  });
+}
+
 async function openErrorLog(page: Page) {
   await page.getByRole('menuitem', { name: 'Help', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Error log...' }).click();
@@ -30,7 +46,8 @@ test('failed file open and an AI 500 are logged without data, file names or keys
   });
   await openWithSample(page);
   // No dot on Help yet.
-  await expect(page.locator('.menubar .menu-dot')).toHaveCount(0);
+  await expect(page.locator('.menubar').getByRole('menuitem', { name: 'Help', exact: true })).toBeVisible();
+  await expect(helpDot(page)).toHaveCount(0);
 
   // 1. A broken "SPSS" file whose name and contents are confidential.
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.keyboard.press('Control+o')]);
@@ -45,13 +62,20 @@ test('failed file open and an AI 500 are logged without data, file names or keys
   await expect(ai.locator('.ai-test-result .text-bad')).toBeVisible();
   await ai.getByRole('button', { name: 'Done' }).click();
 
-  // A calm dot on Help says something was logged.
-  await expect(page.locator('.menubar .menu-dot')).toHaveCount(1);
+  // A calm dot on Help says something was logged. The dot follows the error-level entries of this
+  // session (the file problem is a warning; the AI 500 is an error), so wait for the entry first:
+  // the Test connection check logs it after its steps finish, and menus re-render after that.
+  await expect.poll(() => storedErrors(page), { timeout: 15_000 }).toBeGreaterThan(0);
+  await expect(helpDot(page)).toHaveCount(1);
+  // The dot is decoration: the Help button keeps its name and says why in its description.
+  await expect(page.locator('#help-errors-note')).toHaveText('New problems in Help, Error log');
 
   const dlg = await openErrorLog(page);
-  await expect(page.locator('.menubar .menu-dot')).toHaveCount(0);
+  await expect(helpDot(page)).toHaveCount(0);
   const items = dlg.locator('.errlog-item');
-  const aiItem = items.filter({ has: page.locator('.errlog-area', { hasText: /^AI$/ }) });
+  // One AI error (the 500). AI may also log info entries (timings), which are not counted here.
+  const aiItems = items.filter({ has: page.locator('.errlog-area', { hasText: /^AI$/ }) });
+  const aiItem = aiItems.filter({ has: page.locator('.errlog-level', { hasText: /^Error$/ }) });
   await expect(aiItem).toHaveCount(1);
   await expect(aiItem.locator('.errlog-level')).toHaveText('Error');
   const fileItem = items.filter({ has: page.locator('.errlog-area', { hasText: 'Opening files' }) });
@@ -62,8 +86,10 @@ test('failed file open and an AI 500 are logged without data, file names or keys
   await expect(aiItem.locator('.errlog-detail')).toContainText('AI gemini');
   await expect(aiItem.locator('.errlog-detail')).toContainText(/data \d[\d,]* cases x \d+ variables/);
   // Filters.
+  const nAi = await aiItems.count();
   await dlg.getByLabel('Filter by area').selectOption('ai');
-  await expect(dlg.locator('.errlog-item')).toHaveCount(1);
+  await expect(dlg.locator('.errlog-item')).toHaveCount(nAi);
+  await expect(dlg.locator('.errlog-item').filter({ hasNot: page.locator('.errlog-area', { hasText: /^AI$/ }) })).toHaveCount(0);
   await dlg.getByLabel('Filter by area').selectOption('all');
 
   // Nothing confidential anywhere: dialog, stored log, copied report.
@@ -113,4 +139,39 @@ test('Send feedback offers the error report and prefills the form; Search finds 
   expect(url.searchParams.get('error-report')).toContain('Version:');
   expect(url.searchParams.get('browser')).toMatch(/Chrome/);
   expect(p.url().length).toBeLessThan(6000);
+});
+
+test('a code file missing after an update shows "Socius was updated" with Reload, not a broken feature', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(e.message));
+  await openWithSample(page);
+  // A result to export.
+  await page.getByRole('menuitem', { name: 'Analyze', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Descriptive Statistics', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Frequencies...', exact: true }).click();
+  await page.locator('.modal input[aria-label="Search variables"]').fill('gender');
+  await page.locator('.modal .pd-list .pd-var').filter({ has: page.locator('.vl-name', { hasText: '[gender]' }) }).first().click();
+  await page.locator('.modal .pd-slot-row').nth(0).locator('button.pd-arrow').click();
+  await page.locator('.modal .pd-run').click();
+  await expect(page.locator('.modal')).toHaveCount(0);
+  // As after a new version is published: the old version's Word-export code file is gone.
+  await page.route(/\/assets\/[^/]*[Dd]ocx[^/]*\.js$/, (r) => r.fulfill({ status: 404, body: 'Not found' }));
+  await page.getByRole('menuitem', { name: 'File', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Export output report' }).click();
+  await page.getByRole('menuitem', { name: 'Word document (.docx)' }).click();
+  const banner = page.locator('.update-banner');
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText('Socius was updated. Reload to get the new version.');
+  // Logged calmly (a warning about the network), not as an error; the app keeps working.
+  const log = await page.evaluate(() => JSON.parse(localStorage.getItem('socius.errorlog') ?? '{}').entries ?? []);
+  expect(log.some((e: { level: string; area: string }) => e.level === 'warn' && e.area === 'network')).toBe(true);
+  expect(log.filter((e: { level: string }) => e.level === 'error')).toEqual([]);
+  await expect(page.locator('.menubar .menu-dot')).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+  // Reload gets the page again (autosave brings the work back) and the banner is gone.
+  await page.unroute(/\/assets\/[^/]*[Dd]ocx[^/]*\.js$/);
+  await banner.getByRole('button', { name: 'Reload' }).click();
+  await page.waitForLoadState('load');
+  await expect(page.locator('.update-banner')).toHaveCount(0);
+  await expect(page.locator('.dataset-size')).toContainText('cases', { timeout: 30_000 });
 });

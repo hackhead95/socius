@@ -6,7 +6,9 @@ import { isDateFormat, isUserMissing } from '../../core/data';
 import { Modal } from '../../ui/Modal';
 import { Icon } from '../../ui/Icon';
 import { VarPicker } from '../../ui/VarPicker';
-import { changeType, copyProperties, COPY_PROPS, type CopyProp } from './mutations';
+import { changeType, patchVariable } from './mutations';
+import { COPY_PROPS, copyPropertiesTransform, type CopyProp } from '../../lib/transform/properties';
+import { applyTransform } from '../transform/common';
 
 // ---------- Type ----------
 
@@ -86,7 +88,7 @@ export function TypeDialog({ ds, v, onClose }: { ds: Dataset; v: Variable; onClo
       format = `${fam}${w}.${d}`;
     }
     const lossy = type !== v.type || (type === 'string' && w < v.width);
-    mutate((cur) => changeType(cur, v.id, type, format, fw, fd));
+    mutate((cur) => changeType(cur, v.id, type, format, fw, fd), { label: `Variable type of ${v.name}` });
     if (lossy) useStore.getState().toast(`Changed ${v.name} to ${kind === 'string' ? 'text' : kind}. Values were converted; press Ctrl+Z to undo.`, 'info');
     onClose();
   };
@@ -189,7 +191,7 @@ export function parseLabelLines(text: string, type: VarType): { labels: ValueLab
 }
 
 export function ValueLabelsDialog({ v, onClose }: { v: Variable; onClose: () => void }) {
-  const update = useStore((s) => s.updateVariable);
+  const mutate = useStore((s) => s.mutateDataset);
   const [rows, setRows] = useState<Array<{ value: string; label: string }>>(v.valueLabels.map((l) => ({ value: String(l.value), label: l.label })));
   const [nv, setNv] = useState('');
   const [nl, setNl] = useState('');
@@ -224,7 +226,7 @@ export function ValueLabelsDialog({ v, onClose }: { v: Variable; onClose: () => 
       if (!r.label.trim()) return setErr(`The value ${key} has an empty label.`);
       out.push({ value, label: r.label.trim() });
     }
-    update(v.id, { valueLabels: out });
+    mutate((cur) => patchVariable(cur, v.id, { valueLabels: out }), { label: `Value labels of ${v.name}` });
     onClose();
   };
   const applyPaste = () => {
@@ -306,7 +308,7 @@ export function describeMissing(v: Variable): string {
 }
 
 export function MissingDialog({ v, onClose }: { v: Variable; onClose: () => void }) {
-  const update = useStore((s) => s.updateVariable);
+  const mutate = useStore((s) => s.mutateDataset);
   const m = v.missing;
   const [mode, setMode] = useState<'none' | 'discrete' | 'range'>(m.range ? 'range' : m.discrete.length ? 'discrete' : 'none');
   const [d, setD] = useState<string[]>(() => {
@@ -346,7 +348,7 @@ export function MissingDialog({ v, onClose }: { v: Variable; onClose: () => void
         spec.range = { lo: a, hi: b };
       } else if (!discrete.length) return setErr('Enter at least one missing value, or choose "No missing values".');
     }
-    update(v.id, { missing: spec });
+    mutate((cur) => patchVariable(cur, v.id, { missing: spec }), { label: `Missing values of ${v.name}` });
     onClose();
   };
 
@@ -399,8 +401,6 @@ export function MissingDialog({ v, onClose }: { v: Variable; onClose: () => void
 // ---------- Copy properties ----------
 
 export function CopyPropertiesDialog({ ds, sourceId, onClose }: { ds: Dataset; sourceId: string | null; onClose: () => void }) {
-  const mutate = useStore((s) => s.mutateDataset);
-  const toast = useStore((s) => s.toast);
   const [src, setSrc] = useState<string[]>(sourceId ? [sourceId] : []);
   const [targets, setTargets] = useState<string[]>([]);
   const [props, setProps] = useState<CopyProp[]>(COPY_PROPS.filter((p) => p.defaultOn).map((p) => p.id));
@@ -408,8 +408,10 @@ export function CopyPropertiesDialog({ ds, sourceId, onClose }: { ds: Dataset; s
   const filter = useMemo(() => (source ? (v: Variable) => v.type === source.type && v.id !== source.id : () => false), [source]);
   const apply = () => {
     if (!source || !targets.length || !props.length) return;
-    mutate((cur) => copyProperties(cur, source.id, targets, props));
-    toast(`Copied ${props.length} propert${props.length === 1 ? 'y' : 'ies'} from ${source.name} to ${targets.length} variable${targets.length === 1 ? '' : 's'}.`, 'success');
+    const cur = useStore.getState().dataset;
+    if (!cur) return;
+    // Logged like the other transforms: Output gets the equivalent SPSS syntax, Edit > Undo names the step.
+    applyTransform(copyPropertiesTransform(cur, source.id, targets, props), 'Copy variable properties');
     onClose();
   };
   return (

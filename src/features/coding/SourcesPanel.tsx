@@ -90,7 +90,7 @@ export function SourcesPanel() {
           return (
             <div key={d.id} className={`cw-docitem ${d.id === activeDocId ? 'is-active' : ''}`} role="listitem">
               <button className="cw-docbtn" onClick={() => set({ activeDocId: d.id, view: 'documents' })} aria-current={d.id === activeDocId ? 'true' : undefined}>
-                <span className="cw-docname">{d.name}</span>
+                <span className="cw-docname" title={d.name}>{d.name}</span>
                 <span className="cw-docmeta">
                   {n ? plural(n, 'segment') : 'Not coded yet'}
                   {docSummary(orderedAttributes(d.attributes, constant).filter(([k]) => !constant.has(k)))}

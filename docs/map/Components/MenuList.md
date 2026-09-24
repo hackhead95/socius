@@ -27,7 +27,6 @@ area: ui
 ## Rendered by
 - [[ContextMenu|<ContextMenu>]]
 - [[MenuBar|<MenuBar>]]
-- [[MenuButton (ui-Menu)|<MenuButton>]]
 
 ## Binds shortcut
 - [[ArrowDown (MenuList)]]

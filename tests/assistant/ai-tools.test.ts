@@ -7,7 +7,7 @@ import {
   askClaudeTools, askGeminiTools, askOpenAiTools, buildGeminiInteractionToolRequest, buildGeminiToolRequest, buildOpenAiToolRequest, claudeToolsAvailable, geminiContents, interactionSteps,
   isToolsUnsupported, openAiMessages, parseDelay, parseOpenAiTurn, toGeminiSchema, toolErrorFromResponse, type ChatMessage, type ToolSpec,
 } from '../../src/platform/ai-tools';
-import { __resetGeminiState, __setHttpRetryDelay } from '../../src/platform/ai-http';
+import { __resetGeminiState, __setHttpRetryDelay, __setRateLimitSleep } from '../../src/platform/ai-http';
 import { __resetCapabilityCache } from '../../src/platform/claude';
 import { jsonResponse, sseResponse } from '../platform/helpers';
 import { G, interactionCalls, interactionStream } from '../platform/gemini-fixtures';
@@ -26,6 +26,7 @@ const tools: ToolSpec[] = [
 
 beforeEach(() => {
   __resetGeminiState();
+  __setRateLimitSleep(async () => undefined);
   __setHttpRetryDelay(0);
 });
 

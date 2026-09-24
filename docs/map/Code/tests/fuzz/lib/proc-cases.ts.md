@@ -19,6 +19,7 @@ area: tests
 - [[rng.ts]] · value
 
 ## Imported by
+- [[procedures-text.fuzz.test.ts]] · value
 - [[procedures.fuzz.test.ts]] · value
 - [[replay.test.ts]] · value
 
@@ -36,9 +37,9 @@ area: tests
 *function* · line 13 · exported
 > Pairwise covering rows (dataset state x options) plus random rows; row 0 = defaults on a typical dataset.
 - Calls: [[pairwise.ts#pairwise|pairwise()]], [[proc-harness.ts#optionDomain|optionDomain()]], [[rng.ts#fuzzScale|fuzzScale()]], [[rng.ts#makeRng|makeRng()]]
-- Used in: [[procedures.fuzz.test.ts]], [[replay.test.ts]]
+- Used in: [[procedures-text.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[replay.test.ts]]
 
 ### buildCase
 *function* · line 29 · exported
 - Calls: [[gen-data.ts#genDataset|genDataset()]], [[proc-cases.ts#rowSeed|rowSeed()]], [[proc-harness.ts#assignSlots|assignSlots()]], [[proc-harness.ts#resolveOptions|resolveOptions()]], [[rng.ts#makeRng|makeRng()]]
-- Used in: [[procedures.fuzz.test.ts]], [[replay.test.ts]]
+- Used in: [[procedures-text.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[replay.test.ts]]

@@ -3,7 +3,7 @@
 import { formatCell, valueLabelFor } from '../../core/data';
 import type { Dataset, Variable } from '../../core/types';
 import { decodeText } from './encoding';
-import { tableToDataset } from './infer';
+import { tableToDataset, type ImportColumnInfo } from './infer';
 
 export interface ParseResult {
   rows: string[][];
@@ -119,9 +119,11 @@ export interface CsvImportOptions {
   delimiter?: string;
   header?: boolean;
   encoding?: string;
+  /** 0-based columns to keep as text exactly as written. */
+  textColumns?: readonly number[];
 }
 
-export function readDelimited(fileName: string, bytes: Uint8Array, opts: CsvImportOptions = {}): { dataset: Dataset; warnings: string[] } {
+export function readDelimited(fileName: string, bytes: Uint8Array, opts: CsvImportOptions = {}): { dataset: Dataset; warnings: string[]; columns: ImportColumnInfo[] } {
   const warnings: string[] = [];
   const decoded = decodeText(bytes, opts.encoding);
   if (decoded.warning) warnings.push(decoded.warning);
@@ -144,8 +146,9 @@ export function readDelimited(fileName: string, bytes: Uint8Array, opts: CsvImpo
     // number is more likely a thousands separator, so such columns stay text.
     decimalComma: delimiter === ';',
     source: { kind: 'csv', fileName, encoding: decoded.encoding },
+    textColumns: new Set(opts.textColumns ?? []),
   });
-  return { dataset: result.dataset, warnings: [...warnings, ...result.warnings] };
+  return { dataset: result.dataset, warnings: [...warnings, ...result.warnings], columns: result.columns };
 }
 
 // ---------------------------------------------------------------------------------------------

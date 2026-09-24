@@ -2,13 +2,13 @@
 id: "store-action:useStore.insertCases"
 type: store-action
 file: src/core/store.ts
-line: 109
+line: 111
 area: core
 ---
 
 # useStore.insertCases()
 
-*Store action* · defined in [[store.ts]] (line 109) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 111) · area [[core]]
 
 - **Store:** useStore
 

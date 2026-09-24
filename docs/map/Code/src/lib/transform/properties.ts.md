@@ -7,7 +7,7 @@ area: lib/transform
 
 # src/lib/transform/properties.ts
 
-*Module* · area [[lib - transform|lib/transform]] · 932 lines
+*Module* · area [[lib - transform|lib/transform]] · 1014 lines
 
 > Define Variable Properties (Data menu): scan the values a variable really has, spot unlabelled values and codes that look like missing answers, suggest a measurement level and common value labels, and apply all edits as one undoable change with equivalent SPSS syntax. Pure: no React, no store. The dialog lives in src/features/data/DefineProperties.tsx.
 
@@ -20,19 +20,25 @@ area: lib/transform
 
 ## Calls
 - [[core/data.ts#isUserMissing|isUserMissing()]]
+- [[dsops.ts#maxOf|maxOf()]]
+- [[dsops.ts#minOf|minOf()]]
 
 ## Tested by
+- [[data-fixes.test.ts]] · import
 - [[properties.test.ts]] · import
 
 ## Imported by
 - [[DefineProperties.tsx]] · value
+- [[mutations.ts]] · re-export
+- [[VarDialogs.tsx]] · value
+- [[data-fixes.test.ts]] · value
 - [[properties.test.ts]] · value
 
 ## Types
-ValueCount (line 63) · VarScan (line 70) · ScanOptions (line 82) · PropsDraft (line 133) · DraftChanges (line 167) · MissingToggle (line 224) · CopyableProp (line 272) · DraftIssue (line 309) · FlagKind (line 424) · RowFlag (line 426) · GridRow (line 435) · GridRows (line 447) · VarStatus (line 519) · StatusInfo (line 521) · ScanSummary (line 538) · MeasureSuggestion (line 672) · LabelSuggestion (line 731) · SuggestionPreviewRow (line 806) · AppliedSuggestion (line 822) · PropertiesResult (line 883)
+ValueCount (line 63) · VarScan (line 70) · ScanOptions (line 82) · PropsDraft (line 133) · DraftChanges (line 167) · MissingToggle (line 224) · CopyableProp (line 272) · DraftIssue (line 309) · FlagKind (line 424) · RowFlag (line 426) · GridRow (line 435) · GridRows (line 447) · VarStatus (line 519) · StatusInfo (line 521) · ScanSummary (line 538) · MeasureSuggestion (line 672) · LabelSuggestion (line 731) · SuggestionPreviewRow (line 806) · AppliedSuggestion (line 822) · PropertiesResult (line 883) · CopyProp (line 935)
 
 ## Private helpers
-sameValue() (line 38) · labelsEqual() (line 153) · missingEqual() (line 159) · sortLabels() (line 201) · normaliseMissing() (line 256) · MISSING_WORDS (line 354) · STRING_MISSING (line 362) · rangeOf() (line 379) · substantiveLabelled() (line 456) · flagsFor() (line 463) · ORDERED_FAMILIES (line 565) · COUNT_WORDS (line 678) · LEVEL_NAME (line 680) · ellipsis() (line 686) · AGREE5 (line 741) · AGREE7 (line 742) · numbered() (line 744) · missingLabelFor() (line 748) · LEVEL_KEYWORD (line 850) · groupBy() (line 852)
+sameValue() (line 38) · labelsEqual() (line 153) · missingEqual() (line 159) · sortLabels() (line 201) · normaliseMissing() (line 256) · MISSING_WORDS (line 354) · STRING_MISSING (line 362) · rangeOf() (line 379) · substantiveLabelled() (line 456) · flagsFor() (line 463) · ORDERED_FAMILIES (line 565) · COUNT_WORDS (line 678) · LEVEL_NAME (line 680) · ellipsis() (line 686) · AGREE5 (line 741) · AGREE7 (line 742) · numbered() (line 744) · missingLabelFor() (line 748) · LEVEL_KEYWORD (line 850) · groupBy() (line 852) · ROLE_KEYWORD (line 952)
 
 ## Symbols
 
@@ -178,9 +184,9 @@ sameValue() (line 38) · labelsEqual() (line 153) · missingEqual() (line 159) �
 ### missingCodeHints
 *function* · line 389 · exported
 > Values that look like codes for a missing answer, with the reason (keyed by valueKey). Looks at the observed values and the value labels.
-- Calls: [[properties.ts#labelLooksMissing|labelLooksMissing()]], [[properties.ts#valueKey|valueKey()]], [[properties.ts]]
+- Calls: [[dsops.ts#maxOf|maxOf()]], [[dsops.ts#minOf|minOf()]], [[properties.ts#labelLooksMissing|labelLooksMissing()]], [[properties.ts#valueKey|valueKey()]], [[properties.ts]]
 - Uses: [[properties.ts#isNegativeCode|isNegativeCode()]], [[properties.ts#isNinesCode|isNinesCode()]], [[properties.ts]]
-- Used in: [[properties.test.ts]]
+- Used in: [[data-fixes.test.ts]], [[properties.test.ts]]
 
 ### buildRows
 *function* · line 490 · exported
@@ -220,7 +226,7 @@ sameValue() (line 38) · labelsEqual() (line 153) · missingEqual() (line 159) �
 ### suggestLabels
 *function* · line 766 · exported
 > Common label sets that fit the values of this variable: agreement scales (1 to 5, 1 to 7), yes/no (0/1 or 1/2), sex or gender (1/2) and labels for suspected missing codes. Offered as a preview; nothing changes until the user accepts one.
-- Calls: [[core/data.ts#isUserMissing|isUserMissing()]], [[properties.ts#labelFor|labelFor()]], [[properties.ts#missingCodeHints|missingCodeHints()]], [[properties.ts#valueKey|valueKey()]], [[properties.ts]]
+- Calls: [[core/data.ts#isUserMissing|isUserMissing()]], [[dsops.ts#maxOf|maxOf()]], [[properties.ts#labelFor|labelFor()]], [[properties.ts#missingCodeHints|missingCodeHints()]], [[properties.ts#valueKey|valueKey()]], [[properties.ts]]
 - Uses: [[properties.ts#displayValue|displayValue()]], [[properties.ts]]
 - Used in: [[DefineProperties.tsx]], [[properties.test.ts]]
 
@@ -246,3 +252,20 @@ sameValue() (line 38) · labelsEqual() (line 153) · missingEqual() (line 159) �
 > Apply every draft at once: one new Dataset (one undo step), the SPSS syntax, and a summary. Drafts for unchanged variables are ignored. Missing values are stored sorted.
 - Calls: [[dsops.ts#bump|bump()]], [[dsops.ts#plural|plural()]], [[properties.ts#draftChanges|draftChanges()]], [[properties.ts#formatFor|formatFor()]], [[properties.ts#isDraftChanged|isDraftChanged()]], [[properties.ts#propertiesSyntax|propertiesSyntax()]], [[properties.ts]]
 - Used in: [[DefineProperties.tsx]], [[properties.test.ts]]
+
+### COPY_PROPS
+*const* · line 937 · exported
+- Used in: [[VarDialogs.tsx]]
+
+### copyProperties
+*function* · line 948 · exported
+> Copy chosen properties from one variable to others of the same type (other targets are left alone).
+- Calls: [[properties.ts#copyPropertiesTransform|copyPropertiesTransform()]]
+- Used in: [[dataview.test.ts]]
+
+### copyPropertiesTransform
+*function* · line 959 · exported
+> Copy variable properties as a logged transform: the new dataset, SPSS syntax (VALUE LABELS, MISSING VALUES, VARIABLE LEVEL, FORMATS, VARIABLE WIDTH / ALIGNMENT / ROLE, VARIABLE LABELS, like APPLY DICTIONARY with the source variable) and ...
+- Calls: [[dsops.ts#bump|bump()]], [[dsops.ts#plural|plural()]], [[syntax.ts#lines|lines()]], [[syntax.ts#missingSyntax|missingSyntax()]], [[syntax.ts#q|q()]], [[syntax.ts#valueLabelsSyntax|valueLabelsSyntax()]], [[syntax.ts#varList|varList()]]
+- Uses: [[properties.ts#COPY_PROPS|COPY_PROPS]], [[properties.ts]]
+- Used in: [[VarDialogs.tsx]], [[data-fixes.test.ts]]

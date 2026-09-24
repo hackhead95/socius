@@ -2,13 +2,13 @@
 id: "src/features/transform/common.tsx#NumField"
 type: component
 file: src/features/transform/common.tsx
-line: 223
+line: 247
 area: features/transform
 ---
 
 # <NumField>
 
-*React component* · defined in [[transform/common.tsx]] (line 223) · area [[features - transform|features/transform]]
+*React component* · defined in [[transform/common.tsx]] (line 247) · area [[features - transform|features/transform]]
 
 > Numeric text input helper.
 

@@ -19,5 +19,5 @@ area: dialogs
 - [[file dialogs]]
 
 ## Opened by
+- [[menus.ts#buildMenus|buildMenus()]]
 - [[Recent projects|File > Recent projects...]]
-- [[useMenus|useMenus()]]

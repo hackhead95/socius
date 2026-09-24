@@ -6,19 +6,19 @@ area: features/project
 
 # Area: features/project
 
-4 files, 1106 lines.
+4 files, 1273 lines.
 
 ## Depends on (module imports)
-- [[core]]: 9
-- [[platform]]: 4
+- [[core]]: 10
+- [[platform]]: 5
 - [[ui]]: 3
 - [[lib - io|lib/io]]: 2
 - [[Areas/app|app]]: 1
 - [[samples]]: 1
 
 ## Used by areas
-- [[Areas/app|app]]: 11
-- [[features - ai|features/ai]]: 1
+- [[Areas/app|app]]: 12
+- [[features - ai|features/ai]]: 3
 - [[features - transform|features/transform]]: 1
 
 ## Files

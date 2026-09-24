@@ -7,7 +7,7 @@ area: features/output
 
 # src/features/output/actions.ts
 
-*Module* · area [[features - output|features/output]] · 182 lines
+*Module* · area [[features - output|features/output]] · 184 lines
 
 > Browser-side output actions: copy as rich HTML, save charts, export the report. All file saves go through platform/host (saveFile) so they work inside the claude.ai Artifact sandbox.
 
@@ -32,13 +32,17 @@ area: features/output
 ## Calls store actions
 - [[toast()|useStore.toast()]] · getState
 
+## Tested by
+- [[figures.test.tsx]] · import
+
 ## Imported by
 - [[menus.ts]] · value
 - [[ProcedureDialog.tsx]] · value
 - [[OutputViewer.tsx]] · value
+- [[figures.test.tsx]] · dynamic
 
 ## Types
-ReportFormat (line 108)
+ReportFormat (line 109)
 
 ## Private helpers
 MIME (line 15) · toast() (line 24) · report() (line 28) · dateStamp() (line 34) · PASTE_FONT (line 44)
@@ -58,47 +62,47 @@ MIME (line 15) · toast() (line 24) · report() (line 28) · dateStamp() (line 3
 - Used in: [[OutputViewer.tsx]]
 
 ### copyTable
-*function* · line 64 · exported
+*function* · line 65 · exported
 - Calls: [[host.ts#copyToClipboard|copyToClipboard()]], [[output/actions.ts]], [[tableRender.ts#tableToHtml|tableToHtml()]], [[tableRender.ts#tableToText|tableToText()]]
 - Used in: [[OutputViewer.tsx]]
 
 ### copyText
-*function* · line 69 · exported
+*function* · line 70 · exported
 - Calls: [[host.ts#copyToClipboard|copyToClipboard()]], [[output/actions.ts]]
 - Used in: [[ProcedureDialog.tsx]], [[OutputViewer.tsx]]
 
 ### saveTableXlsx
-*function* · line 74 · exported
+*function* · line 75 · exported
 - Calls: [[errorlog.ts#logFailure|logFailure()]], [[export.ts#fileStem|fileStem()]], [[host.ts#saveFile|saveFile()]], [[output/actions.ts]]
 - Uses: [[output/actions.ts]]
 - Used in: [[OutputViewer.tsx]]
 
 ### saveChartPng
-*function* · line 86 · exported
+*function* · line 87 · exported
 - Calls: [[errorlog.ts#logFailure|logFailure()]], [[export.ts#chartToPng|chartToPng()]], [[export.ts#fileStem|fileStem()]], [[host.ts#saveFile|saveFile()]], [[output/actions.ts]]
 - Uses: [[output/actions.ts]]
 - Used in: [[OutputViewer.tsx]]
 
 ### saveChartSvg
-*function* · line 97 · exported
+*function* · line 98 · exported
 - Calls: [[errorlog.ts#logFailure|logFailure()]], [[export.ts#chartToSvg|chartToSvg()]], [[export.ts#fileStem|fileStem()]], [[host.ts#saveFile|saveFile()]], [[output/actions.ts]]
 - Uses: [[output/actions.ts]]
 - Used in: [[OutputViewer.tsx]]
 
 ### exportReport
-*function* · line 110 · exported
+*function* · line 111 · exported
 - Calls: [[errorlog.ts#logFailure|logFailure()]], [[export.ts#chartToPng|chartToPng()]], [[export.ts#chartToSvg|chartToSvg()]], [[exportText.ts#reportToText|reportToText()]], [[host.ts#saveFile|saveFile()]], [[output/actions.ts#reportFileStem|reportFileStem()]], [[output/actions.ts]], [[reportHtml.ts#reportToHtmlDocument|reportToHtmlDocument()]]
 - Uses: [[output/actions.ts]]
 - Output: [[table]]
 - Used in: [[OutputViewer.tsx]]
 
 ### REPORT_FORMATS
-*const* · line 157 · exported
+*const* · line 159 · exported
 > The report formats, in menu order. Shared by File > Export output report and the Output toolbar.
 - Used in: [[menus.ts]], [[OutputViewer.tsx]]
 
 ### exportAllOutput
-*function* · line 165 · exported
+*function* · line 167 · exported
 > Export every output item with the Output view's current settings (table style, interpretations, syntax).
 - Calls: [[output/actions.ts#exportReport|exportReport()]]
 - Uses: [[useOutputPrefs]], [[useStore]]
@@ -106,7 +110,7 @@ MIME (line 15) · toast() (line 24) · report() (line 28) · dateStamp() (line 3
 - Used in: [[menus.ts]]
 
 ### confirmAndClearOutputs
-*function* · line 171 · exported
+*function* · line 173 · exported
 > One confirmation for clearing the output, used by Edit > Clear output... and the Output toolbar.
 - Uses: [[useStore]], [[useUi]]
 - Reads: [[outputs|useStore.outputs]]

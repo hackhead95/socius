@@ -44,16 +44,20 @@ area: procedures
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
 - [[core/common.ts#categoriesOf|categoriesOf()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
 - [[core/common.ts#fmtCount|fmtCount()]] · procedure helper
 - [[core/common.ts#fmtN|fmtN()]] · procedure helper
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#labelR|labelR()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#optStr|optStr()]] · procedure helper
 - [[core/common.ts#parseNumberList|parseNumberList()]] · procedure helper
 - [[core/common.ts#pcell|pcell()]] · procedure helper
 - [[core/common.ts#sameValue|sameValue()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
 - [[core/common.ts#tableBlock|tableBlock()]] · procedure helper
@@ -67,6 +71,8 @@ area: procedures
 
 ## Tested by
 - [[search.test.ts]] · menu label
+- [[findings-repro.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 

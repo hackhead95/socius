@@ -42,15 +42,21 @@ area: procedures
 
 ## Uses
 - [[stats.ts#betacf|betacf()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[stats.ts#ibeta|ibeta()]] · procedure helper
+- [[procedures/text.ts#labelOf|labelOf()]] · procedure helper
 - [[stats.ts#lgamma|lgamma()]] · procedure helper
 - [[stats.ts#meanCI|meanCI()]] · procedure helper
+- [[procedures/text.ts#nonEmpty|nonEmpty()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[stats.ts#tQuantile|tQuantile()]] · procedure helper
 - [[stats.ts#tTwoSidedP|tTwoSidedP()]] · procedure helper
 - [[core/common.ts#vprose|vprose()]] · procedure helper
 - [[stats.ts#wMoments|wMoments()]] · procedure helper
 
 ## Tested by
+- [[coding-output-fixes.spec.ts]] · menu label
 - [[search.test.ts]] · menu label
 - [[graphs.test.ts]] · procedure id
 

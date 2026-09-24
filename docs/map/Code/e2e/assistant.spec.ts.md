@@ -7,7 +7,7 @@ area: e2e
 
 # e2e/assistant.spec.ts
 
-*End-to-end spec* · area [[e2e]] · 188 lines
+*End-to-end spec* · area [[e2e]] · 199 lines
 
 > The Socius assistant end to end: floating button and Ctrl+J, the panel on every tab, Gemini function calling against a mocked Interactions API (tool calls run on the live data, results go back as function_result steps, with the model's thought signatures replayed), Add to Output, a proposed recode applied only on click and undone, Stop, the phone layout, and opening it from search.
 

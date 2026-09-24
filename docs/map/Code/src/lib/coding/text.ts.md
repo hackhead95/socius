@@ -39,7 +39,7 @@ WORD_RE (line 7) · WORD_CHAR (line 8) · keepWord() (line 67) · resolve() (lin
 
 ### tokenize
 *function* · line 18 · exported
-- Uses: [[text.ts]]
+- Uses: [[coding/text.ts]]
 - Used in: [[Reader.tsx]], [[text.test.ts]]
 
 ### charLength
@@ -53,19 +53,19 @@ WORD_RE (line 7) · WORD_CHAR (line 8) · keepWord() (line 67) · resolve() (lin
 ### wordFrequencies
 *function* · line 89 · exported
 > Word frequencies over a list of texts.
-- Calls: [[text.ts#tokenize|tokenize()]], [[text.ts]]
+- Calls: [[coding/text.ts#tokenize|tokenize()]], [[coding/text.ts]]
 - Used in: [[AnalyseView.tsx]], [[outputs.test.ts]], [[text.test.ts]]
 
 ### bigramFrequencies
 *function* · line 113 · exported
 > Bigram frequencies: pairs of adjacent words within one sentence, not separated by punctuation ("irregular, sometimes" is not a pair). With stopword removal, pairs containing a stopword are skipped (they are not bridged over).
-- Calls: [[text.ts#splitSentences|splitSentences()]], [[text.ts#tokenize|tokenize()]], [[text.ts]]
+- Calls: [[coding/text.ts#splitSentences|splitSentences()]], [[coding/text.ts#tokenize|tokenize()]], [[coding/text.ts]]
 - Used in: [[AnalyseView.tsx]], [[text.test.ts]]
 
 ### splitSentences
 *function* · line 155 · exported
 > Split text into sentence ranges (trimmed). Boundaries: . ! ? … and the Indic danda (। ॥), followed by whitespace, unless the dot ends a known abbreviation ("Dr.", "e.g.") or a single initial ("J."). Line breaks always end a sentence.
-- Uses: [[text.ts]]
+- Uses: [[coding/text.ts]]
 - Used in: [[coding/reliability.ts]], [[rules.ts]], [[text.test.ts]]
 
 ### splitParagraphs
@@ -76,11 +76,11 @@ WORD_RE (line 7) · WORD_CHAR (line 8) · keepWord() (line 67) · resolve() (lin
 ### searchRegex
 *function* · line 235 · exported
 > Build a Unicode-aware, case-insensitive search regex for a word or phrase. `*` is a wildcard for any word characters ("migra*" matches migrant, migration). Whole words only unless `partial`.
-- Uses: [[text.ts]]
+- Uses: [[coding/text.ts]]
 - Used in: [[rules.ts]], [[text.test.ts]]
 
 ### kwic
 *function* · line 258 · exported
 > Keyword-in-context lines. `window` is the number of characters of context on each side.
-- Calls: [[text.ts#searchRegex|searchRegex()]]
+- Calls: [[coding/text.ts#searchRegex|searchRegex()]]
 - Used in: [[AnalyseView.tsx]], [[coding.ts]], [[outputs.test.ts]], [[text.test.ts]]

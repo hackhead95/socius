@@ -2,6 +2,11 @@
 .pd { display: flex; flex-direction: column; gap: var(--space-4); }
 .pd-footer { display: flex; align-items: center; gap: var(--space-2); width: 100%; flex-wrap: wrap; }
 .pd-run { min-width: 88px; }
+.pd-progress { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.875em; color: var(--muted); }
+.pd-progress-bar { position: relative; display: inline-block; width: 72px; height: 4px; border-radius: 2px; overflow: hidden; background: color-mix(in srgb, currentColor 20%, transparent); }
+.pd-progress-bar::after { content: ''; position: absolute; inset: 0; width: 40%; border-radius: 2px; background: currentColor; animation: pd-progress 1.2s ease-in-out infinite; }
+@keyframes pd-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .pd-progress-bar::after { animation: none; width: 100%; opacity: 0.5; } }
 .pd-spinner {
   width: 13px; height: 13px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
   animation: pd-spin 0.7s linear infinite; display: inline-block;

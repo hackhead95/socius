@@ -7,7 +7,7 @@ area: features/ai
 
 # src/features/ai/AiFeatureDialogs.tsx
 
-*Module* · area [[features - ai|features/ai]] · 234 lines
+*Module* · area [[features - ai|features/ai]] · 257 lines
 
 > App-wide AI entry points: the "do this first" dialog, the result picker for Explain a result, and the AI chip in the top bar with its popover.
 

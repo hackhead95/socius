@@ -27,6 +27,6 @@ area: features/charts
 ### PyramidChart
 *component* · line 17 · exported · note: [[PyramidChart|<PyramidChart>]]
 - Renders: [[ChartHeader|<ChartHeader>]], [[ChartSvg|<ChartSvg>]], [[TipRow|<TipRow>]]
-- Calls: [[PyramidChart.tsx#pyramidDesc|pyramidDesc()]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#headerLayout|headerLayout()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[charts/common.tsx#seriesColor|seriesColor()]], [[scale.ts#band|band()]], [[scale.ts#barPath|barPath()]], [[scale.ts#formatTick|formatTick()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#linear|linear()]], [[scale.ts#niceTicks|niceTicks()]]
+- Calls: [[PyramidChart.tsx#pyramidDesc|pyramidDesc()]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[charts/common.tsx#seriesColor|seriesColor()]], [[scale.ts#band|band()]], [[scale.ts#barPath|barPath()]], [[scale.ts#formatTick|formatTick()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#linear|linear()]], [[scale.ts#niceTicks|niceTicks()]], [[useHeaderLayout|useHeaderLayout()]]
 - Uses: [[charts/common.tsx#FS_AXIS|FS_AXIS]], [[charts/common.tsx#FS_TICK|FS_TICK]]
 - Rendered by: [[ChartBody|<ChartBody>]]

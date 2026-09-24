@@ -7,7 +7,7 @@ area: tests
 
 # tests/fuzz/io.fuzz.test.ts
 
-*Test file* · area [[tests]] · 370 lines
+*Test file* · area [[tests]] · 390 lines
 
 > IO round trips and robustness. - Random datasets -> exportSav (none / bytecode / zsav, little and big endian) -> importFile -> equal dictionary and data (differences allowed only when the export report warns about them). - A random subset is cross-checked with pyreadstat (Python oracle, skipped when absent). - CSV and XLSX round trips keep names and values (XLSX also the dictionary via its Vari...
 

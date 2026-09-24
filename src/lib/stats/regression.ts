@@ -202,6 +202,10 @@ export function fitLinear(
   let ssResQR = 0;
   for (let i = k; i < n; i++) ssResQR += qy[i] * qy[i];
   if (Number.isFinite(ssResQR)) ssRes = ssResQR;
+  // An exact fit leaves only rounding noise (1 - R² below 1e-20, far beyond any real data): report it
+  // as zero, so F is infinite rather than a noise-driven 1e29 that depends on the order of the sums
+  // (it differed between integer weights and the same cases replicated).
+  if (ssRes <= 1e-20 * ssTot) ssRes = 0;
   const ssReg = Math.max(ssTot - ssRes, 0);
   const msRes = ssRes / dfRes;
   const msReg = k > 0 ? ssReg / dfReg : NaN;
@@ -338,15 +342,24 @@ export function excludedStats(y: ArrayLike<number>, X: ArrayLike<number>[], w: A
     if (model.includes(j)) continue;
     const tol = A[j * sw.dim + j];
     if (!(tol > DEFAULT_TOLERANCE) || !sw.valid[j]) {
-      out.push({ index: j, betaIn: NaN, t: NaN, p: NaN, partial: NaN, tolerance: Math.max(tol, 0), vif: tol > 0 ? 1 / tol : NaN, minTolerance: NaN });
+      // A tolerance at rounding level (exact collinearity) has no meaningful inverse: no VIF then.
+      out.push({ index: j, betaIn: NaN, t: NaN, p: NaN, partial: NaN, tolerance: Math.max(tol, 0), vif: tol > 1e-12 ? 1 / tol : NaN, minTolerance: NaN });
       continue;
     }
     const ajy = A[j * sw.dim + sw.yIdx];
     const ayy = A[sw.yIdx * sw.dim + sw.yIdx];
+    if (!(ayy > 1e-10)) {
+      // The model already fits y exactly (1 - R² is rounding noise): entering j changes nothing, and
+      // Beta In, t and the partial correlation would be ratios of noise.
+      out.push({ index: j, betaIn: NaN, t: NaN, p: NaN, partial: NaN, tolerance: tol, vif: 1 / tol, minTolerance: NaN });
+      continue;
+    }
     const betaIn = ajy / tol;
-    const partialR = ajy / Math.sqrt(tol * ayy);
+    // |partial r| = 1 means j explains the rest of y exactly; rounding can push it just past 1.
+    let partialR = ajy / Math.sqrt(tol * ayy);
+    if (1 - partialR * partialR <= 1e-12) partialR = Math.sign(partialR);
     const df = W - q - 2;
-    const t = partialR * Math.sqrt(df / (1 - partialR * partialR));
+    const t = Math.abs(partialR) === 1 ? partialR * Infinity : partialR * Math.sqrt(df / (1 - partialR * partialR));
     // Minimum tolerance among all variables in the model after adding j.
     const withJ = sw.sweptFor([...model, j]);
     let minTol = tol;

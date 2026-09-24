@@ -27,9 +27,12 @@ area: lib/transform
 
 ## Tested by
 - [[scenarios.test.ts]] · import
+- [[findings-repro.test.ts]] · import
 - [[transforms-expr.fuzz.test.ts]] · import
 - [[transforms-ops.fuzz.test.ts]] · import
 - [[sample-survey.test.ts]] · import
+- [[data-fixes.test.ts]] · import
+- [[dialog-transforms.test.ts]] · import
 - [[expr.test.ts]] · import
 - [[sample-oracle.test.ts]] · import
 - [[transforms.test.ts]] · import
@@ -45,9 +48,12 @@ area: lib/transform
 - [[assistant/actions.ts]] · value
 - [[transform.ts]] · value
 - [[scenarios.test.ts]] · value
+- [[findings-repro.test.ts]] · value
 - [[transforms-expr.fuzz.test.ts]] · value
 - [[transforms-ops.fuzz.test.ts]] · type-only, value
 - [[sample-survey.test.ts]] · value
+- [[data-fixes.test.ts]] · value
+- [[dialog-transforms.test.ts]] · value
 - [[expr.test.ts]] · value
 - [[sample-oracle.test.ts]] · value
 - [[transforms.test.ts]] · value

@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.showAllCoders"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 33
+line: 38
 area: features/coding
 ---
 
 # useCodingUi.showAllCoders
 
-*Store state key* · defined in [[uiStore.ts]] (line 33) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 38) · area [[features - coding|features/coding]]
 
 - **Store:** useCodingUi
 
@@ -19,6 +19,7 @@ area: features/coding
 
 ## Written by
 - [[CodingWorkspace|<CodingWorkspace>]] · set alias
+- [[ui-fixes.test.tsx]] · setState
 
 ## Store
 - [[useCodingUi]]

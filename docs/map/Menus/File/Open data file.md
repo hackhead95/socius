@@ -26,6 +26,7 @@ area: app
 - [[File]]
 
 ## Tested by
+- [[ui-overlays-focus.spec.ts]] · menu label
 - [[search.test.ts]] · menu label
 
 ## Documents shortcut

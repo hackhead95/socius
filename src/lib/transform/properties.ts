@@ -7,7 +7,7 @@
 import type { Dataset, MeasureLevel, MissingSpec, ValueLabel, Variable, VarType } from '../../core/types';
 import { caseWeights, isDateFormat, isUserMissing } from '../../core/data';
 import { utf8ByteLength } from '../io/encoding';
-import { bump, fmtN, plural, type TransformResult } from './dsops';
+import { bump, fmtN, maxOf, minOf, plural, type TransformResult } from './dsops';
 import { lines, missingSyntax, q, sv, valueLabelsSyntax, varList } from './syntax';
 
 // ---------- limits ----------
@@ -378,7 +378,7 @@ export function isNegativeCode(x: number): boolean {
 
 function rangeOf(nums: number[]): string {
   if (!nums.length) return '';
-  const lo = Math.min(...nums), hi = Math.max(...nums);
+  const lo = minOf(nums), hi = maxOf(nums);
   return lo === hi ? String(lo) : `${lo} to ${hi}`;
 }
 
@@ -395,12 +395,12 @@ export function missingCodeHints(type: VarType, observed: Array<number | string>
     const cand = new Set([...nines, ...negs]);
     const rest = nums.filter((x) => !cand.has(x));
     if (rest.length) {
-      const maxRest = Math.max(...rest);
+      const maxRest = maxOf(rest);
       const above = nines.filter((c) => c > maxRest).sort((a, b) => a - b);
       if (above.length && above[0] - maxRest >= 2) {
         for (const c of above) hints.set(valueKey(c), `${c} sits well above the other values (${rangeOf(rest)}), like a code for Don't know or Refused.`);
       }
-      const minRest = Math.min(...rest);
+      const minRest = minOf(rest);
       if (negs.length && minRest >= 0) {
         const mirrored = negs.every((c) => rest.includes(-c)) && (rest.includes(0) || negs.length >= 2);
         if (!mirrored) for (const c of negs) hints.set(valueKey(c), `Negative codes like ${c} usually mean the question was not asked or not answered (the other values are ${rangeOf(rest)}).`);
@@ -476,7 +476,7 @@ function flagsFor(type: VarType, d: PropsDraft, value: number | string, observed
     flags.push({ kind: 'unlabelled', text: 'unlabelled', reason: 'This value appears in the data but has no label. Type one so tables show words instead of codes.', tone: 'warn' });
   }
   if (observed && typeof value === 'number' && label === undefined && !missing && !hint && labelled.length >= 2) {
-    const lo = Math.min(...labelled), hi = Math.max(...labelled);
+    const lo = minOf(labelled), hi = maxOf(labelled);
     if (value < lo || value > hi) flags.push({ kind: 'outside-range', text: 'outside labelled range', reason: `The labelled answers run from ${lo} to ${hi}. ${value} may be a typing error or an undeclared code.`, tone: 'warn' });
   }
   return flags;
@@ -772,7 +772,7 @@ export function suggestLabels(v: Pick<Variable, 'name' | 'label' | 'type'>, scan
   if (v.type === 'numeric' && valsAll.some((x) => labelFor(d, x) === undefined)) {
     const vals = new Set(valsAll as number[]);
     const within = (allowed: number[]) => vals.size > 0 && [...vals].every((x) => allowed.includes(x));
-    const max = vals.size ? Math.max(...vals) : 0;
+    const max = vals.size ? maxOf(vals) : 0;
     const sexLike = /(^|[^a-z])(sex|gender)([^a-z]|$)/i.test(`${v.name} ${v.label}`) || /^(sex|gender)/i.test(v.name);
     if (sexLike && within([1, 2, 3])) {
       const gender = /gender/i.test(`${v.name} ${v.label}`);
@@ -927,5 +927,87 @@ export function applyPropertyDrafts(ds: Dataset, drafts: Record<string, PropsDra
     summary: `Updated the properties of ${plural(n, 'variable')} (${shown}): ${parts.join(', ')}.`,
     warnings: [],
     changed: changes.map((c) => c.after.id),
+  };
+}
+
+// ---------- Copy variable properties (Data > Copy variable properties) ----------
+
+export type CopyProp = 'valueLabels' | 'missing' | 'measure' | 'format' | 'label' | 'display' | 'role';
+
+export const COPY_PROPS: Array<{ id: CopyProp; label: string; defaultOn: boolean }> = [
+  { id: 'valueLabels', label: 'Value labels', defaultOn: true },
+  { id: 'missing', label: 'Missing values', defaultOn: true },
+  { id: 'measure', label: 'Measure', defaultOn: true },
+  { id: 'format', label: 'Width and decimals', defaultOn: false },
+  { id: 'display', label: 'Columns and alignment', defaultOn: false },
+  { id: 'role', label: 'Role', defaultOn: false },
+  { id: 'label', label: 'Variable label', defaultOn: false },
+];
+
+/** Copy chosen properties from one variable to others of the same type (other targets are left alone). */
+export function copyProperties(ds: Dataset, sourceId: string, targetIds: string[], props: CopyProp[]): Dataset {
+  return copyPropertiesTransform(ds, sourceId, targetIds, props).dataset;
+}
+
+const ROLE_KEYWORD: Record<string, string> = { input: 'INPUT', target: 'TARGET', both: 'BOTH', none: 'NONE', partition: 'PARTITION', split: 'SPLIT' };
+
+/**
+ * Copy variable properties as a logged transform: the new dataset, SPSS syntax (VALUE LABELS,
+ * MISSING VALUES, VARIABLE LEVEL, FORMATS, VARIABLE WIDTH / ALIGNMENT / ROLE, VARIABLE LABELS,
+ * like APPLY DICTIONARY with the source variable) and a summary.
+ */
+export function copyPropertiesTransform(ds: Dataset, sourceId: string, targetIds: string[], props: CopyProp[]): TransformResult {
+  const src = ds.variables.find((v) => v.id === sourceId);
+  const title = 'Copy Variable Properties';
+  if (!src) return { dataset: ds, title, syntax: '', summary: 'The source variable no longer exists.', warnings: [] };
+  const targets = new Set(targetIds);
+  const changes: Array<{ before: Variable; after: Variable }> = [];
+  const skipped: string[] = [];
+  const variables = ds.variables.map((v) => {
+    if (!targets.has(v.id) || v.id === src.id) return v;
+    if (v.type !== src.type) {
+      skipped.push(v.name);
+      return v;
+    }
+    const nv: Variable = { ...v };
+    if (props.includes('valueLabels')) nv.valueLabels = src.valueLabels.map((l) => ({ ...l }));
+    if (props.includes('missing')) nv.missing = { discrete: src.missing.discrete.slice(), ...(src.missing.range ? { range: { ...src.missing.range } } : {}) };
+    if (props.includes('measure')) nv.measure = src.measure;
+    if (props.includes('format')) {
+      nv.width = src.width;
+      nv.decimals = src.decimals;
+      nv.format = src.format;
+    }
+    if (props.includes('display')) {
+      nv.columns = src.columns;
+      nv.align = src.align;
+    }
+    if (props.includes('role')) nv.role = src.role;
+    if (props.includes('label')) nv.label = src.label;
+    changes.push({ before: v, after: nv });
+    return nv;
+  });
+  const warnings = skipped.length ? [`${skipped.join(', ')} ${skipped.length === 1 ? 'is' : 'are'} not the same type as ${src.name} and ${skipped.length === 1 ? 'was' : 'were'} left unchanged.`] : [];
+  if (!changes.length) return { dataset: ds, title, syntax: '', summary: 'No variables were changed.', warnings };
+  const names = changes.map((c) => c.after.name);
+  const list = varList(names);
+  const cmds: string[] = [`* Properties copied from ${src.name}.`];
+  // Value labels and missing values are always written (even when a target already had them), so the
+  // log says exactly what the targets now hold.
+  if (props.includes('label')) cmds.push(`VARIABLE LABELS ${names.map((n) => `${n} ${q(src.label)}`).join('\n  /')}.`);
+  if (props.includes('valueLabels')) cmds.push(src.valueLabels.length ? valueLabelsSyntax(list, src.valueLabels) : `VALUE LABELS ${list}.`);
+  if (props.includes('missing')) cmds.push(missingSyntax(list, src.missing));
+  if (props.includes('measure')) cmds.push(`VARIABLE LEVEL ${list} (${LEVEL_KEYWORD[src.measure]}).`);
+  if (props.includes('format')) cmds.push(`FORMATS ${list} (${src.format}).`);
+  if (props.includes('display')) cmds.push(`VARIABLE WIDTH ${list} (${src.columns}).`, `VARIABLE ALIGNMENT ${list} (${src.align.toUpperCase()}).`);
+  if (props.includes('role')) cmds.push(`VARIABLE ROLE /${ROLE_KEYWORD[src.role] ?? 'INPUT'} ${list}.`);
+  const what = COPY_PROPS.filter((p) => props.includes(p.id)).map((p) => p.label.toLowerCase());
+  const shown = names.length <= 6 ? names.join(', ') : `${names.slice(0, 5).join(', ')} and ${names.length - 5} more`;
+  return {
+    dataset: bump(ds, { variables }),
+    title,
+    syntax: lines(...cmds),
+    summary: `Copied ${what.join(', ')} from ${src.name} to ${plural(names.length, 'variable')} (${shown}).`,
+    warnings,
   };
 }

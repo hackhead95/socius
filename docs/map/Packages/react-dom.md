@@ -11,3 +11,4 @@ type: package
 - [[export.ts]] · value
 - [[main.tsx]] · value
 - [[invariants.ts]] · value
+- [[errorlog-install.test.tsx]] · value

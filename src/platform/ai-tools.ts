@@ -17,8 +17,9 @@
 import { AiUnavailableError, useCapability } from './claude';
 import {
   GEMINI_BASE, InteractionAccumulator, buildInteractionRequest, errorFromResponse, geminiBlocked, geminiEmptyError, geminiModelName, geminiRun, geminiThinkingConfig, httpErrorCode, normaliseBaseUrl,
-  readJsonEvents as readGeminiEvents, readSse, sanitizeApiKey, type AiAttempt, type GeminiConfig, type OpenAiConfig,
+  readJsonEvents as readGeminiEvents, readSse, sanitizeApiKey, thinkingLevelFor, type AiAttempt, type GeminiConfig, type GeminiPreference, type OpenAiConfig, type ThinkingEffort,
 } from './ai-http';
+import type { AiTiming } from './ai-timing';
 
 export { parseDelay } from './ai-http';
 
@@ -79,6 +80,10 @@ export interface ToolTurnOptions {
   onText?: (text: string) => void;
   maxTokens?: number;
   temperature?: number;
+  /** Records where the time goes and drives the progress line (ai-timing.ts). */
+  timing?: AiTiming;
+  /** Gemini: which family the automatic choice favours for this turn (default Flash-Lite). */
+  prefer?: GeminiPreference;
 }
 
 export interface BuiltToolRequest {
@@ -107,16 +112,21 @@ export async function toolErrorFromResponse(res: Response): Promise<ToolAiError>
   return (await errorFromResponse(res, 'chat')) as ToolAiError;
 }
 
-async function sendRequest(req: BuiltToolRequest, signal?: AbortSignal): Promise<Response> {
+async function sendRequest(req: BuiltToolRequest, signal?: AbortSignal, timing?: AiTiming, model?: string): Promise<Response> {
   if (signal?.aborted) throw cancelled();
   let res: Response;
+  const t0 = Date.now();
+  timing?.mark('request', { model });
+  timing?.setStage('waiting');
   try {
     res = await fetch(req.url, { ...req.init, signal });
   } catch (e: any) {
     if (isAbort(e, signal)) throw cancelled();
     throw new AiUnavailableError('network', 'Could not reach the AI service.', e?.message);
   }
+  timing?.mark('headers', { model, status: res.status, ms: Date.now() - t0 });
   if (!res.ok) throw await toolErrorFromResponse(res);
+  timing?.setStage('thinking');
   return res;
 }
 
@@ -224,11 +234,11 @@ export function geminiContents(messages: ChatMessage[]): Array<{ role: 'user' | 
   return out;
 }
 
-export function buildGeminiToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean; thinking?: boolean }): BuiltToolRequest {
+export function buildGeminiToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean; thinking?: boolean; effort?: ThinkingEffort }): BuiltToolRequest {
   const name = geminiModelName(cfg.model);
   const url = `${GEMINI_BASE}/models/${encodeURIComponent(name)}:${opts.stream ? 'streamGenerateContent?alt=sse' : 'generateContent'}`;
   const generationConfig: Record<string, unknown> = { temperature: opts.temperature ?? 0.3 };
-  const thinking = opts.thinking ? geminiThinkingConfig(name) : undefined;
+  const thinking = opts.thinking ? geminiThinkingConfig(name, opts.effort ? thinkingLevelFor(name, opts.effort) : 'low') : undefined;
   if (thinking) generationConfig.thinkingConfig = thinking;
   if (opts.maxTokens) generationConfig.maxOutputTokens = opts.maxTokens + (thinking && thinking.thinkingBudget !== 0 ? 1024 : 0);
   const body: Record<string, unknown> = {
@@ -271,11 +281,12 @@ export function interactionTools(tools: ToolSpec[]): unknown[] {
   );
 }
 
-export function buildGeminiInteractionToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean; thinking?: boolean; noStore?: boolean }): BuiltToolRequest {
+export function buildGeminiInteractionToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean; thinking?: boolean; noStore?: boolean; effort?: ThinkingEffort }): BuiltToolRequest {
   return buildInteractionRequest(cfg, interactionSteps(opts.messages), {
     stream: opts.stream,
     maxTokens: opts.maxTokens,
     thinking: opts.thinking,
+    effort: opts.effort,
     noStore: opts.noStore,
     system: opts.system,
     tools: interactionTools(opts.tools),
@@ -332,11 +343,12 @@ export async function askGeminiTools(cfg: GeminiConfig, opts: ToolTurnOptions & 
     { apiKey: key, model: cfg.model },
     {
       stream,
-      interactions: (model, o) => buildGeminiInteractionToolRequest({ apiKey: key, model }, { ...opts, stream, thinking: o.thinking, noStore: o.noStore }),
-      generateContent: (model, o) => buildGeminiToolRequest({ apiKey: key, model }, { ...opts, stream, thinking: o.thinking }),
+      interactions: (model, o) => buildGeminiInteractionToolRequest({ apiKey: key, model }, { ...opts, stream, thinking: o.thinking, noStore: o.noStore, effort: o.effort }),
+      generateContent: (model, o) => buildGeminiToolRequest({ apiKey: key, model }, { ...opts, stream, thinking: o.thinking, effort: o.effort }),
     },
-    // Tool loops make several requests per question: favour Flash-Lite's larger free daily allowance.
-    { signal: opts.signal, trace: opts.trace, prefer: 'lite' },
+    // Tool loops make several requests per question: Flash-Lite by default (faster, a larger free
+    // allowance), with minimal thinking for tool steps.
+    { signal: opts.signal, trace: opts.trace, prefer: opts.prefer ?? 'lite', timing: opts.timing, effort: 'auto' },
   );
   opts.onModel?.(run.model);
   const info = { model: run.model, api: run.api, tried: run.tried, trace: opts.trace };
@@ -467,7 +479,7 @@ export class OpenAiStreamAccumulator {
 export async function askOpenAiTools(cfg: OpenAiConfig, opts: ToolTurnOptions): Promise<ModelTurn> {
   if (!cfg.baseUrl.trim() || !cfg.model.trim()) throw new AiUnavailableError('not_configured', 'The service is not set up.');
   const stream = !!opts.onText;
-  const res = await sendRequest(buildOpenAiToolRequest(cfg, { ...opts, stream }), opts.signal);
+  const res = await sendRequest(buildOpenAiToolRequest(cfg, { ...opts, stream }), opts.signal, opts.timing, cfg.model.trim());
   if (!stream) return parseOpenAiTurn(await readJson(res, opts.signal));
   const acc = new OpenAiStreamAccumulator();
   let last = '';

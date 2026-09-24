@@ -17,3 +17,6 @@ area: app
 
 ## Part of
 - [[Export output report|File > Export output report]]
+
+## Tested by
+- [[errorlog.spec.ts]] · menu label

@@ -46,7 +46,7 @@ export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: (
     if (!target.trim()) return setRunError('Enter a name for the target variable.');
     if (!expr.trim()) return setRunError('Enter an expression.');
     try {
-      applyTransform(computeVariable(ds, spec));
+      applyTransform(computeVariable(ds, spec), `Compute variable ${spec.target.trim()}`);
       onClose();
     } catch (e) {
       logFailure('transform', e, { op: 'compute' });

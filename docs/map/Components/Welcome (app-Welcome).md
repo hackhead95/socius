@@ -2,13 +2,13 @@
 id: "src/app/Welcome.tsx#Welcome"
 type: component
 file: src/app/Welcome.tsx
-line: 24
+line: 25
 area: app
 ---
 
 # <Welcome>
 
-*React component* · defined in [[Welcome.tsx]] (line 24) · area [[Areas/app|app]]
+*React component* · defined in [[Welcome.tsx]] (line 25) · area [[Areas/app|app]]
 
 > The start screen: shown when nothing is open, and over open work when the Socius logo (Home) is clicked, with a way back.
 
@@ -16,6 +16,7 @@ area: app
 
 ## Calls
 - [[Welcome.tsx#backTarget|backTarget()]]
+- [[format-date.ts#formatDate|formatDate()]]
 - [[persistence.ts#listRecent|listRecent()]]
 - [[fileActions.ts#loadSample|loadSample()]]
 - [[fileActions.ts#newDataset|newDataset()]]

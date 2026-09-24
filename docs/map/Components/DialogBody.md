@@ -2,13 +2,13 @@
 id: "src/features/analysis/ProcedureDialog.tsx#DialogBody"
 type: component
 file: src/features/analysis/ProcedureDialog.tsx
-line: 136
+line: 137
 area: features/analysis
 ---
 
 # <DialogBody>
 
-*React component* · defined in [[ProcedureDialog.tsx]] (line 136) · area [[features - analysis|features/analysis]]
+*React component* · defined in [[ProcedureDialog.tsx]] (line 137) · area [[features - analysis|features/analysis]]
 
 ## Calls
 - [[varUtils.ts#addToSlot|addToSlot()]]
@@ -24,6 +24,7 @@ area: features/analysis
 - [[varUtils.ts#removeFromSlot|removeFromSlot()]]
 - [[varUtils.ts#slotCountHint|slotCountHint()]]
 - [[varUtils.ts#slotSuitHint|slotSuitHint()]]
+- [[runProcedure.ts#startProcedureRun|startProcedureRun()]]
 - [[varUtils.ts#typeFits|typeFits()]]
 - [[useStore]]
 - [[varUtils.ts#validate|validate()]]
@@ -43,6 +44,7 @@ area: features/analysis
 - [[VarIcon|<VarIcon>]]
 
 ## Uses
+- [[runProcedure.ts#StoppedError|StoppedError]]
 - [[useStore]]
 
 ## Reads

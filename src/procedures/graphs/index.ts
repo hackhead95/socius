@@ -1,9 +1,10 @@
 // Graphs menu: chart procedures that build OutputItems with a chart, a small summary table, SPSS
 // syntax and a one-line interpretation. Filter, weights and missing values follow core/data.ts.
 
+import { allFinite, cleanBlocks, countText, labelOf, numText } from '../text';
 import type { Dataset, Variable } from '../../core/types';
 import { newId } from '../../core/types';
-import { categoryLabel, distinctValues, requireVariable, selectCases, varDisplayName, type CaseSelection } from '../../core/data';
+import { distinctValues, requireVariable, selectCases, varDisplayName, type CaseSelection } from '../../core/data';
 import type { ProcedureDef } from '../../core/procedure';
 import { cell, hcell, type Cell, type ChartSpec, type OutputBlock, type OutputItem } from '../../core/output';
 import { formatP } from '../../features/output/format';
@@ -12,8 +13,8 @@ import { vprose } from '../core/common';
 
 // ---------- helpers ----------
 
-const fmt = (x: number, d = 1) => (Number.isFinite(x) ? x.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : '.');
-const fmtN = (x: number) => (Number.isInteger(x) ? x.toLocaleString('en-US') : x.toLocaleString('en-US', { maximumFractionDigits: 1 }));
+const fmt = (x: number, d = 1) => (Number.isFinite(x) ? numText(x, d) : '.');
+const fmtN = countText;
 const dropZero = (s: string) => s.replace(/^(-?)0\./, '$1.');
 
 function name(v: Variable): string {
@@ -34,7 +35,7 @@ function caseNote(ds: Dataset, sel: CaseSelection): string {
     parts[0] += ` (weighted by ${wv?.name ?? 'weight'}; ${fmtN(sel.rows.length)} cases)`;
   }
   const extra: string[] = [];
-  if (sel.nMissing) extra.push(`${fmtN(sel.nMissing)} excluded for missing values`);
+  if (sel.nMissing) extra.push(`${fmtN(sel.nMissing)} case${sel.nMissing === 1 ? "" : "s"} excluded for missing values`);
   const fv = ds.filterVarId ? ds.variables.find((v) => v.id === ds.filterVarId) : undefined;
   if (sel.nFiltered) extra.push(`${fmtN(sel.nFiltered)} ${fv ? `filtered out by ${fv.name}` : 'with zero or missing weight'}`);
   return [parts[0], ...extra].join('; ') + '.';
@@ -48,7 +49,7 @@ function syntaxPrefix(ds: Dataset): string {
 }
 
 function item(ds: Dataset, procedure: string, title: string, syntax: string, sel: CaseSelection, blocks: OutputBlock[]): OutputItem {
-  return { id: newId('out'), procedure, title, createdAt: Date.now(), datasetName: ds.name, syntax: syntaxPrefix(ds) + syntax, caseNote: caseNote(ds, sel), blocks };
+  return { id: newId('out'), procedure, title, createdAt: Date.now(), datasetName: ds.name, syntax: syntaxPrefix(ds) + syntax, caseNote: caseNote(ds, sel), blocks: cleanBlocks(blocks) };
 }
 
 interface Category {
@@ -57,7 +58,7 @@ interface Category {
 }
 
 function categoriesOf(ds: Dataset, v: Variable, rows: number[]): Category[] {
-  return distinctValues(ds, v, rows).map((value) => ({ value, label: categoryLabel(v, value) }));
+  return distinctValues(ds, v, rows).map((value) => ({ value, label: labelOf(v, value) }));
 }
 
 function keyOf(x: number | string): string {
@@ -413,6 +414,9 @@ const boxPlot: ProcedureDef = {
               ? `The median ${prose(v)} is the same (${fmtVal(hiMed)}) in every group of ${prose(gv)}; compare the heights of the boxes (the middle half of cases) to see differences in spread.`
               : `The median ${prose(v)} is highest for ${sorted[0].name} (${fmtVal(hiMed)}) and lowest for ${sorted[sorted.length - 1].name} (${fmtVal(loMed)}).`,
           );
+        } else if (sorted.length === 1) {
+          const g = sorted[0];
+          interps.push(`Only one group of ${prose(gv)} (${g.name}) has cases, so there is nothing to compare: its median ${prose(v)} is ${fmtVal(g.median)}${allFinite(g.q1, g.q3) ? ` and the middle half of cases lies between ${fmtVal(g.q1)} and ${fmtVal(g.q3)}` : ''}.`);
         }
       }
     } else {
@@ -432,7 +436,7 @@ const boxPlot: ProcedureDef = {
     }
     const nOut = summaryRows.reduce((a, r) => a + (Number((r[r.length - 2] as Cell).v) || 0) + (Number((r[r.length - 1] as Cell).v) || 0), 0);
     if (nOut) interps.push(`${nOut} outlying value${nOut === 1 ? ' is' : 's are'} marked; point at a mark to see its case number.`);
-    blocks.push({ kind: 'text', style: 'interpretation', text: interps.join(' ') });
+    if (interps.length) blocks.push({ kind: 'text', style: 'interpretation', text: interps.join(' ') });
     blocks.push({
       kind: 'table',
       table: {
@@ -526,8 +530,10 @@ const scatter: ProcedureDef = {
       fit: showFit ? { a: fitRes.a, b: fitRes.b, r2: fitRes.r2 } : undefined,
     };
     const blocks: OutputBlock[] = [{ kind: 'chart', chart }];
+    // A significance test needs at least 3 (weighted) cases: df = N - 2 > 0.
     const df = fitRes.n - 2;
-    const t = Number.isFinite(fitRes.r) && df > 0 ? fitRes.r * Math.sqrt(df / Math.max(1e-300, 1 - fitRes.r * fitRes.r)) : NaN;
+    const testable = df >= 1;
+    const t = Number.isFinite(fitRes.r) && testable ? fitRes.r * Math.sqrt(df / Math.max(1e-300, 1 - fitRes.r * fitRes.r)) : NaN;
     const p = Number.isFinite(t) ? tTwoSidedP(t, df) : NaN;
     if (Number.isFinite(fitRes.r)) {
       const dir = fitRes.r > 0 ? 'higher' : 'lower';
@@ -537,10 +543,14 @@ const scatter: ProcedureDef = {
         text: `There is ${strength(fitRes.r)} ${fitRes.r >= 0 ? 'positive' : 'negative'} linear relationship between ${prose(xv)} and ${prose(yv)} (r = ${dropZero(fmt(fitRes.r, 2))}).` +
           (Math.abs(fitRes.r) >= 0.1 ? ` Cases with higher ${prose(xv)} tend to have ${dir} ${prose(yv)}; ${prose(xv)} accounts for ${fmt(fitRes.r2 * 100)}% of the variation in ${prose(yv)}.` : ''),
       });
-      const pText = formatP(p, 'apa');
-      // The APA wording follows the significance test (a tiny but significant r is still "significantly correlated").
-      const apaDir = !(p < 0.05) ? 'not significantly' : `${Math.abs(fitRes.r) < 0.1 ? 'very weakly ' : ''}${fitRes.r > 0 ? 'positively' : 'negatively'}`;
-      blocks.push({ kind: 'text', style: 'apa', text: `${prose(xv)} and ${prose(yv)} were ${apaDir} correlated, r(${fmtN(Math.round(df))}) = ${dropZero(fitRes.r.toFixed(2))}, p ${/^[<>]/.test(pText) ? pText : '= ' + pText}.` });
+      if (Number.isFinite(p)) {
+        const pText = formatP(p, 'apa');
+        // The APA wording follows the significance test (a tiny but significant r is still "significantly correlated").
+        const apaDir = !(p < 0.05) ? 'not significantly' : `${Math.abs(fitRes.r) < 0.1 ? 'very weakly ' : ''}${fitRes.r > 0 ? 'positively' : 'negatively'}`;
+        blocks.push({ kind: 'text', style: 'apa', text: `${prose(xv)} and ${prose(yv)} were ${apaDir} correlated, r(${fmtN(Math.round(df))}) = ${numText(fitRes.r, 2, true)}, p ${/^[<>]/.test(pText) ? pText : '= ' + pText}.` });
+      } else {
+        blocks.push({ kind: 'text', style: 'note', text: `The correlation cannot be tested for significance: a test needs at least 3 cases (N = ${fmtN(fitRes.n)}).` });
+      }
       blocks.push({
         kind: 'table',
         table: {
@@ -748,7 +758,7 @@ const pyramid: ProcedureDef = {
     const pair = Array.isArray(opts.sides) && opts.sides.length === 2 && opts.sides.every((x) => x !== null && x !== '') ? (opts.sides as Array<number | string>) : null;
     let cats: Category[];
     if (pair) {
-      cats = pair.map((p) => allCats.find((c) => keyOf(c.value) === keyOf(typeof p === 'string' && sv.type === 'numeric' ? Number(p) : p)) ?? { value: p, label: categoryLabel(sv, p) });
+      cats = pair.map((p) => allCats.find((c) => keyOf(c.value) === keyOf(typeof p === 'string' && sv.type === 'numeric' ? Number(p) : p)) ?? { value: p, label: labelOf(sv, p) });
       if (keyOf(cats[0].value) === keyOf(cats[1].value)) throw new Error('Choose two different categories for the left and right side.');
     } else if (allCats.length === 2) cats = allCats;
     else
@@ -774,6 +784,9 @@ const pyramid: ProcedureDef = {
     const start = Math.floor(lo / width) * width;
     const openTop = top > 0 && hi >= top ? Math.max(start + width, Math.floor(top / width) * width) : Infinity;
     const lastStart = Number.isFinite(openTop) ? openTop : Math.floor(hi / width) * width;
+    // Count the bands before building them: an age column in the billions would otherwise allocate
+    // billions of bands (out of memory) before the size check.
+    if (Math.floor((lastStart - start) / width) + 1 > 40) throw new Error(`${av.name} spans too wide a range for age groups (${fmt(lo, 0)} to ${fmt(hi, 0)}).`);
     const bands: Array<{ from: number; label: string }> = [];
     for (let a = start; a <= lastStart; a += width) bands.push({ from: a, label: Number.isFinite(openTop) && a === openTop ? `${a}+` : `${a}–${a + width - 1}` });
     if (bands.length > 40) throw new Error(`${av.name} spans too wide a range for age groups (${fmt(lo, 0)} to ${fmt(hi, 0)}).`);

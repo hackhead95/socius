@@ -35,6 +35,6 @@ area: features/charts
 ### ScatterChart
 *component* · line 38 · exported · note: [[ScatterChart|<ScatterChart>]]
 - Renders: [[ChartHeader|<ChartHeader>]], [[ChartSvg|<ChartSvg>]], [[TipRow|<TipRow>]], [[XAxisNumeric|<XAxisNumeric>]], [[YAxis|<YAxis>]]
-- Calls: [[ScatterChart.tsx#scatterDesc|scatterDesc()]], [[charts/common.tsx#headerLayout|headerLayout()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[charts/common.tsx#measureText|measureText()]], [[charts/common.tsx#seriesColor|seriesColor()]], [[scale.ts#PointIndex|PointIndex]], [[scale.ts#extent|extent()]], [[scale.ts#formatTick|formatTick()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#linear|linear()]], [[scale.ts#niceTicks|niceTicks()]], [[useThemeVersion|useThemeVersion()]]
+- Calls: [[ScatterChart.tsx#scatterDesc|scatterDesc()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[charts/common.tsx#measureText|measureText()]], [[charts/common.tsx#seriesColor|seriesColor()]], [[scale.ts#PointIndex|PointIndex]], [[scale.ts#extent|extent()]], [[scale.ts#formatTick|formatTick()]], [[scale.ts#formatValue|formatValue()]], [[scale.ts#linear|linear()]], [[scale.ts#niceTicks|niceTicks()]], [[useHeaderLayout|useHeaderLayout()]], [[useThemeVersion|useThemeVersion()]]
 - Uses: [[ScatterChart.tsx#CANVAS_THRESHOLD|CANVAS_THRESHOLD]], [[charts/common.tsx#FS_TICK|FS_TICK]]
 - Rendered by: [[ChartBody|<ChartBody>]]

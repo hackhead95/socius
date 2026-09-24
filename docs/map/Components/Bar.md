@@ -2,13 +2,13 @@
 id: "src/features/coding/ui.tsx#Bar"
 type: component
 file: src/features/coding/ui.tsx
-line: 197
+line: 304
 area: features/coding
 ---
 
 # <Bar>
 
-*React component* · defined in [[ui.tsx]] (line 197) · area [[features - coding|features/coding]]
+*React component* · defined in [[ui.tsx]] (line 304) · area [[features - coding|features/coding]]
 
 > Horizontal percentage bar used in frequency tables.
 

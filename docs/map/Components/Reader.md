@@ -26,7 +26,7 @@ area: features/coding
 - [[coding/actions.ts#removeSegment|removeSegment()]]
 - [[coding/actions.ts#setSegmentMemo|setSegmentMemo()]]
 - [[segments.ts#splitLines|splitLines()]]
-- [[text.ts#tokenize|tokenize()]]
+- [[coding/text.ts#tokenize|tokenize()]]
 - [[segments.ts#trimRange|trimRange()]]
 - [[coding/actions.ts#uncodeRange|uncodeRange()]]
 - [[useCodeMap|useCodeMap()]]

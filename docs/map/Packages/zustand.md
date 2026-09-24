@@ -12,6 +12,8 @@ type: package
 - [[store.ts]] · value
 - [[explainStore.ts]] · value
 - [[ai/hooks.ts]] · value
+- [[StorageManager.tsx]] · value
+- [[AssistantPanel.tsx]] · value
 - [[chat-store.ts]] · value
 - [[open.ts]] · value
 - [[uiStore.ts]] · value

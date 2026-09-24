@@ -79,11 +79,6 @@ export function indexByDoc(segments: CodedSegment[]): Map<string, CodedSegment[]
   return m;
 }
 
-/** Segments covering character `offset` (inclusive start, exclusive end). */
-export function segmentsAt(segs: CodedSegment[], offset: number): CodedSegment[] {
-  return segs.filter((s) => s.start <= offset && offset < s.end);
-}
-
 /** Paragraph ranges: text split at line breaks. Empty lines give empty ranges (kept for spacing). */
 export function splitLines(text: string): Range[] {
   const out: Range[] = [];
@@ -138,9 +133,3 @@ export function assignLanes(segs: Array<Pick<CodedSegment, 'id' | 'start' | 'end
   return { lanes, count: laneEnds.length };
 }
 
-/** Clamp segments to a (possibly edited, shorter) text length; drop empties. */
-export function clampSegments(segments: CodedSegment[], docId: string, length: number): CodedSegment[] {
-  return segments
-    .map((s) => (s.docId !== docId ? s : { ...s, start: Math.min(s.start, length), end: Math.min(s.end, length) }))
-    .filter((s) => s.end > s.start);
-}

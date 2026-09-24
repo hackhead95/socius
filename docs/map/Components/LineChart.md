@@ -17,7 +17,6 @@ area: features/charts
 - [[charts/common.tsx#fit|fit()]]
 - [[scale.ts#formatTick|formatTick()]]
 - [[scale.ts#formatValue|formatValue()]]
-- [[charts/common.tsx#headerLayout|headerLayout()]]
 - [[scale.ts#labelStride|labelStride()]]
 - [[scale.ts#linear|linear()]]
 - [[LineChart.tsx#lineDesc|lineDesc()]]
@@ -25,6 +24,7 @@ area: features/charts
 - [[charts/common.tsx#measureText|measureText()]]
 - [[scale.ts#niceTicks|niceTicks()]]
 - [[charts/common.tsx#seriesColor|seriesColor()]]
+- [[useHeaderLayout|useHeaderLayout()]]
 
 ## Renders
 - [[ChartHeader|<ChartHeader>]]

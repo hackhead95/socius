@@ -7,7 +7,7 @@ area: tests
 
 # tests/platform/errorlog.test.ts
 
-*Test file* · area [[tests]] · 285 lines
+*Test file* · area [[tests]] · 371 lines
 
 > @vitest-environment jsdom Error log: redaction (no keys, tokens, data values, names or file names ever stored), the ring buffer (entry and size caps, repeats counted, storage failures), context and reports.
 
@@ -21,6 +21,15 @@ area: tests
   - removes long random-looking strings but keeps words and code identifiers
   - truncates long strings and never throws
   - fileKind keeps only the extension
+- **redact: numbers that identify people**
+  - removes Indian mobile numbers in every usual form
+  - removes Aadhaar-like 12-digit numbers, with or without groups of four
+  - removes any other long run of digits in free text, in any script
+  - keeps short numbers: HTTP statuses, counts, sizes, dates and stack positions
+  - never stores such numbers in the log (message, detail or service text)
+  - is stable: redacting twice changes nothing more
+- **componentStackText**
+  - keeps component names only, without file addresses
 - **logging**
   - stores level, area, message, detail and context, newest first
   - never stores keys, names or values, even in stacks, service messages or the file name
@@ -42,6 +51,8 @@ area: tests
   - formatReport lists version, browser and every entry in plain text
   - formatSummary is short and lists the last problems
   - describeBrowser names the browser and system only
+- **the same problem in several sessions**
+  - is one entry with the total count, the number of sessions and when it was first seen
 
 ## Imports
 - [[claude.ts]] · value
@@ -52,6 +63,7 @@ area: tests
 - [[errorlog.ts#__resetErrorLogForTests|__resetErrorLogForTests()]]
 - [[claude.ts#AiUnavailableError|AiUnavailableError]]
 - [[errorlog.ts#clearLog|clearLog()]]
+- [[errorlog.ts#componentStackText|componentStackText()]]
 - [[errorlog.ts#describeBrowser|describeBrowser()]]
 - [[errorlog.ts#fileKind|fileKind()]]
 - [[errorlog.ts#formatReport|formatReport()]]
@@ -75,6 +87,7 @@ area: tests
 - [[errorlog.ts#ERROR_LOG_KEY|ERROR_LOG_KEY]]
 - [[errorlog.ts#MAX_BYTES|MAX_BYTES]]
 - [[errorlog.ts#MAX_ENTRIES|MAX_ENTRIES]]
+- [[errorlog.ts#NUMBER_REMOVED|NUMBER_REMOVED]]
 - [[errorlog.ts#SESSION_ID|SESSION_ID]]
 
 ## Tests

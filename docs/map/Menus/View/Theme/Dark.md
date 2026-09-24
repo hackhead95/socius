@@ -17,3 +17,6 @@ area: app
 
 ## Part of
 - [[View/Theme|View > Theme]]
+
+## Tested by
+- [[commands-smoke-app.spec.ts]] · menu label

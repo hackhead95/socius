@@ -40,6 +40,7 @@ import {
   vlabel,
   vprose,
   type Cell,
+  selMissing,
 } from './common';
 
 // ---------------------------------------------------------------------------------------------
@@ -51,7 +52,7 @@ function runGof(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   if (!vs.length) throw new Error('Choose at least one test variable.');
   const custom = optStr(opts, 'expected', 'equal') === 'values';
   const valuesText = optStr(opts, 'expectedValues', '').trim();
-  const props = custom ? parseNumberList(valuesText, 'Expected values', 0) : undefined;
+  const props = custom ? parseNumberList(valuesText, 'Expected values', 0, Infinity, true) : undefined;
   if (custom && (!props || !props.length)) throw new Error('Enter the expected values (one per category, in ascending order of the category codes).');
   const blocks: OutputBlock[] = [];
   const testRows: Cell[][] = [];
@@ -61,7 +62,7 @@ function runGof(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   let note = '';
   vs.forEach((v, vi) => {
     const sel = selectCases(ds, [v.id]);
-    if (!note) note = caseNote(ds, selN(sel), sel.nMissing);
+    if (!note) note = caseNote(ds, selN(sel), selMissing(ds, sel));
     const cats = categoriesOf(ds, v, sel.rows);
     if (cats.length < 2) throw new Error(cats.length === 0 ? `${v.name} has no valid values among the selected cases.` : `${v.name} has only one category (${valueText(v, cats[0])}) among the valid cases; the chi-square test needs at least two.`);
     const col = ds.columns[v.id];
@@ -120,7 +121,7 @@ export const chiSquareGofProc: ProcedureDef = {
     const t = typeof opts.expectedValues === 'string' ? opts.expectedValues.trim() : '';
     if (!t) return 'Enter the expected values, one per category.';
     try {
-      parseNumberList(t, 'Expected values', 0);
+      parseNumberList(t, 'Expected values', 0, Infinity, true);
       return null;
     } catch (e) {
       return (e as Error).message;
@@ -148,7 +149,7 @@ function runBinomial(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   let anyOneTailed = false;
   vs.forEach((v) => {
     const sel = selectCases(ds, [v.id]);
-    if (!note) note = caseNote(ds, selN(sel), sel.nMissing);
+    if (!note) note = caseNote(ds, selN(sel), selMissing(ds, sel));
     const col = ds.columns[v.id];
     let n1 = 0;
     let n2 = 0;
@@ -287,7 +288,7 @@ function runMannWhitney(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   blocks.push(text('apa', apa.join(' ')));
   const r0 = res[0];
   const syntax = `NPAR TESTS\n  /M-W=${vs.map((v) => v.name).join(' ')} BY ${gv.name}${r0.g.defineSyntax}\n  /MISSING ANALYSIS.`;
-  return item('mann-whitney', 'Mann-Whitney Test', ds, blocks, syntax, caseNote(ds, r0.r.n1 + r0.r.n2, r0.sel.nMissing));
+  return item('mann-whitney', 'Mann-Whitney Test', ds, blocks, syntax, caseNote(ds, r0.r.n1 + r0.r.n2, selMissing(ds, r0.sel)));
 }
 
 export const mannWhitneyProc: ProcedureDef = {
@@ -368,7 +369,7 @@ function runWilcoxon(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   blocks.push(text('apa', apa.join(' ')));
   const syntax = `NPAR TESTS\n  /WILCOXON=${first.map((v) => v.name).join(' ')} WITH ${second.map((v) => v.name).join(' ')} (PAIRED)\n  /MISSING ANALYSIS.`;
   const r0 = res[0];
-  return item('wilcoxon', 'Wilcoxon Signed Ranks Test', ds, blocks, syntax, caseNote(ds, selN(r0.sel), r0.sel.nMissing));
+  return item('wilcoxon', 'Wilcoxon Signed Ranks Test', ds, blocks, syntax, caseNote(ds, selN(r0.sel), selMissing(ds, r0.sel)));
 }
 
 export const wilcoxonProc: ProcedureDef = {
@@ -463,7 +464,7 @@ function runKruskal(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const numericCats = r0.cats.filter((c): c is number => typeof c === 'number');
   const range = numericCats.length === r0.cats.length && numericCats.length ? `(${Math.min(...numericCats)} ${Math.max(...numericCats)})` : `(${r0.cats.map(syntaxValue).join(' ')})`;
   const syntax = `NPAR TESTS\n  /K-W=${vs.map((v) => v.name).join(' ')} BY ${gv.name}${range}\n  /MISSING ANALYSIS.`;
-  return item('kruskal-wallis', 'Kruskal-Wallis Test', ds, blocks, syntax, caseNote(ds, r0.r.N, r0.sel.nMissing));
+  return item('kruskal-wallis', 'Kruskal-Wallis Test', ds, blocks, syntax, caseNote(ds, r0.r.N, selMissing(ds, r0.sel)));
 }
 
 export const kruskalProc: ProcedureDef = {
@@ -520,7 +521,7 @@ function runFriedman(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   blocks.push(text('apa', `A Friedman test ${r.p < 0.05 ? 'indicated significant differences' : 'did not indicate significant differences'} among ${listProse(vs.map(vprose))}, χ²(${r.df}, N = ${fmtN(Math.round(r.N))}) = ${apaNum(r.chiSquare)}, ${apaP(r.p)}, Kendall's W = ${apaNum(r.kendallW, 2, true)}.`));
   if (r.N < 10) blocks.push(text('warning', `Only ${fmtN(r.N)} complete cases: the chi-square approximation for the Friedman test is rough with so few cases.`));
   const syntax = `NPAR TESTS\n  /FRIEDMAN=${vs.map((v) => v.name).join(' ')}\n  /KENDALL=${vs.map((v) => v.name).join(' ')}\n  /MISSING LISTWISE.`;
-  return item('friedman', 'Friedman Test', ds, blocks, syntax, caseNote(ds, selN(sel), sel.nMissing, 'complete cases on all variables'));
+  return item('friedman', 'Friedman Test', ds, blocks, syntax, caseNote(ds, selN(sel), selMissing(ds, sel), 'complete cases on all variables'));
 }
 
 export const friedmanProc: ProcedureDef = {

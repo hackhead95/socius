@@ -2,13 +2,13 @@
 id: "store-action:useUi.setBusy"
 type: store-action
 file: src/app/ui-store.ts
-line: 50
+line: 56
 area: app
 ---
 
 # useUi.setBusy()
 
-*Store action* · defined in [[ui-store.ts]] (line 50) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 56) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

@@ -2,13 +2,13 @@
 id: "store-key:useStore.coding"
 type: store-key
 file: src/core/store.ts
-line: 86
+line: 88
 area: core
 ---
 
 # useStore.coding
 
-*Store state key* · defined in [[store.ts]] (line 86) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 88) · area [[core]]
 
 - **Store:** useStore
 
@@ -65,13 +65,13 @@ area: core
 - [[navigation-audit.test.tsx]] · getState
 - [[shell-fixes.test.ts]] · getState
 - [[actions.test.ts]] · getState
+- [[ui-fixes.test.tsx]] · getState
 - [[coding/actions.ts#undoCoding|undoCoding()]] · getState
 - [[coding/actions.ts#undoLabel|undoLabel()]] · getState
 - [[useAutosave|useAutosave()]] · subscribe
 - [[useCodeMap|useCodeMap()]] · selector
 - [[useEntries|useEntries()]] · selector
 - [[useOrderedCodes|useOrderedCodes()]] · selector
-- [[updateCoding()|useStore.updateCoding()]]
 - [[useUndoRedo|useUndoRedo()]] · selector
 - [[useVisibleSegments|useVisibleSegments()]] · selector
 
@@ -81,8 +81,8 @@ area: core
 - [[navigation-audit.test.tsx]] · setState
 - [[palette.test.tsx]] · setState
 - [[shell-fixes.test.ts]] · setState
+- [[shortcut-precedence.test.tsx]] · setState
 - [[setCoding()|useStore.setCoding()]]
-- [[updateCoding()|useStore.updateCoding()]]
 
 ## Store
 - [[useStore]]

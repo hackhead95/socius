@@ -11,6 +11,7 @@ area: platform
 - **Has a user message:** yes
 
 ## Produced by
+- [[ai-webllm.ts#ensureEngine|ensureEngine()]]
 - [[ai-webllm.ts#loadErrorCode|loadErrorCode()]]
 
 ## Explained by
@@ -18,3 +19,4 @@ area: platform
 
 ## Checked by
 - [[platform/ai.ts#aiErrorText|aiErrorText()]]
+- [[ai-webllm.ts#ensureEngine|ensureEngine()]]

@@ -2,13 +2,13 @@
 id: "src/features/ai/AiSettingsDialog.tsx#AiSettingsDialog"
 type: component
 file: src/features/ai/AiSettingsDialog.tsx
-line: 55
+line: 67
 area: features/ai
 ---
 
 # <AiSettingsDialog>
 
-*React component* · defined in [[AiSettingsDialog.tsx]] (line 55) · area [[features - ai|features/ai]]
+*React component* · defined in [[AiSettingsDialog.tsx]] (line 67) · area [[features - ai|features/ai]]
 
 - **Exported:** yes
 
@@ -23,6 +23,7 @@ area: features/ai
 - [[useAiStatus|useAiStatus()]]
 
 ## Renders
+- [[AiActivityLine|<AiActivityLine>]]
 - [[AiPrivacyNotice|<AiPrivacyNotice>]]
 - [[ConnectionChecklist|<ConnectionChecklist>]]
 - [[GeminiSection|<GeminiSection>]]

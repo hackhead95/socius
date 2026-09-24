@@ -2,13 +2,13 @@
 id: "store-action:useStore.moveOutput"
 type: store-action
 file: src/core/store.ts
-line: 126
+line: 129
 area: core
 ---
 
 # useStore.moveOutput()
 
-*Store action* · defined in [[store.ts]] (line 126) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 129) · area [[core]]
 
 - **Store:** useStore
 

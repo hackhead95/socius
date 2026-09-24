@@ -2,13 +2,13 @@
 id: "store-key:useCodingUi.pending"
 type: store-key
 file: src/features/coding/uiStore.ts
-line: 38
+line: 43
 area: features/coding
 ---
 
 # useCodingUi.pending
 
-*Store state key* · defined in [[uiStore.ts]] (line 38) · area [[features - coding|features/coding]]
+*Store state key* · defined in [[uiStore.ts]] (line 43) · area [[features - coding|features/coding]]
 
 > Text selected in the reader, waiting for a code.
 

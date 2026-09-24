@@ -2,13 +2,13 @@
 id: "src/app/HelpDialogs.tsx#GettingStartedDialog"
 type: component
 file: src/app/HelpDialogs.tsx
-line: 8
+line: 9
 area: app
 ---
 
 # <GettingStartedDialog>
 
-*React component* · defined in [[HelpDialogs.tsx]] (line 8) · area [[Areas/app|app]]
+*React component* · defined in [[HelpDialogs.tsx]] (line 9) · area [[Areas/app|app]]
 
 - **Exported:** yes
 

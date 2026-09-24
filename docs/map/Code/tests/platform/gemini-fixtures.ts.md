@@ -18,6 +18,7 @@ area: tests
 - [[ai-tools.test.ts]] · value
 - [[ai-diagnose.test.ts]] · value
 - [[ai-http.test.ts]] · value
+- [[ai-pace.test.ts]] · value
 
 ## Private helpers
 errorInfo() (line 8) · sse() (line 126)
@@ -38,13 +39,13 @@ errorInfo() (line 8) · sse() (line 126)
 *function* · line 92 · exported
 > ---------- Gemini successes ----------
 - Calls: [[platform/helpers.ts#jsonResponse|jsonResponse()]]
-- Used in: [[ai-diagnose.test.ts]], [[ai-http.test.ts]]
+- Used in: [[ai-diagnose.test.ts]], [[ai-http.test.ts]], [[ai-pace.test.ts]]
 
 ### interaction
 *function* · line 97 · exported
 > A completed Interaction: a thought step (with its signature) and the model's text.
 - Calls: [[platform/helpers.ts#jsonResponse|jsonResponse()]]
-- Used in: [[ai-diagnose.test.ts]], [[ai-http.test.ts]]
+- Used in: [[ai-diagnose.test.ts]], [[ai-http.test.ts]], [[ai-pace.test.ts]]
 
 ### interactionIncomplete
 *function* · line 113 · exported

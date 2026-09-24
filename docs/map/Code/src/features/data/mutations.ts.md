@@ -7,7 +7,7 @@ area: features/data
 
 # src/features/data/mutations.ts
 
-*Module* · area [[features - data|features/data]] · 329 lines
+*Module* · area [[features - data|features/data]] · 310 lines
 
 > Immutable dataset edits used by the Data View and Variable View (all go through mutateDataset).
 
@@ -17,9 +17,11 @@ area: features/data
 - [[gridEdit.ts]] · value
 - [[encoding.ts]] · value
 - [[infer.ts]] · value
+- [[properties.ts]] · re-export
 
 ## Tested by
 - [[shell-fixes.test.ts]] · import
+- [[data-fixes.test.ts]] · import
 - [[dataview.test.ts]] · import
 
 ## Imported by
@@ -27,10 +29,11 @@ area: features/data
 - [[VarDialogs.tsx]] · value
 - [[VariableView.tsx]] · value
 - [[shell-fixes.test.ts]] · value
+- [[data-fixes.test.ts]] · value
 - [[dataview.test.ts]] · value
 
 ## Types
-CellWrite (line 85) · WriteReport (line 91) · CopyProp (line 291)
+CellWrite (line 85) · WriteReport (line 91)
 
 ## Private helpers
 MAX_STRING_WIDTH (line 11) · bump() (line 13) · NAME_CHAR (line 17) · RESERVED_WORDS (line 18) · growCases() (line 71)
@@ -59,49 +62,45 @@ MAX_STRING_WIDTH (line 11) · bump() (line 13) · NAME_CHAR (line 17) · RESERVE
 > Write a block of typed/pasted texts. Rows past the end add cases; columns past the end add variables (numeric if every value in that column is a number, else string).
 - Calls: [[encoding.ts#utf8ByteLength|utf8ByteLength()]], [[gridEdit.ts#parseCellInput|parseCellInput()]], [[mutations.ts#newDefaultVariable|newDefaultVariable()]], [[mutations.ts]]
 - Uses: [[mutations.ts]]
-- Used in: [[DataView.tsx]], [[dataview.test.ts]]
+- Used in: [[DataView.tsx]], [[data-fixes.test.ts]], [[dataview.test.ts]]
 
 ### looksLikeHeader
-*function* · line 177 · exported
+*function* · line 183 · exported
 > Does the first pasted row look like column headings (as when copying a table from Excel)? True when every heading is non-empty text that is not a number and at least one column below holds numbers.
 - Used in: [[DataView.tsx]], [[dataview.test.ts]]
 
 ### nameVariablesFromHeader
-*function* · line 190 · exported
+*function* · line 196 · exported
 > Rename variables from `start` on after pasted headings (invalid names are made valid; the heading becomes the label).
 - Calls: [[infer.ts#variableNameFor|variableNameFor()]]
-- Used in: [[DataView.tsx]], [[dataview.test.ts]]
+- Used in: [[DataView.tsx]], [[data-fixes.test.ts]], [[dataview.test.ts]]
 
 ### clearRange
-*function* · line 206 · exported
+*function* · line 214 · exported
 > Clear a rectangle (sysmis for numbers, empty for text).
 - Calls: [[mutations.ts]]
 - Used in: [[DataView.tsx]], [[dataview.test.ts]]
 
 ### formatWith
-*function* · line 222 · exported
+*function* · line 230 · exported
 > Keep the SPSS format family (F, COMMA, DOLLAR, DATE...) while changing width/decimals.
 - Calls: [[core/data.ts#isDateFormat|isDateFormat()]]
 - Used in: [[VariableView.tsx]], [[dataview.test.ts]]
 
 ### changeType
-*function* · line 231 · exported
+*function* · line 239 · exported
 > Change type and/or format with sensible data conversion (dates parse from text, numbers format to text).
 - Calls: [[core/data.ts#formatRawValue|formatRawValue()]], [[core/data.ts#isDateFormat|isDateFormat()]], [[gridEdit.ts#parseDateText|parseDateText()]], [[mutations.ts]]
 - Used in: [[VarDialogs.tsx]], [[VariableView.tsx]], [[dataview.test.ts]]
 
+### patchVariable
+*function* · line 283 · exported
+> Change dictionary properties of one variable (not its type; see changeType).
+- Calls: [[mutations.ts]]
+- Used in: [[VarDialogs.tsx]]
+
 ### duplicateVariables
-*function* · line 275 · exported
+*function* · line 292 · exported
 > Duplicate variables (with data) right after each original, named <name>_copy.
 - Calls: [[core/data.ts#uniqueVarName|uniqueVarName()]], [[core/types.ts#newId|newId()]], [[mutations.ts]]
 - Used in: [[VariableView.tsx]], [[dataview.test.ts]]
-
-### COPY_PROPS
-*const* · line 293 · exported
-- Used in: [[VarDialogs.tsx]]
-
-### copyProperties
-*function* · line 304 · exported
-> Copy chosen properties from one variable to others of the same type.
-- Calls: [[mutations.ts]]
-- Used in: [[VarDialogs.tsx]], [[dataview.test.ts]]

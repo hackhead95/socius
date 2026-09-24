@@ -19,5 +19,5 @@ area: dialogs
 - [[custom dialogs]]
 
 ## Opened by
+- [[menus.ts#buildMenus|buildMenus()]]
 - [[About Socius|Help > About Socius]]
-- [[useMenus|useMenus()]]

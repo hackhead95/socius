@@ -16,7 +16,7 @@ area: lib/assistant
 - [[assistant/format.ts]] · value
 - [[assistant/types.ts]] · type-only
 - [[coding/analysis.ts]] · value
-- [[text.ts]] · value
+- [[coding/text.ts]] · value
 - [[tree.ts]] · value
 
 ## Imported by
@@ -64,7 +64,7 @@ area: lib/assistant
 
 ### searchText
 *function* · line 128
-- Calls: [[assistant/format.ts#trimToBytes|trimToBytes()]], [[coding.ts#docLabel|docLabel()]], [[coding.ts#projectOf|projectOf()]], [[text.ts#kwic|kwic()]]
+- Calls: [[assistant/format.ts#trimToBytes|trimToBytes()]], [[coding.ts#docLabel|docLabel()]], [[coding.ts#projectOf|projectOf()]], [[coding/text.ts#kwic|kwic()]]
 - Uses: [[coding.ts#TEXTS_OFF|TEXTS_OFF]]
 
 ### codingTools

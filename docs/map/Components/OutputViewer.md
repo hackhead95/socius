@@ -2,13 +2,13 @@
 id: "src/features/output/OutputViewer.tsx#OutputViewer"
 type: component
 file: src/features/output/OutputViewer.tsx
-line: 51
+line: 63
 area: features/output
 ---
 
 # <OutputViewer>
 
-*React component* · defined in [[OutputViewer.tsx]] (line 51) · area [[features - output|features/output]]
+*React component* · defined in [[OutputViewer.tsx]] (line 63) · area [[features - output|features/output]]
 
 - **Exported:** yes
 
@@ -17,6 +17,9 @@ area: features/output
 - [[output/actions.ts#confirmAndClearOutputs|confirmAndClearOutputs()]]
 - [[output/actions.ts#copyItem|copyItem()]]
 - [[output/actions.ts#exportReport|exportReport()]]
+- [[format-date.ts#formatDateTime|formatDateTime()]]
+- [[format-date.ts#formatTime|formatTime()]]
+- [[shortcuts.ts#modKey|modKey()]]
 - [[useNumbering|useNumbering()]]
 - [[useOutputPrefs]]
 - [[useStore]]
@@ -40,20 +43,21 @@ area: features/output
 - [[showSyntax|useOutputPrefs.showSyntax]] · alias
 - [[tableStyle|useOutputPrefs.tableStyle]] · alias
 - [[useStore/focusOutputId|useStore.focusOutputId]] · selector
-- [[outputs|useStore.outputs]] · alias, selector
+- [[outputs|useStore.outputs]] · selector
 - [[outputTarget|useUi.outputTarget]] · selector
 
 ## Writes
 - [[showInterpretations|useOutputPrefs.showInterpretations]] · alias.set, set()
 - [[showSyntax|useOutputPrefs.showSyntax]] · alias.set, set()
 - [[tableStyle|useOutputPrefs.tableStyle]] · alias.set, set()
-- [[outputs|useStore.outputs]] · setState
 
 ## Calls store actions
 - [[useOutputPrefs/set()|useOutputPrefs.set()]] · alias
 - [[clearOutputs()|useStore.clearOutputs()]] · selector
 - [[moveOutput()|useStore.moveOutput()]] · selector
 - [[removeOutput()|useStore.removeOutput()]] · selector
+- [[restoreOutput()|useStore.restoreOutput()]] · getState
+- [[toast()|useStore.toast()]] · getState
 
 ## Handles
 - [[Blocks/chart|chart]] · renderer

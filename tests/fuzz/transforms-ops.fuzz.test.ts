@@ -398,11 +398,18 @@ describe('aggregate and merge', () => {
           const v = ds.variables.find((x) => x.id === it.sourceId)!;
           const c = ds.columns[v.id];
           const valid = rows.filter((i) => w[i] > 0 && !isMissingValue(v, c[i]));
+          // SPSS N(var) / NMISS(var): weighted counts of valid / missing values (strings too).
+          if (it.fn === 'nvalid') return valid.reduce((s, i) => s + w[i], 0);
+          if (it.fn === 'nmiss') return rows.filter((i) => w[i] > 0 && isMissingValue(v, c[i])).reduce((s, i) => s + w[i], 0);
           if (it.fn === 'first' || it.fn === 'last') return valid.length ? c[valid[it.fn === 'first' ? 0 : valid.length - 1]] : v.type === 'numeric' ? NaN : '';
-          if (!valid.length) return NaN;
+          if (!valid.length) return v.type === 'numeric' ? NaN : '';
+          if (v.type === 'string') {
+            const ss = valid.map((i) => (c[i] as string).trimEnd()).sort();
+            return it.fn === 'min' ? ss[0] : ss[ss.length - 1];
+          }
           const xs = valid.map((i) => c[i] as number), ws = valid.map((i) => w[i]);
-          if (it.fn === 'min') return Math.min(...xs);
-          if (it.fn === 'max') return Math.max(...xs);
+          if (it.fn === 'min') return xs.reduce((a, b) => Math.min(a, b), Infinity);
+          if (it.fn === 'max') return xs.reduce((a, b) => Math.max(a, b), -Infinity);
           const sw = ws.reduce((a, b) => a + b, 0), sx = xs.reduce((a, x, j) => a + x * ws[j], 0);
           if (it.fn === 'sum') return sx;
           const mean = sx / sw;

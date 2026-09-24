@@ -23,6 +23,7 @@ area: tests
 - [[known-issues.ts]] · type-only
 - [[proc-harness.ts]] · type-only, value
 - [[procedures-oracle.fuzz.test.ts]] · value
+- [[procedures-perf.fuzz.test.ts]] · value
 - [[procedures.fuzz.test.ts]] · value
 - [[transforms-expr.fuzz.test.ts]] · value
 - [[transforms-ops.fuzz.test.ts]] · value
@@ -41,7 +42,7 @@ Failure (line 10)
 *class* · line 33 · exported
 - Calls: [[findings.ts#matchKnown|matchKnown()]], [[findings.ts#signature|signature()]]
 - Uses: [[findings.ts#describe|describe()]]
-- Used in: [[ai-matrix.fuzz.test.ts]], [[io.fuzz.test.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
+- Used in: [[ai-matrix.fuzz.test.ts]], [[io.fuzz.test.ts]], [[procedures-oracle.fuzz.test.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[transforms-expr.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]]
 
 ### matchKnown
 *function* · line 82 · exported

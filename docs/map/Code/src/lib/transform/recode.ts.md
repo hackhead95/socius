@@ -70,7 +70,7 @@ fromSyntax() (line 46) · toSyntax() (line 58) · validateRules() (line 113) · 
 ### recodeSame
 *function* · line 148 · exported
 - Calls: [[dsops.ts#bump|bump()]], [[dsops.ts#plural|plural()]], [[recode.ts#RecodeError|RecodeError]], [[recode.ts#recodeValue|recodeValue()]], [[recode.ts#rulesSyntax|rulesSyntax()]], [[recode.ts]], [[syntax.ts#lines|lines()]], [[syntax.ts#varList|varList()]]
-- Used in: [[RecodeDialog.tsx]], [[transforms-ops.fuzz.test.ts]], [[transforms.test.ts]]
+- Used in: [[RecodeDialog.tsx]], [[transforms-ops.fuzz.test.ts]], [[dialog-transforms.test.ts]], [[transforms.test.ts]]
 
 ### recodeDifferent
 *function* · line 216 · exported
@@ -80,7 +80,7 @@ fromSyntax() (line 46) · toSyntax() (line 58) · validateRules() (line 113) · 
 ### autoRecode
 *function* · line 289 · exported
 - Calls: [[core/data.ts#isUserMissing|isUserMissing()]], [[core/data.ts#validateVarName|validateVarName()]], [[core/data.ts#valueLabelFor|valueLabelFor()]], [[dsops.ts#addVariable|addVariable()]], [[dsops.ts#newNumericVar|newNumericVar()]], [[dsops.ts#plural|plural()]], [[recode.ts#RecodeError|RecodeError]]
-- Used in: [[DeriveDialogs.tsx]], [[transforms-ops.fuzz.test.ts]], [[sample-oracle.test.ts]], [[transforms.test.ts]]
+- Used in: [[DeriveDialogs.tsx]], [[transforms-ops.fuzz.test.ts]], [[dialog-transforms.test.ts]], [[sample-oracle.test.ts]], [[transforms.test.ts]]
 
 ### parseValueFor
 *function* · line 347 · exported

@@ -20,7 +20,7 @@ area: features/output
 - [[output/format.ts#layoutRows|layoutRows()]]
 - [[output/format.ts#percentColumns|percentColumns()]]
 - [[output/format.ts#stubCount|stubCount()]]
-- [[useScrollEdges|useScrollEdges()]]
+- [[useScrollEdges (features-output-OutputTableView)|useScrollEdges()]]
 
 ## Rendered by
 - [[BlockView|<BlockView>]]

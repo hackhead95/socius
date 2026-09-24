@@ -2,13 +2,13 @@
 id: "store-action:useStore.addOutput"
 type: store-action
 file: src/core/store.ts
-line: 118
+line: 121
 area: core
 ---
 
 # useStore.addOutput()
 
-*Store action* · defined in [[store.ts]] (line 118) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 121) · area [[core]]
 
 > Append an output item. By default it is focused and the Output tab opens; pass `{ focus: false }` to log quietly.
 

@@ -2,13 +2,13 @@
 id: "store-action:useUi.requestFind"
 type: store-action
 file: src/app/ui-store.ts
-line: 54
+line: 60
 area: app
 ---
 
 # useUi.requestFind()
 
-*Store action* · defined in [[ui-store.ts]] (line 54) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 60) · area [[Areas/app|app]]
 
 - **Store:** useUi
 
@@ -19,10 +19,10 @@ area: app
 - [[findSeq|useUi.findSeq]]
 
 ## Called by
+- [[menus.ts#buildMenus|buildMenus()]] · getState
 - [[Find in data|Edit > Find in data...]]
 - [[shortcuts.ts#handleGlobalKey|handleGlobalKey()]] · getState
 - [[navigation-audit.test.tsx]] · setState
-- [[useMenus|useMenus()]] · getState
 
 ## Store
 - [[useUi]]

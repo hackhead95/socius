@@ -2,13 +2,13 @@
 id: "store-action:useUi.setSidebarOpen"
 type: store-action
 file: src/app/ui-store.ts
-line: 29
+line: 30
 area: app
 ---
 
 # useUi.setSidebarOpen()
 
-*Store action* · defined in [[ui-store.ts]] (line 29) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 30) · area [[Areas/app|app]]
 
 - **Store:** useUi
 
@@ -18,8 +18,7 @@ area: app
 ## Called by
 - [[Sidebar|<Sidebar>]] · selector
 - [[navigation-audit.test.tsx]] · setState
-- [[useMenus|useMenus()]] · getState
-- [[Variable list|View > Variable list]]
+- [[toggleVariableList()|useUi.toggleVariableList()]]
 
 ## Store
 - [[useUi]]

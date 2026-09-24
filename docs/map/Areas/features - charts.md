@@ -6,7 +6,7 @@ area: features/charts
 
 # Area: features/charts
 
-13 files, 2264 lines.
+13 files, 2280 lines.
 
 ## Depends on (module imports)
 - [[core]]: 11
@@ -34,4 +34,4 @@ area: features/charts
 [[BarChart|<BarChart>]] · [[BoxChart|<BoxChart>]] · [[Components/Chart|<Chart>]] · [[ChartBody|<ChartBody>]] · [[ChartHeader|<ChartHeader>]] · [[ChartSvg|<ChartSvg>]] · [[HeatmapChart|<HeatmapChart>]] · [[HistogramChart|<HistogramChart>]] · [[LineChart|<LineChart>]] · [[PieChart|<PieChart>]] · [[PyramidChart|<PyramidChart>]] · [[ScatterChart|<ScatterChart>]] · [[TipRow|<TipRow>]] · [[Tooltip|<Tooltip>]] · [[XAxisNumeric|<XAxisNumeric>]] · [[YAxis|<YAxis>]]
 
 ## Hooks
-[[useChartWidth|useChartWidth()]] · [[useThemeVersion|useThemeVersion()]] · [[useUid|useUid()]]
+[[useChartWidth|useChartWidth()]] · [[useHeaderLayout|useHeaderLayout()]] · [[useThemeVersion|useThemeVersion()]] · [[useUid|useUid()]]

@@ -4,6 +4,7 @@ import { itemMeta, blockVisible, type ReportOptions } from './reportHtml';
 import { tableToText } from './tableRender';
 import { chartDataTable } from '../charts/dataTable';
 import { formatNumber } from './format';
+import { formatLongDate } from '../../core/format-date';
 
 function wrap(text: string, width = 96): string {
   return text
@@ -62,7 +63,7 @@ export function itemToText(item: OutputItem, opts: ReportOptions): string {
 }
 
 export function reportToText(items: OutputItem[], opts: ReportOptions): string {
-  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const date = formatLongDate(Date.now());
   const head = `Analysis report (Socius), ${date}\n${'='.repeat(40)}\n\n`;
   return head + items.map((i) => itemToText(i, opts)).join('\n' + '-'.repeat(40) + '\n\n');
 }

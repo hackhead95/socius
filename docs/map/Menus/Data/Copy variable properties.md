@@ -21,3 +21,6 @@ area: app
 
 ## Part of
 - [[Data]]
+
+## Tested by
+- [[transform-dialogs.spec.ts]] · menu label

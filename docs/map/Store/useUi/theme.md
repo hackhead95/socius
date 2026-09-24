@@ -2,13 +2,13 @@
 id: "store-key:useUi.theme"
 type: store-key
 file: src/app/ui-store.ts
-line: 26
+line: 27
 area: app
 ---
 
 # useUi.theme
 
-*Store state key* · defined in [[ui-store.ts]] (line 26) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 27) · area [[Areas/app|app]]
 
 - **Store:** useUi
 

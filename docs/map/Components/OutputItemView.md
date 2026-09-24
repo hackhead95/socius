@@ -2,13 +2,13 @@
 id: "src/features/output/OutputViewer.tsx#OutputItemView"
 type: component
 file: src/features/output/OutputViewer.tsx
-line: 365
+line: 359
 area: features/output
 ---
 
 # <OutputItemView>
 
-*React component* · defined in [[OutputViewer.tsx]] (line 365) · area [[features - output|features/output]]
+*React component* · defined in [[OutputViewer.tsx]] (line 359) · area [[features - output|features/output]]
 
 ## Calls
 - [[reportHtml.ts#formatItemTime|formatItemTime()]]

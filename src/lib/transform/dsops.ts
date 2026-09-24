@@ -101,5 +101,21 @@ export function rowsWhere(mask: Uint8Array): number[] {
   return out;
 }
 
+/**
+ * Smallest / largest number in a list (Infinity / -Infinity when empty). Use these instead of
+ * Math.min(...values): spreading a data-sized list as call arguments overflows the call stack
+ * (about 120,000 values in V8).
+ */
+export function minOf(values: Iterable<number>): number {
+  let m = Infinity;
+  for (const x of values) if (x < m) m = x;
+  return m;
+}
+export function maxOf(values: Iterable<number>): number {
+  let m = -Infinity;
+  for (const x of values) if (x > m) m = x;
+  return m;
+}
+
 export const fmtN = (n: number) => n.toLocaleString('en-US');
 export const plural = (n: number, one: string, many = one + 's') => `${fmtN(n)} ${n === 1 ? one : many}`;

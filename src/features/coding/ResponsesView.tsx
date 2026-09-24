@@ -12,6 +12,7 @@ import { useCodeMap, useQuickKeyCodes, useSegmentIndex, plural } from './hooks';
 import { useCodingUi, openLocalDialog, jumpTo } from './uiStore';
 import { QuickCode } from './QuickCode';
 import { CodeChip, Floating } from './ui';
+import { NOT_CODED_FILTER_LABEL, workedExampleGuide } from './exampleGuide';
 
 export function ResponsesView() {
   const allDocs = useStore((s) => s.coding.docs);
@@ -223,7 +224,7 @@ export function ResponsesView() {
         />
         <select className="select input-sm" value={codeFilter} onChange={(e) => setCodeFilter(e.target.value)} aria-label="Filter by code">
           <option value="">All responses</option>
-          <option value="__uncoded">Not coded yet</option>
+          <option value="__uncoded">{NOT_CODED_FILTER_LABEL}</option>
           <option value="__coded">Coded</option>
           {codes.map((c) => (
             <option key={c.id} value={c.id}>
@@ -270,6 +271,7 @@ export function ResponsesView() {
           <div className="cw-example-text">
             <b>Worked example.</b> These are the sample survey’s answers about the biggest challenge facing the neighbourhood. Keyword rules from the starter codebook coded{' '}
             {nAutoCoded.toLocaleString()} of {responses.length.toLocaleString()} answers automatically. Rules miss answers worded differently and sometimes pick up a word used in passing, so check the codes before you rely on them.
+            <ExampleNextSteps />
           </div>
           <div className="cw-example-actions">
             <button className="btn btn-sm" onClick={() => { setCodeFilter('__coded'); scrollRef.current?.focus(); }}>Review coded answers</button>
@@ -464,3 +466,16 @@ function ResponseRow(props: {
   );
 }
 
+/**
+ * What to do after reviewing the worked example (UI-018: this used to be a long toast that vanished
+ * before it could be read). Menu names come from the menu model (UI-029).
+ */
+function ExampleNextSteps() {
+  const g = useMemo(() => workedExampleGuide(), []);
+  return (
+    <p className="cw-example-next">
+      Then compare themes across groups with <b>{g.codesByAttribute}</b>, or use <b>{g.exportCodes}</b> and run <b>{g.crosstabs}</b> of a code by gender.{' '}
+      Straight after loading, <b>{g.undo}</b> in the toolbar removes the whole example. The memo “About this worked example” (Memos tab) keeps these steps.
+    </p>
+  );
+}

@@ -2,13 +2,13 @@
 id: "store-action:useStore.setDataset"
 type: store-action
 file: src/core/store.ts
-line: 97
+line: 99
 area: core
 ---
 
 # useStore.setDataset()
 
-*Store action* · defined in [[store.ts]] (line 97) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 99) · area [[core]]
 
 > dataset
 
@@ -28,6 +28,7 @@ area: core
 - [[dataset.test.ts]] · getState
 - [[transforms-expr.fuzz.test.ts]] · alias
 - [[transforms-ops.fuzz.test.ts]] · alias
+- [[data-fixes.test.ts]] · getState
 - [[history.test.ts]] · getState
 
 ## Store

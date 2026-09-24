@@ -8,6 +8,7 @@ import { createMemo, deleteMemo, updateMemo } from './actions';
 import { useOrderedCodes, toast, saveAndReport } from './hooks';
 import { useCodingUi } from './uiStore';
 import { Swatch } from './ui';
+import { formatDateTime } from '../../core/format-date';
 
 export function MemosView() {
   const memos = useStore((s) => s.coding.memos);
@@ -35,7 +36,7 @@ export function MemosView() {
   const exportAll = () => {
     const text = [...memos]
       .sort((a, b) => a.createdAt - b.createdAt)
-      .map((m) => `# ${m.title}\n${linkLabel(m)} · ${new Date(m.updatedAt).toLocaleString()}\n\n${m.text}`)
+      .map((m) => `# ${m.title}\n${linkLabel(m)} · ${formatDateTime(m.updatedAt)}\n\n${m.text}`)
       .join('\n\n---\n\n');
     void saveAndReport('memos.md', text, 'text/markdown;charset=utf-8');
   };
@@ -52,8 +53,8 @@ export function MemosView() {
         <div role="list" className="cw-memo-items">
           {shown.map((m) => (
             <button key={m.id} role="listitem" className={`cw-memo-item ${memo?.id === m.id ? 'is-active' : ''}`} onClick={() => setActiveId(m.id)}>
-              <span className="cw-docname">{m.title || 'Untitled memo'}</span>
-              <span className="cw-docmeta">{linkLabel(m)} · {new Date(m.updatedAt).toLocaleDateString()}</span>
+              <span className="cw-docname" title={m.title || undefined}>{m.title || 'Untitled memo'}</span>
+              <span className="cw-docmeta">{linkLabel(m)} · {formatDateTime(m.updatedAt)}</span>
             </button>
           ))}
           {!memos.length ? <p className="help">Memos hold your analytic thinking: emerging ideas, decisions about codes, reflections on an interview.</p> : null}
@@ -97,7 +98,7 @@ export function MemosView() {
               <button className="btn btn-ghost btn-sm cw-danger" onClick={() => setConfirm(memo.id)}>Delete</button>
             </div>
             <textarea className="textarea cw-memo-text" value={memo.text} placeholder="Write your memo…" onChange={(e) => updateMemo(memo.id, { text: e.target.value })} aria-label="Memo text" />
-            <div className="help">Saved as you type · last edited {new Date(memo.updatedAt).toLocaleString()}</div>
+            <div className="help">Saved as you type · last edited {formatDateTime(memo.updatedAt)}</div>
           </>
         ) : (
           <div className="cw-center-empty empty">

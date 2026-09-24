@@ -15,4 +15,4 @@ area: storage
 
 ## Written by
 - [[persistence.ts#clearSession|clearSession()]]
-- [[persistence.ts#saveSession|saveSession()]]
+- [[persistence.ts]]

@@ -18,9 +18,13 @@ area: features/output
 ## Reads
 - [[socius.output.prefs]]
 
+## Tested by
+- [[figures.test.tsx]] · import
+
 ## Imported by
 - [[output/actions.ts]] · value
 - [[OutputViewer.tsx]] · value
+- [[figures.test.tsx]] · dynamic
 
 ## Private helpers
 KEY (line 12) · load() (line 14)

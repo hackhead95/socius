@@ -2,13 +2,13 @@
 id: "src/features/ai/AiBits.tsx#AiPrivacyNotice"
 type: component
 file: src/features/ai/AiBits.tsx
-line: 55
+line: 56
 area: features/ai
 ---
 
 # <AiPrivacyNotice>
 
-*React component* · defined in [[AiBits.tsx]] (line 55) · area [[features - ai|features/ai]]
+*React component* · defined in [[AiBits.tsx]] (line 56) · area [[features - ai|features/ai]]
 
 > Research-ethics privacy notice for a provider.
 

@@ -22,15 +22,18 @@ area: samples
 ## Tested by
 - [[shell-fixes.test.ts]] · import
 - [[example.test.ts]] · import
+- [[ui-fixes.test.tsx]] · import
 - [[samples.test.ts]] · import
 
 ## Imported by
+- [[CommandPalette.tsx]] · value
 - [[menus.ts]] · value
 - [[Welcome.tsx]] · value
 - [[ImportDialog.tsx]] · value
 - [[fileActions.ts]] · value
 - [[shell-fixes.test.ts]] · value
 - [[example.test.ts]] · value
+- [[ui-fixes.test.tsx]] · value
 - [[samples.test.ts]] · value
 
 ## Types
@@ -44,11 +47,11 @@ SAMPLE_FILES (line 41) · COMMON (line 75)
 ### SAMPLE_SURVEY_FILE
 *const* · line 25 · exported
 > File name the bundled survey is imported under (and shown as its source).
-- Used in: [[example.test.ts]], [[samples.test.ts]]
+- Used in: [[example.test.ts]], [[ui-fixes.test.tsx]], [[samples.test.ts]]
 
 ### samples
 *const* · line 27 · exported
-- Used in: [[Welcome.tsx]], [[menus.ts]], [[fileActions.ts]], [[samples.test.ts]]
+- Used in: [[CommandPalette.tsx]], [[Welcome.tsx]], [[menus.ts]], [[fileActions.ts]], [[samples.test.ts]]
 
 ### assetBytes
 *function* · line 47 · exported

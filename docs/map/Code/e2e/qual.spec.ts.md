@@ -7,7 +7,7 @@ area: e2e
 
 # e2e/qual.spec.ts
 
-*End-to-end spec* · area [[e2e]] · 444 lines
+*End-to-end spec* · area [[e2e]] · 452 lines
 
 > Qualitative coding end to end: open-ended answers, codebook, keyboard coding, auto-coding, export to the dataset and crosstabs, intercoder reliability, interview coding, AI help (mocked) and persistence.
 

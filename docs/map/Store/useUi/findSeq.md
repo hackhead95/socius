@@ -2,13 +2,13 @@
 id: "store-key:useUi.findSeq"
 type: store-key
 file: src/app/ui-store.ts
-line: 52
+line: 58
 area: app
 ---
 
 # useUi.findSeq
 
-*Store state key* · defined in [[ui-store.ts]] (line 52) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 58) · area [[Areas/app|app]]
 
 > Ask the Data View to open its find / go-to bar.
 
@@ -16,9 +16,11 @@ area: app
 
 ## Read by
 - [[DataViewInner|<DataViewInner>]] · selector
+- [[shortcut-precedence.test.tsx]] · getState
 - [[requestFind()|useUi.requestFind()]]
 
 ## Written by
+- [[shortcut-precedence.test.tsx]] · setState
 - [[requestFind()|useUi.requestFind()]]
 
 ## Store

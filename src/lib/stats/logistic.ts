@@ -470,8 +470,9 @@ function multinomialLogLik(beta: Float64Array, yIdx: ArrayLike<number>, X: Array
   let ll = 0;
   const K = cats.length;
   const eta = new Float64Array(K);
-  const pos = new Int32Array(Math.max(...cats, 0) + 2).fill(-1);
-  cats.forEach((c, k) => (pos[c] = k));
+  // Category code -> position; a Map, so large or sparse codes cost nothing (no array sized by code value).
+  const pos = new Map<number, number>();
+  cats.forEach((c, k) => pos.set(c, k));
   for (let i = 0; i < yIdx.length; i++) {
     let mx = 0;
     for (let k = 0; k < K; k++) {
@@ -483,7 +484,7 @@ function multinomialLogLik(beta: Float64Array, yIdx: ArrayLike<number>, X: Array
     let den = Math.exp(-mx);
     for (let k = 0; k < K; k++) den += Math.exp(eta[k] - mx);
     const yi = yIdx[i];
-    const k = pos[yi] ?? -1;
+    const k = pos.get(yi) ?? -1;
     const num = k >= 0 ? eta[k] - mx : -mx;
     ll += w[i] * (num - Math.log(den));
   }
@@ -502,6 +503,11 @@ export function fitMultinomial(
   w: ArrayLike<number>,
   opts: { maxIter?: number } = {},
 ): MultinomialFit {
+  // Fit on distinct (outcome, covariate) patterns with summed weights. The likelihood is the same, but
+  // integer-weighted data and the same data with replicated cases then run through exactly the same
+  // arithmetic. Otherwise rounding in the sums differs, and under separation (where the iterations
+  // stop at an arbitrary point) the printed estimates differed between the two.
+  ({ yIdx, X, w } = collapsePatterns(yIdx, X, w));
   const n = yIdx.length;
   const p = X.length + 1;
   const cats: number[] = [];
@@ -608,6 +614,37 @@ export function fitMultinomial(
     unstable.push(unstableParams(coef[k], s, inv.nullLoading.subarray(k * p, (k + 1) * p), scales));
   }
   return { J, ref, cats, coef, se, cov, logLik: ll, m2ll: -2 * ll, iterations, converged, singular, diverged, unstable };
+}
+
+/**
+ * Merge rows with the same outcome and covariate values (first-occurrence order), summing weights and
+ * dropping zero weights. The likelihood is unchanged, and integer-weighted data and the same cases
+ * replicated become identical inputs, so they give bit-identical fits even where the iterations stop
+ * at an arbitrary point (separation).
+ */
+export function collapsePatterns(yIdx: ArrayLike<number>, X: ArrayLike<number>[], w: ArrayLike<number>): { yIdx: Int32Array; X: Float64Array[]; w: Float64Array } {
+  const n = yIdx.length;
+  const index = new Map<string, number>();
+  const rows: number[] = [];
+  const ws: number[] = [];
+  const key: number[] = new Array(X.length + 1);
+  for (let i = 0; i < n; i++) {
+    if (!(w[i] > 0)) continue;
+    key[0] = yIdx[i];
+    for (let j = 0; j < X.length; j++) key[j + 1] = X[j][i];
+    const k = key.join('|');
+    const at = index.get(k);
+    if (at === undefined) {
+      index.set(k, rows.length);
+      rows.push(i);
+      ws.push(w[i]);
+    } else ws[at] += w[i];
+  }
+  return {
+    yIdx: Int32Array.from(rows, (i) => yIdx[i]),
+    X: X.map((col) => Float64Array.from(rows, (i) => col[i])),
+    w: Float64Array.from(ws),
+  };
 }
 
 /** Log-likelihood of the intercept-only multinomial model (closed form). */

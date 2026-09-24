@@ -21,3 +21,6 @@ area: app
 
 ## Part of
 - [[Menus/Text coding|Text coding]]
+
+## Tested by
+- [[coding-output-fixes.spec.ts]] · menu label

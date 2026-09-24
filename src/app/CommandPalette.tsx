@@ -11,13 +11,16 @@ import { prefillProcedure } from '../features/analysis/varUtils';
 import { useCodingUi } from '../features/coding/uiStore';
 import { openAssistant } from '../features/assistant/open';
 import { readPref, writePref } from '../features/project/persistence';
-import { useMenus } from './menus';
+import { NEED_DATA, useMenus } from './menus';
+import { loadSample, openDataFile } from '../features/project/fileActions';
+import { samples } from '../samples';
 import { commandsFromMenus, searchEntries, type SearchEntry, type SearchGroup } from './search';
 import { HELP_TOPICS, helpTopicUrl } from './helpTopics';
 import { openExternal } from './links';
 import { isMac } from './shortcuts';
 import { useUi } from './ui-store';
 import './palette.css';
+import { formatTime } from '../core/format-date';
 
 interface Secondary {
   label: string;
@@ -117,7 +120,7 @@ function useEntries(): PaletteEntry[] {
       }
     }
     for (const it of outputs) {
-      const time = new Date(it.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const time = formatTime(it.createdAt);
       const go = (block?: number) => () => {
         st().setTab('output');
         ui().focusOutput(it.id, block);
@@ -162,6 +165,8 @@ function CommandPalette() {
   const hasTexts = useStore((s) => s.coding.docs.length > 0);
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
+  // A command that cannot run yet was chosen: say why, and offer the way forward.
+  const [blocked, setBlocked] = useState<PaletteEntry | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const prevFocus = useRef<HTMLElement | null>(null);
@@ -225,6 +230,7 @@ function CommandPalette() {
 
   const flat = useMemo(() => sections.flatMap((s) => s.items), [sections]);
   useEffect(() => setActive(0), [dq]);
+  useEffect(() => setBlocked(null), [q]);
   const cur = flat[Math.min(active, flat.length - 1)];
 
   useEffect(() => {
@@ -238,7 +244,11 @@ function CommandPalette() {
   };
 
   const run = (e: PaletteEntry | undefined, which?: number) => {
-    if (!e || e.disabled) return;
+    if (!e) return;
+    if (e.disabled) {
+      setBlocked(e);
+      return;
+    }
     const fn = which === undefined ? e.run : e.secondary?.[which]?.run;
     if (!fn) return;
     if (e.group === 'commands') pushRecent(e.id);
@@ -304,6 +314,21 @@ function CommandPalette() {
           <kbd className="kbd palette-esc">Esc</kbd>
           <button type="button" className="btn btn-sm btn-ghost palette-close" onClick={close}>Close</button>
         </div>
+        {blocked ? (
+          <div className="palette-blocked" role="alert">
+            <Icon name="info" size={15} />
+            <div className="palette-blocked-text">
+              <strong>{blocked.title}</strong> is not available yet: {(blocked.disabledReason ?? 'Not available right now').replace(/\.$/, '')}.
+              {blocked.disabledReason === NEED_DATA ? ' Open a data file, or practise with the sample survey.' : null}
+            </div>
+            {blocked.disabledReason === NEED_DATA ? (
+              <span className="palette-blocked-actions">
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => { close(); void openDataFile(); }}>Open data file...</button>
+                {samples.length ? <button type="button" className="btn btn-sm" onClick={() => { close(); void loadSample(); }}>Load sample survey</button> : null}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         <div ref={listRef} id={`${uid}-list`} className="palette-list" role="listbox" aria-label="Search results">
           {sections.map((s) => (
             <div key={s.key} role="group" aria-labelledby={`${uid}-g-${s.key}`} className="palette-section">

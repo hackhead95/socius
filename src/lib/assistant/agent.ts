@@ -5,7 +5,12 @@
 // - text   : a strict JSON action protocol for models without reliable tool calling (on-device).
 // Limits: rounds per question, a byte budget per request (old tool results are shortened first),
 // per-minute pacing and one back-off on rate limits, Stop through an AbortSignal.
+// Speed: a driver may "prime" tools (the dataset overview) that are run before the first request and
+// put in the system prompt, which saves the model a whole round for most questions; the model is asked
+// to call independent tools together; every request is timed (platform/ai-timing.ts), and waits for
+// rate limits show a countdown there.
 import { AiUnavailableError } from '../../platform/claude';
+import { startAiTiming, type AiTiming } from '../../platform/ai-timing';
 import type { ChatMessage, ClaudeTool, ModelTurn, ToolCall, ToolSpec, ToolTurnOptions, ToolAiError } from '../../platform/ai-tools';
 import { isToolsUnsupported } from '../../platform/ai-tools';
 import { byteLength, trimToBytes } from './format';
@@ -32,6 +37,8 @@ interface DriverBase {
   rateKey?: string;
   /** Use the short system prompt and tool list. */
   compact?: boolean;
+  /** Tools (without arguments) to run before the first request, their results put in the system prompt. */
+  prime?: string[];
 }
 
 export interface NativeDriver extends DriverBase {
@@ -48,7 +55,7 @@ export interface HostedDriver extends DriverBase {
 
 export interface TextDriver extends DriverBase {
   kind: 'text';
-  complete: (prompt: string, opts: { signal?: AbortSignal; json: boolean; maxTokens?: number; onText?: (t: string) => void }) => Promise<string>;
+  complete: (prompt: string, opts: { signal?: AbortSignal; json: boolean; maxTokens?: number; onText?: (t: string) => void; timing?: AiTiming }) => Promise<string>;
 }
 
 export type Driver = NativeDriver | HostedDriver | TextDriver;
@@ -73,6 +80,8 @@ export interface RunInput {
   maxRounds?: number;
   sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   limiter?: RateLimiter;
+  /** Timing for the progress line; one is started (and finished) by runAgent when not given. */
+  timing?: AiTiming;
 }
 
 export interface ToolCallRecord {
@@ -95,6 +104,10 @@ export interface RunResult {
 }
 
 export const MAX_ROUNDS = 8;
+/** Largest primed tool result put in the system prompt. */
+export const PRIME_MAX_BYTES = 6_000;
+export const PRIME_HEADER = 'Already looked up for this question';
+const BATCH_NOTE = 'Speed: when you need several tools that do not depend on each other, call them together in one turn rather than one per turn.';
 const LIMIT_NOTE =
   'You have used all the tool steps available for this question. Do not call tools now: answer with what you found, say what you could not check, and suggest how to continue.';
 
@@ -115,7 +128,10 @@ class Runner {
   artifacts: Artifact[] = [];
   toolCalls: ToolCallRecord[] = [];
   requests = 0;
-  constructor(private input: RunInput) {}
+  constructor(
+    private input: RunInput,
+    readonly timing?: AiTiming,
+  ) {}
 
   get signal() {
     return this.input.signal;
@@ -154,7 +170,9 @@ class Runner {
         const wait = lim.waitMs();
         if (wait > 0) {
           const s = this.step({ kind: 'wait', label: `Pausing ${Math.ceil(wait / 1000)} s to stay within the free tier's limit of ${lim.perMinute} requests a minute`, status: 'running' });
+          this.timing?.setStage('limit', wait);
           await this.sleep(wait);
+          this.timing?.setStage('waiting');
           this.step({ ...s, status: 'done' });
         }
         lim.record();
@@ -164,11 +182,14 @@ class Runner {
         return await fn();
       } catch (e) {
         if (this.signal?.aborted) throw cancelledError();
-        const err = e as ToolAiError;
-        if (err?.code === 'rate_limited' && !err.daily && attempt === 0) {
+        const err = e as ToolAiError & { waited?: boolean };
+        // (Gemini requests already waited out a short per-minute limit once, with a countdown: do not wait again.)
+        if (err?.code === 'rate_limited' && !err.daily && attempt === 0 && !err.waited) {
           const ms = Math.min(60_000, Math.max(2_000, err.retryAfterMs ?? 20_000));
           const s = this.step({ kind: 'wait', label: `The AI service is busy or the free per-minute allowance is used up. Waiting ${Math.ceil(ms / 1000)} s, then trying once more`, status: 'running' });
+          this.timing?.setStage('limit', ms);
           await this.sleep(ms);
+          this.timing?.setStage('waiting');
           this.step({ ...s, status: 'done' });
           continue;
         }
@@ -302,6 +323,25 @@ export function fitMessages(system: string, msgs: ChatMessage[], maxBytes: numbe
 
 // ---------- native loop ----------
 
+/**
+ * Run the driver's primed tools (for example the dataset overview) before the first request and return
+ * a system-prompt section with their results, so the model can often answer or act in its first turn.
+ */
+async function primeContext(r: Runner, input: RunInput, driver: DriverBase): Promise<string> {
+  const names = (driver.prime ?? []).filter((n) => input.tools.some((t) => t.name === n));
+  if (!names.length) return '';
+  const parts: string[] = [];
+  for (const name of names) {
+    const before = r.toolCalls.length;
+    const text = await r.execute({ name, args: {} });
+    if (input.signal?.aborted) throw cancelledError();
+    if (r.toolCalls[before]?.ok === false) continue;
+    parts.push(`${name} (called for you):\n${trimToBytes(text, PRIME_MAX_BYTES)}`);
+  }
+  if (!parts.length) return '';
+  return `\n\n## ${PRIME_HEADER}\nThe dataset overview below was fetched for you with the listed tool. Do not call it again unless you need other variables (search or offset).\n\n${parts.join('\n\n')}`;
+}
+
 async function runNative(r: Runner, input: RunInput, driver: NativeDriver): Promise<RunResult> {
   const maxRounds = input.maxRounds ?? MAX_ROUNDS;
   const specs = toolSpecs(input.tools);
@@ -309,10 +349,12 @@ async function runNative(r: Runner, input: RunInput, driver: NativeDriver): Prom
   let messages: ChatMessage[] = [...input.history, { role: 'user', text: input.user }];
   let rounds = 0;
   let limitReached = false;
+  const primed = await primeContext(r, input, driver);
+  const baseSystem = `${input.system}${primed}\n\n${BATCH_NOTE}`;
   for (;;) {
     const final = rounds >= maxRounds;
     if (final) limitReached = true;
-    const system = final ? `${input.system}\n\n${LIMIT_NOTE}` : input.system;
+    const system = final ? `${baseSystem}\n\n${LIMIT_NOTE}` : baseSystem;
     messages = fitMessages(system, messages, driver.budget.maxPromptBytes, toolsBytes);
     let streamed = '';
     const turn = await r.request(() =>
@@ -323,8 +365,10 @@ async function runNative(r: Runner, input: RunInput, driver: NativeDriver): Prom
         toolChoice: final ? 'none' : 'auto',
         signal: input.signal,
         maxTokens: driver.budget.maxOutputTokens,
+        timing: r.timing,
         onText: (t) => {
           streamed = t;
+          if (t) r.timing?.firstText();
           input.events?.onText?.(t);
         },
       }),
@@ -339,6 +383,8 @@ async function runNative(r: Runner, input: RunInput, driver: NativeDriver): Prom
       if (streamed) input.events?.onText?.('');
       messages.push({ role: 'assistant', text: turn.text, toolCalls: calls, raw: turn.raw });
       const found: Artifact[][] = calls.map(() => []);
+      r.timing?.mark('tools', { note: calls.map((c) => c.name).join(', ') });
+      r.timing?.setStage('tools');
       const results = await Promise.all(calls.map((c: ToolCall, i) => r.execute(c, found[i])));
       if (input.signal?.aborted) throw cancelledError();
       for (const list of found) for (const a of list) r.report(a);
@@ -411,6 +457,7 @@ async function runText(r: Runner, input: RunInput, driver: TextDriver): Promise<
         signal: input.signal,
         json: true,
         maxTokens: driver.budget.maxOutputTokens,
+        timing: r.timing,
         onText: (raw) => {
           const p = partialAnswer(raw);
           if (p !== null) input.events?.onText?.(p);
@@ -457,24 +504,33 @@ async function runText(r: Runner, input: RunInput, driver: TextDriver): Promise<
 
 /** Answer one user message, using tools as needed. Rejects AiUnavailableError (code 'cancelled' on Stop). */
 export async function runAgent(input: RunInput): Promise<RunResult> {
-  const r = new Runner(input);
   const d = input.driver;
+  const own = !input.timing;
+  const timing = input.timing ?? startAiTiming('assistant', d.name.replace(/-json$/, ''));
+  const r = new Runner(input, timing);
   try {
-    if (d.kind === 'hosted') return await runHosted(r, input, d);
-    if (d.kind === 'text') return await runText(r, input, d);
-    try {
-      return await runNative(r, input, d);
-    } catch (e) {
-      // The service cannot do tool calling (some local models): continue with the JSON protocol.
-      if (d.fallback && isToolsUnsupported(e) && !r.toolCalls.length) {
-        r.step({ kind: 'note', label: 'This model does not support tool calling; switching to a simpler way of using tools', status: 'done' });
-        return await runText(r, input, d.fallback());
-      }
-      throw e;
-    }
+    const res = await runDriver(r, input, d);
+    if (own) timing.finish(true);
+    return res;
   } catch (e) {
     for (const s of r.steps) if (s.status === 'running') r.step({ ...s, status: 'error', detail: input.signal?.aborted ? 'Stopped' : undefined });
-    if (input.signal?.aborted) throw cancelledError();
+    const err = input.signal?.aborted ? cancelledError() : e;
+    if (own) timing.finish(false, err as { code?: string });
+    throw err;
+  }
+}
+
+async function runDriver(r: Runner, input: RunInput, d: Driver): Promise<RunResult> {
+  if (d.kind === 'hosted') return await runHosted(r, input, d);
+  if (d.kind === 'text') return await runText(r, input, d);
+  try {
+    return await runNative(r, input, d);
+  } catch (e) {
+    // The service cannot do tool calling (some local models): continue with the JSON protocol.
+    if (d.fallback && isToolsUnsupported(e) && r.toolCalls.every((c) => d.prime?.includes(c.name))) {
+      r.step({ kind: 'note', label: 'This model does not support tool calling; switching to a simpler way of using tools', status: 'done' });
+      return await runText(r, input, d.fallback());
+    }
     throw e;
   }
 }

@@ -16,11 +16,11 @@ area: features/charts
 - [[scale.ts#arcPath|arcPath()]]
 - [[charts/common.tsx#fit|fit()]]
 - [[scale.ts#formatValue|formatValue()]]
-- [[charts/common.tsx#headerLayout|headerLayout()]]
 - [[charts/common.tsx#measureText|measureText()]]
 - [[scale.ts#pieAngles|pieAngles()]]
 - [[PieChart.tsx#pieDesc|pieDesc()]]
 - [[charts/common.tsx#seriesColor|seriesColor()]]
+- [[useHeaderLayout|useHeaderLayout()]]
 
 ## Renders
 - [[ChartHeader|<ChartHeader>]]

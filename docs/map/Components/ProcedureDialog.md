@@ -2,13 +2,13 @@
 id: "src/features/analysis/ProcedureDialog.tsx#ProcedureDialog"
 type: component
 file: src/features/analysis/ProcedureDialog.tsx
-line: 18
+line: 19
 area: features/analysis
 ---
 
 # <ProcedureDialog>
 
-*React component* · defined in [[ProcedureDialog.tsx]] (line 18) · area [[features - analysis|features/analysis]]
+*React component* · defined in [[ProcedureDialog.tsx]] (line 19) · area [[features - analysis|features/analysis]]
 
 - **Exported:** yes
 

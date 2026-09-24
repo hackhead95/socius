@@ -2,18 +2,19 @@
 id: "src/app/CommandPalette.tsx#useEntries"
 type: hook
 file: src/app/CommandPalette.tsx
-line: 72
+line: 75
 area: app
 ---
 
 # useEntries()
 
-*React hook* · defined in [[CommandPalette.tsx]] (line 72) · area [[Areas/app|app]]
+*React hook* · defined in [[CommandPalette.tsx]] (line 75) · area [[Areas/app|app]]
 
 > Everything searchable right now.
 
 ## Calls
 - [[search.ts#commandsFromMenus|commandsFromMenus()]]
+- [[format-date.ts#formatTime|formatTime()]]
 - [[procedures/index.ts#getProcedure|getProcedure()]]
 - [[helpTopics.ts#helpTopicUrl|helpTopicUrl()]]
 - [[links.ts#openExternal|openExternal()]]

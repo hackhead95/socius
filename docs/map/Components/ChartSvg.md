@@ -2,13 +2,13 @@
 id: "src/features/charts/common.tsx#ChartSvg"
 type: component
 file: src/features/charts/common.tsx
-line: 122
+line: 138
 area: features/charts
 ---
 
 # <ChartSvg>
 
-*React component* · defined in [[charts/common.tsx]] (line 122) · area [[features - charts|features/charts]]
+*React component* · defined in [[charts/common.tsx]] (line 138) · area [[features - charts|features/charts]]
 
 > The outer SVG with accessible name and description, and a surface-coloured background.
 

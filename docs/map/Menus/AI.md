@@ -18,7 +18,7 @@ area: app
 - [[Summarise a code|AI > Summarise a code...]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

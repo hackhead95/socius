@@ -6,17 +6,18 @@ area: procedures
 
 # Area: procedures
 
-21 files, 8083 lines.
+22 files, 8363 lines.
 
 ## Depends on (module imports)
-- [[core]]: 65
+- [[core]]: 69
 - [[lib - stats|lib/stats]]: 24
 - [[features - output|features/output]]: 1
 
 ## Used by areas
-- [[Areas/app|app]]: 2
+- [[Areas/app|app]]: 3
+- [[features - analysis|features/analysis]]: 2
 - [[lib - assistant|lib/assistant]]: 2
-- [[features - analysis|features/analysis]]: 1
+- [[features - coding|features/coding]]: 1
 - [[features - output|features/output]]: 1
 
 ## Files
@@ -41,3 +42,4 @@ area: procedures
 - [[nomreg.ts]]: Multinomial Logistic Regression (SPSS NOMREG): baseline-category logit for an unordered outcome.
 - [[plum.ts]]: Ordinal Regression (SPSS PLUM, logit link): proportional-odds cumulative logit model. SPSS parameterisation: logit P(Y <= j) = threshold_j -…
 - [[models/reliability.ts]]: Reliability Analysis (SPSS RELIABILITY /MODEL=ALPHA) with McDonald's omega.
+- [[procedures/text.ts]]: Shared, safe building blocks for the words procedures write (interpretations, APA sentences, notes) and for the confidence-level option. Eve…

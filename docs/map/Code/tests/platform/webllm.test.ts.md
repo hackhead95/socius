@@ -60,7 +60,7 @@ area: tests
 - [[ai-webllm.ts#suggestSmallerModel|suggestSmallerModel()]]
 
 ## Uses
-- [[ai-webllm.ts#WEBLLM_MODELS|WEBLLM_MODELS]]
+- [[ai-webllm-models.ts#WEBLLM_MODELS|WEBLLM_MODELS]]
 
 ## Writes
 - [[provider|aiSettings.provider]] · setter

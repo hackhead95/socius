@@ -2,13 +2,13 @@
 id: "store-key:useStore.outputUndo"
 type: store-key
 file: src/core/store.ts
-line: 84
+line: 86
 area: core
 ---
 
 # useStore.outputUndo
 
-*Store state key* · defined in [[store.ts]] (line 84) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 86) · area [[core]]
 
 > Results deleted from Output (newest last), for Undo in the Output tab; and deletions undone, for Redo.
 

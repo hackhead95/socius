@@ -112,7 +112,7 @@ function DataViewInner({ ds }: { ds: Dataset }) {
 
   const onClear = (r: Rect) => {
     if (r.r0 >= ds.nCases || r.c0 >= nVars) return;
-    mutate((d) => clearRange(d, r.r0, r.r1, r.c0, r.c1));
+    mutate((d) => clearRange(d, r.r0, r.r1, r.c0, r.c1), { label: 'Clear cells' });
   };
 
   const copyText = (r: Rect): string => {
@@ -157,7 +157,7 @@ function DataViewInner({ ds }: { ds: Dataset }) {
     }
     const rep = writeTexts(ds, writes);
     const named = headings ? nameVariablesFromHeader(rep.dataset, 0, headings) : rep.dataset;
-    mutate(() => named);
+    mutate(() => named, { label: 'Paste' });
     if (headings) toast('The first row was used as variable names.', 'info');
     const parts = [`Pasted ${writes.length.toLocaleString('en-US')} value${writes.length === 1 ? '' : 's'}`];
     if (rep.addedCases) parts.push(`added ${rep.addedCases} case${rep.addedCases === 1 ? '' : 's'}`);
@@ -165,7 +165,7 @@ function DataViewInner({ ds }: { ds: Dataset }) {
     toast(parts.join(', ') + '.', 'success');
     if (rep.widened.length) toast(`Widened ${rep.widened.join(', ')} so the pasted text fits.`, 'info');
     if (rep.rejected) toast(rep.rejected === 1 ? '1 pasted value did not fit its variable (for example text in a numeric variable) and that cell was left unchanged.' : `${rep.rejected.toLocaleString('en-US')} pasted values did not fit their variables (for example text in a numeric variable) and those cells were left unchanged.`, 'warning');
-    const lastR = r.r0 + grid.length - 1, lastC = Math.min(r.c0, nVars) + Math.max(...grid.map((g) => g.length)) - 1;
+    const lastR = r.r0 + grid.length - 1, lastC = Math.min(r.c0, nVars) + grid.reduce((m, g) => Math.max(m, g.length), 0) - 1;
     setSelState({ r: lastR, c: lastC, ar: r.r0, ac: Math.min(r.c0, nVars) });
   };
 
@@ -205,7 +205,7 @@ function DataViewInner({ ds }: { ds: Dataset }) {
   const sortBy = (dir: 'asc' | 'desc') => {
     if (!curVar) return;
     const res = sortCases(ds, [{ varId: curVar.id, dir }]);
-    mutate(() => res.dataset);
+    mutate(() => res.dataset, { label: 'Sort cases' });
     useStore.getState().addOutput(transformLogItem(res, ds.name), { focus: false });
     toast(res.summary, 'success');
   };
@@ -289,7 +289,12 @@ function DataViewInner({ ds }: { ds: Dataset }) {
           <Icon name="goto" size={15} />
         </button>
         <span className="spacer" />
-        <span className="toolbar-status num" aria-live="polite">
+        <span
+          className="toolbar-status num"
+          aria-live="polite"
+          // Narrow windows shorten the status with "..."; the whole of it is in the tooltip.
+          title={`${sel.r < ds.nCases ? `Case ${(sel.r + 1).toLocaleString('en-US')} of ${ds.nCases.toLocaleString('en-US')}` : 'New case'}${curVar ? ` · ${curVar.name}${curVar.label ? ` ${curVar.label}` : ''}` : ''}${ds.filterVarId ? ` · ${nActive.toLocaleString('en-US')} selected` : ''}`}
+        >
           {sel.r < ds.nCases ? `Case ${(sel.r + 1).toLocaleString('en-US')} of ${ds.nCases.toLocaleString('en-US')}` : 'New case'}
           {curVar ? (
             <>

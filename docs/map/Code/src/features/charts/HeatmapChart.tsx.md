@@ -44,6 +44,6 @@ fmtCell() (line 30)
 ### HeatmapChart
 *component* · line 52 · exported · note: [[HeatmapChart|<HeatmapChart>]]
 - Renders: [[ChartHeader|<ChartHeader>]], [[ChartSvg|<ChartSvg>]], [[TipRow|<TipRow>]]
-- Calls: [[HeatmapChart.tsx#heatFill|heatFill()]], [[HeatmapChart.tsx#heatIntensity|heatIntensity()]], [[HeatmapChart.tsx#heatText|heatText()]], [[HeatmapChart.tsx#heatmapDesc|heatmapDesc()]], [[HeatmapChart.tsx]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#headerLayout|headerLayout()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[useUid|useUid()]]
+- Calls: [[HeatmapChart.tsx#heatFill|heatFill()]], [[HeatmapChart.tsx#heatIntensity|heatIntensity()]], [[HeatmapChart.tsx#heatText|heatText()]], [[HeatmapChart.tsx#heatmapDesc|heatmapDesc()]], [[HeatmapChart.tsx]], [[charts/common.tsx#fit|fit()]], [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]], [[useHeaderLayout|useHeaderLayout()]], [[useUid|useUid()]]
 - Uses: [[charts/common.tsx#FS_TICK|FS_TICK]]
 - Rendered by: [[ChartBody|<ChartBody>]]

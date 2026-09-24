@@ -1,4 +1,5 @@
 // Visual Binning: turn a scale variable into ordered groups (equal width, equal count, custom cutpoints).
+// Group labels read "18 to 29" (never "18-29", which is ambiguous for negative numbers: "-20--10").
 
 import type { Dataset, ValueLabel, Variable } from '../../core/types';
 import { activeCaseMask, isMissingValue, validateVarName } from '../../core/data';
@@ -66,7 +67,11 @@ export function computeCutpoints(ds: Dataset, v: Variable, method: BinMethod): n
       break;
     }
     case 'widthFrom': {
-      if (!(method.width > 0)) throw new BinError('The interval width must be greater than zero.');
+      if (!Number.isFinite(method.first)) throw new BinError('Enter the first cutpoint as a number.');
+      if (!(method.width > 0 && Number.isFinite(method.width))) throw new BinError('The interval width must be a number greater than zero.');
+      // Every case would land in one group: no cutpoint falls below the largest value.
+      if (method.first >= st.max)
+        throw new BinError(`The first cutpoint (${fmtCut(method.first)}) is not below the largest value of ${v.name} (${fmtCut(st.max)}), so every case would fall into one group. Choose a first cutpoint below ${fmtCut(st.max)}.`);
       for (let c = method.first; c < st.max && cuts.length < 200; c += method.width) cuts.push(Number(c.toPrecision(10)));
       if (cuts.length >= 200) throw new BinError('That would make more than 200 groups. Use a wider interval.');
       break;
@@ -79,7 +84,8 @@ export function computeCutpoints(ds: Dataset, v: Variable, method: BinMethod): n
       break;
     }
     case 'custom':
-      cuts = method.cuts.filter((c) => Number.isFinite(c));
+      if (method.cuts.some((c) => !Number.isFinite(c))) throw new BinError('Cutpoints must be numbers separated by commas, for example 29, 44, 64.');
+      cuts = method.cuts.slice();
       if (!cuts.length) throw new BinError('Enter at least one cutpoint.');
       break;
   }
@@ -101,12 +107,27 @@ export function binOf(x: number, cuts: number[], upperIncluded = true): number {
   return lo + 1;
 }
 
-function fmtCut(x: number): string {
-  return Number.isInteger(x) ? String(x) : String(Number(x.toPrecision(6)));
+function fmtCut(x: number, digits = 6): string {
+  return Number.isInteger(x) ? String(x) : String(Number(x.toPrecision(digits)));
 }
 
-/** Readable labels: "18-29", "30-44", "65+" for whole numbers; "<= 2.5", "2.5-5", "> 5" otherwise. */
+/**
+ * Significant digits that tell every cutpoint apart (6 usually; more when cutpoints lie very close
+ * together, so two groups never get the same label).
+ */
+function cutDigits(cuts: number[]): number {
+  for (let d = 6; d < 17; d++) if (new Set(cuts.map((c) => fmtCut(c, d))).size === new Set(cuts).size) return d;
+  return 17;
+}
+
+/** Readable labels: "18 to 29", "30 to 44", "65+" for whole numbers; "<= 2.5", "2.5 to 5", "> 5" otherwise. */
 export function binLabels(cuts: number[], dataMin: number, integerData: boolean, upperIncluded = true): string[] {
+  // No cutpoint: one group holding every value (never read cuts[0] of an empty list).
+  if (!cuts.length) return [Number.isFinite(dataMin) ? `${fmtCut(dataMin)}+` : 'All values'];
+  const digits = cutDigits(cuts);
+  const f = (x: number) => fmtCut(x, digits);
+  /** "lo to hi": unambiguous for negative numbers too ("-20 to -10", never "-20--10"). */
+  const span = (lo: number, hi: number) => `${f(lo)} to ${f(hi)}`;
   const k = cuts.length + 1;
   const labels: string[] = [];
   const ints = integerData && cuts.every(Number.isInteger);
@@ -115,13 +136,13 @@ export function binLabels(cuts: number[], dataMin: number, integerData: boolean,
     if (ints) {
       const lo = first ? dataMin : upperIncluded ? cuts[j - 1] + 1 : cuts[j - 1];
       const hi = last ? Infinity : upperIncluded ? cuts[j] : cuts[j] - 1;
-      if (last) labels.push(`${fmtCut(lo)}+`);
-      else if (first && dataMin > hi) labels.push(`Up to ${fmtCut(hi)}`);
-      else labels.push(lo === hi ? fmtCut(lo) : `${fmtCut(lo)}-${fmtCut(hi)}`);
+      if (last) labels.push(`${f(lo)}+`);
+      else if (first && dataMin > hi) labels.push(`Up to ${f(hi)}`);
+      else labels.push(lo === hi ? f(lo) : span(lo, hi));
     } else if (upperIncluded) {
-      labels.push(first ? `<= ${fmtCut(cuts[0])}` : last ? `> ${fmtCut(cuts[j - 1])}` : `${fmtCut(cuts[j - 1])}-${fmtCut(cuts[j])}`);
+      labels.push(first ? `<= ${f(cuts[0])}` : last ? `> ${f(cuts[j - 1])}` : span(cuts[j - 1], cuts[j]));
     } else {
-      labels.push(first ? `< ${fmtCut(cuts[0])}` : last ? `>= ${fmtCut(cuts[j - 1])}` : `${fmtCut(cuts[j - 1])}-${fmtCut(cuts[j])}`);
+      labels.push(first ? `< ${f(cuts[0])}` : last ? `>= ${f(cuts[j - 1])}` : span(cuts[j - 1], cuts[j]));
     }
   }
   return labels;

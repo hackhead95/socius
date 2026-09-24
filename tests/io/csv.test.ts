@@ -77,7 +77,8 @@ describe('CSV import', () => {
       '4,-2,x,2024-02-29,2024-02-29 23:59:59,null,1e3',
     ].join('\n');
     const r = await importFile('survey.csv', enc(text));
-    expect(r.warnings).toEqual([]);
+    // A column of nothing but missing words becomes an empty numeric column; the warning says so.
+    expect(r.warnings).toEqual(['Read as numbers: missing_mix ("NA", "N/A", "." and others became system-missing in 4 cases). To keep a column exactly as written, tick "Keep as text" for it in the import preview.']);
     expect(r.dataset.name).toBe('survey');
     expect(r.dataset.source).toEqual({ kind: 'csv', fileName: 'survey.csv', encoding: 'utf-8' });
     const score = col(r, 'score');
@@ -149,7 +150,8 @@ describe('CSV import', () => {
     expect(col(r, 'city').data).toEqual(['Delhi', 'Mumbai', 'NA']);
     const w = r.warnings.join('\n');
     expect(w).toMatch(/income holds numbers written with thousands separators.*change the type to Numeric/);
-    expect(w).toMatch(/"NA", "n\/a" or "\." were read as missing values in age\./);
+    // FZ-18 (intended, with warning): the warning names the column and says how its text changed.
+    expect(w).toMatch(/Read as numbers: age \("n\/a", "\." became system-missing in 2 cases\)\. To keep a column exactly as written, tick "Keep as text"/);
     const clean = await importFile('c.csv', enc('a,b\n1,x\n,y\n'));
     expect(clean.warnings).toEqual([]);
   });

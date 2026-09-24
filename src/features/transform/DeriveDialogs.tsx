@@ -40,7 +40,7 @@ export function AutoRecodeDialog({ ds, onClose }: { ds: Dataset; onClose: () => 
   const [names, setNames] = useSuggestedNames(ds, ids, (v) => `${v.name}_n`);
   const run = () =>
     tryRun(() => {
-      applyTransform(autoRecode(ds, { items: ids.map((id) => ({ sourceId: id, name: names[id] ?? '' })), descending: desc }));
+      applyTransform(autoRecode(ds, { items: ids.map((id) => ({ sourceId: id, name: names[id] ?? '' })), descending: desc }), 'Automatic recode');
       onClose();
     }, setError);
   return (
@@ -91,7 +91,7 @@ export function ReverseDialog({ ds, onClose }: { ds: Dataset; onClose: () => voi
     tryRun(() => {
       const range = override ? { min: Number(min), max: Number(max) } : undefined;
       if (range && !(Number.isFinite(range.min) && Number.isFinite(range.max) && range.min < range.max)) throw new Error('Enter a lowest and highest scale point, lowest first.');
-      applyTransform(reverseCode(ds, { varIds: ids, mode, suffix: suffix.trim() || '_r', range }));
+      applyTransform(reverseCode(ds, { varIds: ids, mode, suffix: suffix.trim() || '_r', range }), 'Reverse-code items');
       onClose();
     }, setError);
   return (
@@ -168,7 +168,7 @@ export function ScaleDialog({ ds, onClose }: { ds: Dataset; onClose: () => void 
     tryRun(() => {
       const res = createScale(ds, { itemIds: ids, method, minValid: effMin, name, label: label.trim() || undefined });
       // Keep the reliability estimate in the output log next to the syntax.
-      applyTransform(alpha && /alpha/.test(alpha.text) ? { ...res, summary: `${res.summary} ${alpha.text}` } : res);
+      applyTransform(alpha && /alpha/.test(alpha.text) ? { ...res, summary: `${res.summary} ${alpha.text}` } : res, `Create scale ${name.trim()}`);
       onClose();
     }, setError);
 
@@ -210,7 +210,7 @@ export function StandardizeDialog({ ds, onClose }: { ds: Dataset; onClose: () =>
   const [error, setError] = useState<string | null>(null);
   const run = () =>
     tryRun(() => {
-      applyTransform(standardize(ds, ids));
+      applyTransform(standardize(ds, ids), 'Standardize (z-scores)');
       onClose();
     }, setError);
   return (
@@ -247,7 +247,7 @@ export function CountDialog({ ds, onClose }: { ds: Dataset; onClose: () => void 
   };
   const run = () =>
     tryRun(() => {
-      applyTransform(countValues(ds, { varIds: ids, values, name, label: label.trim() || undefined }));
+      applyTransform(countValues(ds, { varIds: ids, values, name, label: label.trim() || undefined }), 'Count values within cases');
       onClose();
     }, setError);
   return (
@@ -291,7 +291,7 @@ export function RankDialog({ ds, onClose }: { ds: Dataset; onClose: () => void }
   const [error, setError] = useState<string | null>(null);
   const run = () =>
     tryRun(() => {
-      applyTransform(rankCases(ds, { varIds: ids, order, ties, type, ntiles: Number(k) }));
+      applyTransform(rankCases(ds, { varIds: ids, order, ties, type, ntiles: Number(k) }), 'Rank cases');
       onClose();
     }, setError);
   return (

@@ -101,7 +101,7 @@ export function AutoCodeDialog(props: { onClose: () => void }) {
               return (
                 <button key={n.code.id} role="option" aria-selected={codeId === n.code.id} className={`cw-autocode-code ${codeId === n.code.id ? 'is-active' : ''}`} style={{ paddingLeft: 8 + n.depth * 12 }} onClick={() => setCodeId(n.code.id)}>
                   <Swatch color={n.code.color} />
-                  <span className="cw-codename-text">{n.code.name}</span>
+                  <span className="cw-codename-text" title={n.code.name}>{n.code.name}</span>
                   {k ? <span className="badge badge-accent">{k}</span> : null}
                 </button>
               );

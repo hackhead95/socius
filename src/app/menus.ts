@@ -4,19 +4,19 @@
 // settings live only in the AI menu; switching views lives only in the View menu. Toolbars, the top
 // bar and set-up prompts may mirror a command where the user is working, with the same wording.
 // tests/app/navigation-audit.test.ts checks this.
-import { useStore } from '../core/store';
+import { useStore, type MainTab } from '../core/store';
 import type { ProcedureMenu } from '../core/procedure';
 import { procedures } from '../procedures';
 import { codingMenuItems } from '../features/coding/menu';
 import type { MenuItem } from '../ui/Menu';
-import { useUi, type ThemePref } from './ui-store';
+import { isNarrow, useNarrow, useUi, type ThemePref } from './ui-store';
 import {
   exportCodebook, exportCsvFile, exportSavFile, exportXlsxFile, loadSample, newDataset, openDataFile, openProjectFile, saveProject, startFresh,
 } from '../features/project/fileActions';
 import { samples } from '../samples';
 import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { modKey } from './shortcuts';
-import { nothingTo, runRedo, runUndo, useUndoRedo } from './undo';
+import { nothingTo, runRedo, runUndo, useUndoRedo, type UndoStep } from './undo';
 import { GUIDE_URL, openExternal } from './links';
 import { openAiSettings } from '../features/ai/hooks';
 import { AI_FEATURES, runAiFeature } from '../features/ai/features';
@@ -29,10 +29,29 @@ export interface TopMenu {
   items: MenuItem[];
 }
 
-const NEED_DATA = 'Open or create a dataset first';
+export const NEED_DATA = 'Open or create a dataset first';
 
 const ANALYZE_ORDER: ProcedureMenu[] = ['Descriptive Statistics', 'Compare Means', 'Correlate', 'Regression', 'Nonparametric Tests', 'Scale', 'Dimension Reduction'];
 
+/** Everything the menus depend on (enabled items, check marks, labels). */
+export interface MenuState {
+  hasData: boolean;
+  hasCases: boolean;
+  /** What Edit > Undo and Redo would do in the current tab (null: nothing). */
+  undo: UndoStep | null;
+  redo: UndoStep | null;
+  filterOn: boolean;
+  weightOn: boolean;
+  showLabels: boolean;
+  tab: MainTab;
+  nOutputs: number;
+  theme: ThemePref;
+  unseenErrors: number;
+  sidebarOpen: boolean;
+  currentVarId: string | null;
+}
+
+/** The menus, kept up to date (menubar, phone menu sheet, search palette). */
 export function useMenus(): TopMenu[] {
   const hasData = useStore((s) => !!s.dataset);
   const hasCases = useStore((s) => (s.dataset?.nCases ?? 0) > 0);
@@ -45,8 +64,27 @@ export function useMenus(): TopMenu[] {
   const nOutputs = useStore((s) => s.outputs.length);
   const theme = useUi((s) => s.theme);
   const unseenErrors = useUnseenErrors();
-  const sidebarOpen = useUi((s) => s.sidebarOpen);
+  // Below 900 px the variable list is a drawer: the check mark says whether it is showing.
+  const narrow = useNarrow();
+  const sidebarOpen = useUi((s) => (narrow ? s.drawerOpen : s.sidebarOpen));
   const currentVarId = useUi((s) => s.currentVarId);
+  return buildMenus({ hasData, hasCases, undo, redo, filterOn, weightOn, showLabels, tab, nOutputs, theme, unseenErrors, sidebarOpen, currentVarId });
+}
+
+/**
+ * Every command, whatever is open: data with cases, filter and weight on, some output. For knowledge
+ * about the menus (the Socius assistant), not for display: nothing is disabled or checked.
+ */
+export function allMenus(): TopMenu[] {
+  return buildMenus({
+    hasData: true, hasCases: true, undo: null, redo: null, filterOn: true, weightOn: true, showLabels: false, tab: 'data', nOutputs: 1,
+    theme: 'system', unseenErrors: 0, sidebarOpen: false, currentVarId: null,
+  });
+}
+
+/** The menu model for a given state (pure apart from what the items do when chosen). */
+export function buildMenus(ms: MenuState): TopMenu[] {
+  const { hasData, hasCases, undo, redo, filterOn, weightOn, showLabels, tab, nOutputs, theme, unseenErrors, sidebarOpen, currentVarId } = ms;
   const st = useStore.getState;
   const mod = modKey();
 
@@ -129,7 +167,12 @@ export function useMenus(): TopMenu[] {
     { id: 'v-out', label: 'Output', checked: tab === 'output', onSelect: () => st().setTab('output') },
     { id: 'v-code', label: 'Text coding', checked: tab === 'coding', onSelect: () => st().setTab('coding') },
     { id: 'v-labels', label: 'Value labels in Data View', separator: true, checked: showLabels, onSelect: () => st().setShowValueLabels(!showLabels) },
-    { id: 'v-side', label: 'Variable list', checked: sidebarOpen, onSelect: () => useUi.getState().setSidebarOpen(!sidebarOpen) },
+    { id: 'v-side', label: 'Variable list', checked: sidebarOpen, onSelect: () => {
+        // The drawer (narrow windows) shows with the data: open Data View first when another view is showing.
+        const t = st().tab;
+        if (isNarrow() && !useUi.getState().drawerOpen && t !== 'data' && t !== 'variables' && st().dataset) st().setTab('data');
+        useUi.getState().toggleVariableList();
+      } },
     { id: 'v-theme', label: 'Theme', separator: true, children: [themeItem('system', 'Match my system'), themeItem('light', 'Light'), themeItem('dark', 'Dark')] },
   ];
 

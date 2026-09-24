@@ -17,8 +17,10 @@
   /* text */
   --text: #19202b;
   --text-2: #3d4757;
-  --muted: #5d6878;
-  --faint: #8a94a3;
+  /* Secondary text. Both pass WCAG AA (4.5:1) on every surface they are used on, including
+     --surface-3, --accent-soft and --grid-sel; --faint is the lightest text colour allowed. */
+  --muted: #525d6d;
+  --faint: #5a6576;
 
   /* accent: ink blue */
   --accent: #2c4a9e;
@@ -103,8 +105,8 @@
     --border-strong: #434d5d;
     --text: #e5e9ef;
     --text-2: #c3cad5;
-    --muted: #97a1b0;
-    --faint: #6d7787;
+    --muted: #a3adbb;
+    --faint: #949eac;
     --accent: #8fa9f2;
     --accent-hover: #a9bdf6;
     --accent-soft: #232f4f;
@@ -150,8 +152,8 @@
   --border-strong: #434d5d;
   --text: #e5e9ef;
   --text-2: #c3cad5;
-  --muted: #97a1b0;
-  --faint: #6d7787;
+  --muted: #a3adbb;
+  --faint: #949eac;
   --accent: #8fa9f2;
   --accent-hover: #a9bdf6;
   --accent-soft: #232f4f;

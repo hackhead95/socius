@@ -24,9 +24,13 @@ area: features/coding
 - [[uiStore.ts]] · value
 - [[Modal.tsx]] · value
 
+## Tested by
+- [[ui-fixes.test.tsx]] · import
+
 ## Imported by
 - [[DialogHost.tsx]] · value
 - [[CodingWorkspace.tsx]] · value
+- [[ui-fixes.test.tsx]] · value
 
 ## Private helpers
 ANALYSE (line 16)
@@ -49,4 +53,4 @@ ANALYSE (line 16)
 ### CodingDialog
 *component* · line 73 · exported · note: [[CodingDialog|<CodingDialog>]]
 - Renders: [[AiCodebookDialog|<AiCodebookDialog>]], [[AiGate|<AiGate>]], [[AiSuggestDialog|<AiSuggestDialog>]], [[AutoCodeDialog|<AutoCodeDialog>]], [[CodeEditDialog|<CodeEditDialog>]], [[CodersDialog|<CodersDialog>]], [[CodingDialog.tsx#ViewSwitch|ViewSwitch()]], [[DocEditDialog|<DocEditDialog>]], [[ExportDialog|<ExportDialog>]], [[ExportToDatasetDialog|<ExportToDatasetDialog>]], [[ImportDialog (features-coding-dialogs-ImportDialog)|<ImportDialog>]], [[MergeCodeDialog|<MergeCodeDialog>]]
-- Rendered by: [[CodingWorkspace|<CodingWorkspace>]], [[DialogHost|<DialogHost>]]
+- Rendered by: [[CodingWorkspace|<CodingWorkspace>]], [[DialogHost|<DialogHost>]], [[ui-fixes.test.tsx]]

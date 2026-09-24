@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/core/frequencies.ts
 
-*Module* · area [[procedures]] · 408 lines
+*Module* · area [[procedures]] · 409 lines
 
 > Analyze > Descriptive Statistics > Frequencies (SPSS FREQUENCIES).
 
@@ -49,23 +49,23 @@ area: procedures
 - [[core/index.ts]] · value
 
 ## Private helpers
-collect() (line 41) · freqTableOut() (line 65) · STAT_KEYS (line 117) · statisticsTable() (line 132) · interpret() (line 224) · apaFor() (line 264)
+collect() (line 41) · freqTableOut() (line 65) · STAT_KEYS (line 117) · statisticsTable() (line 132) · interpret() (line 225) · apaFor() (line 265)
 
 ## Symbols
 
 ### chartFor
-*function* · line 199
+*function* · line 200
 - Calls: [[chartUtil.ts#histogram|histogram()]], [[core/common.ts#valueText|valueText()]], [[core/common.ts#vlabel|vlabel()]], [[util.ts#moments|moments()]]
 - Output: [[Charts/bar|bar]], [[Charts/histogram|histogram]], [[pie]]
 
 ### run
-*function* · line 276
+*function* · line 277
 - Calls: [[core/common.ts#caseNote|caseNote()]], [[core/common.ts#item|item()]], [[core/common.ts#optBool|optBool()]], [[core/common.ts#optStr|optStr()]], [[core/common.ts#parseNumberList|parseNumberList()]], [[core/common.ts#tableBlock|tableBlock()]], [[core/common.ts#text|text()]], [[core/common.ts#vars|vars()]], [[core/frequencies.ts#chartFor|chartFor()]], [[core/frequencies.ts]]
 - Uses: [[core/frequencies.ts]]
 - Output: [[Blocks/chart|chart]]
 
 ### frequencies
-*const* · line 333 · exported
+*const* · line 334 · exported
 - Calls: [[core/common.ts#parseNumberList|parseNumberList()]]
 - Uses: [[core/frequencies.ts#run|run()]]
 - Used in: [[core/index.ts]]

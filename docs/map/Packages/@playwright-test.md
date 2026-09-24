@@ -11,8 +11,13 @@ type: package
 - [[ai-check.spec.ts]] · value
 - [[ai-features.spec.ts]] · value
 - [[ai-local.spec.ts]] · value
+- [[ai-speed.spec.ts]] · value
 - [[ai.spec.ts]] · value
 - [[assistant.spec.ts]] · value
+- [[coding-output-fixes.spec.ts]] · value
+- [[commands-smoke-analyze.spec.ts]] · value
+- [[commands-smoke-app.spec.ts]] · value
+- [[commands-smoke-helpers.ts]] · value
 - [[data.spec.ts]] · value
 - [[define-properties.spec.ts]] · value
 - [[errorlog.spec.ts]] · value
@@ -24,3 +29,5 @@ type: package
 - [[shell-fixes.spec.ts]] · value
 - [[shell.spec.ts]] · value
 - [[subpath.spec.ts]] · value
+- [[transform-dialogs.spec.ts]] · value
+- [[ui-overlays-focus.spec.ts]] · value

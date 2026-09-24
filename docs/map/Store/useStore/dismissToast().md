@@ -2,13 +2,13 @@
 id: "store-action:useStore.dismissToast"
 type: store-action
 file: src/core/store.ts
-line: 138
+line: 140
 area: core
 ---
 
 # useStore.dismissToast()
 
-*Store action* · defined in [[store.ts]] (line 138) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 140) · area [[core]]
 
 - **Store:** useStore
 

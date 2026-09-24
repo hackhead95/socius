@@ -7,7 +7,7 @@ area: tests
 
 # tests/fuzz/lib/proc-harness.ts
 
-*Test helper* · area [[tests]] · 310 lines
+*Test helper* · area [[tests]] · 331 lines
 
 > Harness for fuzzing ProcedureDefs: option domains, slot assignment, one checked run, metamorphic comparisons (weights, filter, user-missing) and a shrinker that produces a minimal reproduction.
 
@@ -24,6 +24,8 @@ area: tests
 
 ## Imported by
 - [[proc-cases.ts]] · value
+- [[procedures-perf.fuzz.test.ts]] · value
+- [[procedures-text.fuzz.test.ts]] · value
 - [[procedures.fuzz.test.ts]] · value
 - [[replay.test.ts]] · value
 
@@ -35,7 +37,7 @@ area: tests
 - [[varUtils.ts]] · import
 
 ## Types
-SlotChoice (line 53) · RunOutcome (line 114) · CaseSpec (line 140)
+SlotChoice (line 53) · RunOutcome (line 134) · CaseSpec (line 160)
 
 ## Symbols
 
@@ -58,61 +60,66 @@ SlotChoice (line 53) · RunOutcome (line 114) · CaseSpec (line 140)
 > A random but UI-valid slot assignment (types respected, counts within min..max).
 - Used in: [[proc-cases.ts]], [[procedures.fuzz.test.ts]]
 
-### resolveOptions
+### assignTypical
 *function* · line 88 · exported
+> A realistic assignment (what a researcher would pick): measure-matching, well-behaved variables only.
+- Used in: [[procedures-perf.fuzz.test.ts]]
+
+### resolveOptions
+*function* · line 108 · exported
 > Resolve group-pair markers to concrete values from the data.
 - Calls: [[core/data.ts#distinctValues|distinctValues()]], [[procedure.ts#defaultOptions|defaultOptions()]]
-- Used in: [[proc-cases.ts]], [[procedures.fuzz.test.ts]]
+- Used in: [[proc-cases.ts]], [[procedures-perf.fuzz.test.ts]], [[procedures.fuzz.test.ts]]
 
 ### runChecked
-*function* · line 123 · exported
+*function* · line 143 · exported
 > Validate like the dialog, then run; never throws.
 - Calls: [[varUtils.ts#validate|validate()]]
-- Used in: [[procedures.fuzz.test.ts]], [[replay.test.ts]]
+- Used in: [[procedures-perf.fuzz.test.ts]], [[procedures-text.fuzz.test.ts]], [[procedures.fuzz.test.ts]], [[replay.test.ts]]
 
 ### checkRun
-*function* · line 149 · exported
+*function* · line 169 · exported
 > Invariant failures for one run (not metamorphic).
 - Calls: [[gen-data.ts#cloneDataset|cloneDataset()]], [[gen-data.ts#deepDiff|deepDiff()]], [[invariants.ts#badWords|badWords()]], [[invariants.ts#errorProblems|errorProblems()]], [[invariants.ts#outputProblems|outputProblems()]], [[proc-harness.ts#runChecked|runChecked()]]
 - Used in: [[procedures.fuzz.test.ts]]
 
 ### checkWeightReplication
-*function* · line 178 · exported
+*function* · line 198 · exported
 > Integer weights must equal replicated cases.
 - Calls: [[gen-data.ts#replicateByWeight|replicateByWeight()]], [[invariants.ts#compareTables|compareTables()]], [[proc-harness.ts#runChecked|runChecked()]]
 - Used in: [[procedures.fuzz.test.ts]]
 
 ### checkFilterSubset
-*function* · line 192 · exported
+*function* · line 213 · exported
 > Filtering must equal physically removing the filtered-out cases.
 - Calls: [[gen-data.ts#subsetRows|subsetRows()]], [[invariants.ts#compareTables|compareTables()]], [[proc-harness.ts#runChecked|runChecked()]]
 - Used in: [[procedures.fuzz.test.ts]]
 
 ### userMissingAsSysmis
-*function* · line 207 · exported
+*function* · line 228 · exported
 > Declared user-missing numeric codes must behave exactly like system-missing.
 - Calls: [[core/data.ts#isUserMissing|isUserMissing()]]
 - Used in: [[replay.test.ts]]
 
 ### checkUserMissing
-*function* · line 220 · exported
+*function* · line 241 · exported
 - Calls: [[gen-data.ts#deepDiff|deepDiff()]], [[invariants.ts#compareTables|compareTables()]], [[proc-harness.ts#runChecked|runChecked()]], [[proc-harness.ts#userMissingAsSysmis|userMissingAsSysmis()]]
 - Used in: [[procedures.fuzz.test.ts]]
 
 ### shrinkCase
-*function* · line 236 · exported
+*function* · line 257 · exported
 > Minimise a failing case: drop unused variables, reset options to defaults, drop cases. `fails` must return true while the (same) failure still occurs.
 - Calls: [[gen-data.ts#keepVariables|keepVariables()]], [[gen-data.ts#subsetRows|subsetRows()]], [[procedure.ts#defaultOptions|defaultOptions()]]
 - Used in: [[procedures.fuzz.test.ts]]
 
 ### reproCode
-*function* · line 290 · exported
+*function* · line 311 · exported
 > Code that reproduces a case (paste into a vitest file).
 - Calls: [[gen-data.ts#datasetToCode|datasetToCode()]], [[procedure.ts#defaultOptions|defaultOptions()]]
 - Used in: [[procedures.fuzz.test.ts]], [[replay.test.ts]]
 
 ### sameFailure
-*function* · line 304 · exported
+*function* · line 325 · exported
 > Helper to know whether a list of check failures still contains the given signature.
 - Calls: [[findings.ts#signature|signature()]]
 - Used in: [[procedures.fuzz.test.ts]]

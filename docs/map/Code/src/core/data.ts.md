@@ -15,6 +15,7 @@ area: core
 - [[core/types.ts]] · type-only
 
 ## Tested by
+- [[commands-smoke-analyze.spec.ts]] · import
 - [[gen-expr.ts]] · import
 - [[proc-harness.ts]] · import
 - [[procedures-oracle.fuzz.test.ts]] · import
@@ -24,6 +25,7 @@ area: core
 - [[transforms.test.ts]] · import
 
 ## Imported by
+- [[commands-smoke-analyze.spec.ts]] · value
 - [[TopBar.tsx]] · value
 - [[ProcedureDialog.tsx]] · value
 - [[starters.ts]] · value
@@ -73,6 +75,7 @@ area: core
 - [[linear.ts]] · value
 - [[nomreg.ts]] · value
 - [[plum.ts]] · value
+- [[procedures/text.ts]] · value
 - [[gen-expr.ts]] · value
 - [[proc-harness.ts]] · value
 - [[procedures-oracle.fuzz.test.ts]] · value
@@ -118,7 +121,7 @@ varName() (line 37) · SPSS_EPOCH_MS (line 176) · MONTHS (line 190) · pad() (l
 *function* · line 55 · exported
 > True if value is system-missing (numeric NaN) or user-missing. Empty strings are NOT missing unless declared.
 - Calls: [[core/data.ts#isUserMissing|isUserMissing()]]
-- Used in: [[find.ts]], [[DeriveDialogs.tsx]], [[transform.ts]], [[survey.ts]], [[aggregate.ts]], [[binning.ts]], [[derive.ts]], [[procedures-oracle.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]], [[sample-oracle.test.ts]]
+- Used in: [[commands-smoke-analyze.spec.ts]], [[find.ts]], [[DeriveDialogs.tsx]], [[transform.ts]], [[survey.ts]], [[aggregate.ts]], [[binning.ts]], [[derive.ts]], [[procedures-oracle.fuzz.test.ts]], [[transforms-ops.fuzz.test.ts]], [[sample-oracle.test.ts]]
 
 ### valueLabelFor
 *function* · line 61 · exported
@@ -129,13 +132,13 @@ varName() (line 37) · SPSS_EPOCH_MS (line 176) · MONTHS (line 190) · pad() (l
 *function* · line 75 · exported
 > Cases that are "in play" for analysis: passes the dataset filter (filterVarId: value non-zero and not missing). Returns a Uint8Array mask of length nCases (1 = include).
 - Calls: [[core/data.ts#isUserMissing|isUserMissing()]]
-- Used in: [[TopBar.tsx]], [[DataGrid.tsx]], [[DataView.tsx]], [[find.ts]], [[DeriveDialogs.tsx]], [[tools/analysis.ts]], [[tools/data.ts]], [[transform.ts]], [[aggregate.ts]], [[binning.ts]], [[derive.ts]], [[core/common.ts]], [[correlations.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[transforms-ops.fuzz.test.ts]], [[transforms.test.ts]]
+- Used in: [[TopBar.tsx]], [[DataGrid.tsx]], [[DataView.tsx]], [[find.ts]], [[DeriveDialogs.tsx]], [[tools/analysis.ts]], [[tools/data.ts]], [[transform.ts]], [[aggregate.ts]], [[binning.ts]], [[derive.ts]], [[core/common.ts]], [[correlations.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[nomreg.ts]], [[plum.ts]], [[transforms-ops.fuzz.test.ts]], [[transforms.test.ts]]
 
 ### caseWeights
 *function* · line 94 · exported
 > Case weights (length nCases). All 1 when no weight variable is set. Like SPSS, cases with missing, zero or negative weight get weight 0 (excluded). Fractional weights are kept as-is.
 - Calls: [[core/data.ts#isUserMissing|isUserMissing()]]
-- Used in: [[find.ts]], [[DeriveDialogs.tsx]], [[tools/data.ts]], [[aggregate.ts]], [[derive.ts]], [[properties.ts]], [[core/common.ts]], [[correlations.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[transforms-ops.fuzz.test.ts]]
+- Used in: [[find.ts]], [[DeriveDialogs.tsx]], [[tools/data.ts]], [[aggregate.ts]], [[derive.ts]], [[properties.ts]], [[core/common.ts]], [[correlations.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[nomreg.ts]], [[plum.ts]], [[transforms-ops.fuzz.test.ts]]
 
 ### selectCases
 *function* · line 124 · exported
@@ -182,13 +185,13 @@ varName() (line 37) · SPSS_EPOCH_MS (line 176) · MONTHS (line 190) · pad() (l
 ### varDisplayName
 *function* · line 230 · exported
 > "Label (name)" or "name" — how variables are referred to in output tables.
-- Used in: [[ImportDialog.tsx]], [[survey.ts]], [[core/common.ts]], [[correlations.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[graphs/index.ts]]
+- Used in: [[ImportDialog.tsx]], [[core/common.ts]], [[correlations.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[graphs/index.ts]]
 
 ### categoryLabel
 *function* · line 237 · exported
 > Display text for a category value in output tables: its label, else the formatted value.
 - Calls: [[core/data.ts#formatRawValue|formatRawValue()]], [[core/data.ts#isDateFormat|isDateFormat()]], [[core/data.ts#valueLabelFor|valueLabelFor()]]
-- Used in: [[ProcedureDialog.tsx]], [[tools/analysis.ts]], [[tools/data.ts]], [[core/common.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[graphs/index.ts]], [[binary.ts]], [[models/common.ts]], [[linear.ts]], [[nomreg.ts]], [[plum.ts]]
+- Used in: [[ProcedureDialog.tsx]], [[tools/analysis.ts]], [[tools/data.ts]], [[core/common.ts]], [[core/crosstabs.ts]], [[core/descriptives.ts]], [[core/frequencies.ts]], [[core/nonparametric.ts]], [[oneway.ts]], [[ttests.ts]], [[graphs/index.ts]], [[binary.ts]], [[linear.ts]], [[nomreg.ts]], [[plum.ts]], [[procedures/text.ts]]
 
 ### validateVarName
 *function* · line 250 · exported
@@ -200,7 +203,7 @@ varName() (line 37) · SPSS_EPOCH_MS (line 176) · MONTHS (line 190) · pad() (l
 *function* · line 261 · exported
 > Make `base` into a valid unused name by sanitising and appending _1, _2, ...
 - Uses: [[core/data.ts]]
-- Used in: [[mutations.ts]], [[CasesDialogs.tsx]], [[DeriveDialogs.tsx]], [[RecodeDialog.tsx]], [[toDataset.ts]], [[infer.ts]], [[derive.ts]], [[merge.ts]]
+- Used in: [[mutations.ts]], [[CasesDialogs.tsx]], [[DeriveDialogs.tsx]], [[RecodeDialog.tsx]], [[toDataset.ts]], [[infer.ts]], [[cases.ts]], [[derive.ts]], [[merge.ts]]
 
 ### distinctValues
 *function* · line 275 · exported

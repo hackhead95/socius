@@ -6,7 +6,7 @@ area: lib/stats
 
 # Area: lib/stats
 
-16 files, 6647 lines.
+16 files, 6927 lines.
 
 ## Used by areas
 - [[procedures]]: 24

@@ -46,11 +46,14 @@ area: procedures
 - [[core/data.ts#varDisplayName|varDisplayName()]]
 
 ## Uses
+- [[procedures/text.ts#allFinite|allFinite()]] · procedure helper
 - [[core/common.ts#apaNum|apaNum()]] · procedure helper
 - [[core/common.ts#blank|blank()]] · procedure helper
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteRange|caseNoteRange()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#decFmt|decFmt()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
@@ -59,9 +62,11 @@ area: procedures
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#listProse|listProse()]] · procedure helper
 - [[core/common.ts#numericValues|numericValues()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#optBool|optBool()]] · procedure helper
 - [[core/common.ts#optStr|optStr()]] · procedure helper
 - [[core/common.ts#requireNumeric|requireNumeric()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
 - [[core/common.ts#tableBlock|tableBlock()]] · procedure helper
@@ -73,7 +78,9 @@ area: procedures
 
 ## Tested by
 - [[scenarios.test.ts]] · procedure id
+- [[findings-repro.test.ts]] · procedure id
 - [[procedures-oracle.fuzz.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · menu label, procedure id
 - [[sample-survey.test.ts]] · procedure id
 

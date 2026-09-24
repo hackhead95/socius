@@ -1,9 +1,10 @@
 // Shared helpers for the model procedures: option access, case notes, SPSS syntax preamble,
 // APA number formatting, and predictor design (automatic dummy coding of categorical predictors).
 
+import { cleanBlocks, labelOf, numText } from '../text';
 import type { Dataset, Variable } from '../../core/types';
 import { newId } from '../../core/types';
-import { categoryLabel, requireVariable, selectCases, type CaseSelection } from '../../core/data';
+import { requireVariable, selectCases, type CaseSelection } from '../../core/data';
 import { cell, hcell, type Cell, type CellFormat, type ChartSpec, type OutputBlock, type OutputItem } from '../../core/output';
 import type { OptionValues, SlotValues } from '../../core/procedure';
 
@@ -39,15 +40,15 @@ export function fmtP(p: number): string {
 
 /** Fixed decimals with thousands separators. */
 export function num(x: number, d = 2): string {
+  if (x === Infinity || x === -Infinity) return x > 0 ? '∞' : '-∞';
   if (!Number.isFinite(x)) return '.';
-  return x.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const s = x.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return /^-[0.,]*$/.test(s) ? s.slice(1) : s; // no negative zero
 }
 
-/** Statistic that cannot exceed 1 in absolute value: drop the leading zero (".178"). */
+/** Statistic that cannot exceed 1 in absolute value: drop the leading zero (".178"); never "-.00". */
 export function noLead(x: number, d = 3): string {
-  if (!Number.isFinite(x)) return '.';
-  const s = x.toFixed(d);
-  return s.replace(/^(-?)0\./, '$1.');
+  return numText(x, d, true);
 }
 
 export function pct(fraction: number, d = 1): string {
@@ -62,8 +63,15 @@ export function dfCell(x: number): Cell {
   return Math.abs(x - Math.round(x)) < 1e-9 ? cell(Math.round(x), 'int') : cell(x, 'dec1');
 }
 
-/** Coefficient cell: 3 decimals, switching to scientific text for tiny non-zero magnitudes (like SPSS). */
-export function coefCell(x: number, fmt: CellFormat = 'coef'): Cell {
+/**
+ * Coefficient cell: 3 decimals, switching to scientific text for tiny non-zero magnitudes (like SPSS).
+ * With its standard error `se`, an estimate below 1e-9 standard errors is rounding noise around an
+ * exact zero (e.g. the intercept of balanced categories, log(1)) and is shown as 0: otherwise the
+ * noise ("6.493E-18" vs "2.029E-17") would differ between numerically equivalent data, such as
+ * integer weights and replicated cases.
+ */
+export function coefCell(x: number, fmt: CellFormat = 'coef', se?: number): Cell {
+  if (se !== undefined && Number.isFinite(se) && se > 0 && Math.abs(x) <= 1e-9 * se) x = 0;
   if (Number.isFinite(x) && x !== 0 && Math.abs(x) < 0.0005) {
     const [m, e] = x.toExponential(3).split('e');
     return cell(`${m}E${Number(e)}`, 'text', { align: 'right' });
@@ -80,6 +88,29 @@ export function textName(v: Variable): string {
   const l = v.label.trim();
   // Question-style labels ("Did you vote ...?") read badly inside a sentence.
   return l && l.length <= 40 && !l.includes('?') ? l : v.name;
+}
+
+/** Names variables in prose; see proseNamer. */
+export type Namer = (v: Variable) => string;
+
+const usableLabel = (v: Variable) => {
+  const l = v.label.trim();
+  return !!l && l.length <= 40 && !l.includes('?');
+};
+
+/**
+ * One naming convention for all the prose of an analysis: labels when every variable involved has a
+ * short, statement-like label, otherwise variable names throughout. Mixing the two ("life_sat ...
+ * Age in completed years ... yrs_nbhd") reads badly and has to be rewritten before it can be quoted.
+ */
+export function proseNamer(vs: Variable[]): Namer {
+  const labels = vs.length > 0 && vs.every(usableLabel);
+  return (v) => (labels && usableLabel(v) ? v.label.trim() : v.name);
+}
+
+/** A design column in prose: "age", or "region = North" for a dummy of a factor. */
+export function colProse(c: { name: string; term: Term; level: number }, nm: Namer): string {
+  return c.term.kind === 'factor' ? `${nm(c.term.variable)} = ${c.term.levelLabels[c.level]}` : nm(c.term.variable);
 }
 
 /** How a variable is referred to in table footnotes (SPSS shows labels). */
@@ -137,7 +168,7 @@ export function syntaxPreamble(ds: Dataset): string[] {
 }
 
 export function makeItem(procedure: string, title: string, ds: Dataset, blocks: OutputBlock[], syntax: string, note: string): OutputItem {
-  return { id: newId('out'), procedure, title, createdAt: Date.now(), datasetName: ds.name, syntax, caseNote: note, blocks };
+  return { id: newId('out'), procedure, title, createdAt: Date.now(), datasetName: ds.name, syntax, caseNote: note, blocks: cleanBlocks(blocks) };
 }
 
 export const heading = (text: string): OutputBlock => ({ kind: 'heading', text });
@@ -244,14 +275,14 @@ export function buildTerms(
       for (let i = 1; i < levels.length; i++) if (levels[i].count > levels[refIdx].count) refIdx = i;
     }
     const ref = levels[refIdx];
-    const refLabel = categoryLabel(v, ref.value);
+    const refLabel = labelOf(v, ref.value);
     const cols: Float64Array[] = [], colNames: string[] = [], levelLabels: string[] = [], levelValues: Array<number | string> = [];
     const syntaxNames: string[] = [], syntaxCompute: string[] = [];
     levels.forEach((lv, i) => {
       if (i === refIdx) return;
       const x = new Float64Array(rows.length);
       for (let r = 0; r < rows.length; r++) x[r] = values[r] === lv.value ? 1 : 0;
-      const lab = categoryLabel(v, lv.value);
+      const lab = labelOf(v, lv.value);
       cols.push(x);
       colNames.push(`${v.name}: ${lab} (ref = ${refLabel})`);
       levelLabels.push(lab);
@@ -265,11 +296,11 @@ export function buildTerms(
 }
 
 /** Names for a set of design columns, grouping dummies of the same factor: "educ_cat (Secondary, Vocational vs Primary)". */
-export function describeCols(list: Array<{ name: string; term: Term; level: number }>): string[] {
+export function describeCols(list: Array<{ name: string; term: Term; level: number }>, nm: Namer = (v) => v.name): string[] {
   const out: string[] = [];
   const seen = new Map<Term, string[]>();
   for (const c of list) {
-    if (c.term.kind !== 'factor') out.push(c.name);
+    if (c.term.kind !== 'factor') out.push(nm(c.term.variable));
     else {
       if (!seen.has(c.term)) {
         seen.set(c.term, []);
@@ -278,7 +309,7 @@ export function describeCols(list: Array<{ name: string; term: Term; level: numb
       seen.get(c.term)!.push(c.term.levelLabels[c.level]);
     }
   }
-  const factorTexts = [...seen.entries()].map(([t, labs]) => `${t.variable.name} (${listText(labs)} vs ${t.refLabel})`);
+  const factorTexts = [...seen.entries()].map(([t, labs]) => `${nm(t.variable)} (${listText(labs)} vs ${t.refLabel})`);
   let fi = 0;
   return out.map((x) => (x === '' ? factorTexts[fi++] : x));
 }
@@ -406,6 +437,8 @@ export function marginalCaseSummary(
   factors: Term[],
   sel: CaseSelection,
   subpopulations: number,
+  /** Weighted number of cases excluded for missing values (selMissing); defaults to the case count. */
+  missingW: number = sel.nMissing,
 ): import('../../core/output').OutputTable {
   const W = depLevels.reduce((s, l) => s + l.count, 0);
   const n = (x: number) => (Math.abs(x - Math.round(x)) < 1e-9 ? cell(Math.round(x), 'int') : cell(x, 'dec1'));
@@ -416,7 +449,7 @@ export function marginalCaseSummary(
     levels.forEach((l, i) => {
       const r: Cell[] = [];
       if (i === 0) r.push(cell(v.name, 'text', { rowSpan: levels.length }));
-      r.push(cell(categoryLabel(v, l.value), 'text'), n(l.count), cell((100 * l.count) / W, 'pct'));
+      r.push(cell(labelOf(v, l.value), 'text'), n(l.count), cell((100 * l.count) / W, 'pct'));
       rows.push(r);
     });
   };
@@ -424,8 +457,8 @@ export function marginalCaseSummary(
   for (const f of factors) if (f.levels) group(f.variable, f.levels);
   rules.push(rows.length);
   rows.push([cell('Valid', 'text', { colSpan: 2 }), n(W), cell(100, 'pct')]);
-  rows.push([cell('Missing', 'text', { colSpan: 2 }), cell(sel.nMissing, 'int'), cell(null)]);
-  rows.push([cell('Total', 'text', { colSpan: 2 }), n(W + sel.nMissing), cell(null)]);
+  rows.push([cell('Missing', 'text', { colSpan: 2 }), n(missingW), cell(null)]);
+  rows.push([cell('Total', 'text', { colSpan: 2 }), n(W + missingW), cell(null)]);
   rows.push([cell('Subpopulation', 'text', { colSpan: 2 }), cell(subpopulations, 'int'), cell(null)]);
   return {
     title: 'Case Processing Summary',
@@ -433,7 +466,6 @@ export function marginalCaseSummary(
     rows,
     stubColumns: 2,
     ruleBefore: rules,
-    footnotes: sel.nMissing && sel.weights.some((x) => x !== 1) ? ['Missing is the unweighted number of cases excluded for missing values.'] : [],
   };
 }
 

@@ -15,6 +15,10 @@ area: app
 ## Part of
 - [[File]]
 
+## Tested by
+- [[errorlog.spec.ts]] · menu label
+- [[menu-knowledge.test.ts]] · menu label
+
 ## Items
 - [[Excel workbook (.xlsx)|File > Export output report > Excel workbook (.xlsx)]]
 - [[Plain text (.txt)|File > Export output report > Plain text (.txt)]]

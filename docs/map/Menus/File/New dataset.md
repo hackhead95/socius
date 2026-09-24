@@ -24,4 +24,5 @@ area: app
 - [[File]]
 
 ## Tested by
+- [[commands-smoke-app.spec.ts]] · menu label
 - [[shell-fixes.spec.ts]] · menu label

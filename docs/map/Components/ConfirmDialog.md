@@ -2,13 +2,13 @@
 id: "src/ui/Modal.tsx#ConfirmDialog"
 type: component
 file: src/ui/Modal.tsx
-line: 72
+line: 222
 area: ui
 ---
 
 # <ConfirmDialog>
 
-*React component* · defined in [[Modal.tsx]] (line 72) · area [[ui]]
+*React component* · defined in [[Modal.tsx]] (line 222) · area [[ui]]
 
 > In-page confirmation (window.confirm is blocked inside the Claude artifact viewer).
 

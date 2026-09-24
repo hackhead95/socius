@@ -523,6 +523,10 @@ const GridCell = memo(function GridCell({ ds, r, c, left, width, showLabels, sel
     text = formatCell(v, x, showLabels);
   }
   const align = labelShown ? 'left' : v.align;
+  // The full text on hover when the column is too narrow for it (an estimate: the grid is virtualised,
+  // so cells are not measured). User-missing values say so.
+  const cut = text.length * (v.type === 'numeric' && !labelShown ? 7.6 : 6.9) > width - 14;
+  const title = muted ? `${text} (user-missing value)` : cut ? text : undefined;
   return (
     <div
       className={`${cls} ${v.type === 'numeric' && !labelShown ? 'mono num' : ''} ${muted ? 'user-missing' : ''}`}
@@ -531,7 +535,7 @@ const GridCell = memo(function GridCell({ ds, r, c, left, width, showLabels, sel
       role="gridcell"
       aria-selected={selected}
       style={{ left, width, textAlign: align }}
-      title={muted ? 'User-missing value' : undefined}
+      title={title}
     >
       {text}
     </div>

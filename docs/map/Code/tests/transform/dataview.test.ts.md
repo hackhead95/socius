@@ -50,7 +50,7 @@ area: tests
 - [[mutations.ts#changeType|changeType()]]
 - [[mutations.ts#clearRange|clearRange()]]
 - [[transform/helpers.ts#col|col()]]
-- [[mutations.ts#copyProperties|copyProperties()]]
+- [[properties.ts#copyProperties|copyProperties()]]
 - [[mutations.ts#defaultVarName|defaultVarName()]]
 - [[transform/helpers.ts#ds|ds()]]
 - [[mutations.ts#duplicateVariables|duplicateVariables()]]

@@ -143,18 +143,3 @@ export function tableToText(table: OutputTable, style: TableStyle = 'apa'): stri
   return out.join('\n');
 }
 
-/** Cell matrix with spans, formatted as text; used by the Excel exporter. */
-export function tableToMatrix(table: OutputTable, style: TableStyle = 'apa') {
-  const pctCols = percentColumns(table);
-  const head = layoutRows(table.header);
-  const body = layoutRows(table.rows);
-  const columns = Math.max(head.columns, body.columns);
-  const map = (grid: typeof head.grid) =>
-    grid.map((row) =>
-      row.map((g) => {
-        const f = formatCell(g.cell, { style, percentColumn: pctCols[g.col] });
-        return { ...g, text: f.text + (f.mark ?? ''), numeric: f.numeric };
-      }),
-    );
-  return { header: map(head.grid), body: map(body.grid), columns, stubs: stubCount(table) };
-}

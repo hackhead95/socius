@@ -4,6 +4,7 @@
 import type { CodeDef, CodedSegment, CodingProject, TextDoc } from '../../core/coding-types';
 import { attributeKeys, codeFrequencies } from './analysis';
 import { codePath, flattenTree, buildCodeTree, parentName } from './tree';
+import { formatLongDate } from '../../core/format-date';
 
 export type Row = Array<string | number>;
 
@@ -111,7 +112,7 @@ export function reportData(project: CodingProject, title = 'Qualitative coding r
   const parents = new Set(project.codes.map((c) => c.parentId).filter(Boolean));
   return {
     title,
-    generated: new Date().toISOString().slice(0, 10),
+    generated: formatLongDate(Date.now()),
     nDocuments: project.docs.filter((d) => d.kind === 'document').length,
     nResponses: project.docs.filter((d) => d.kind === 'response').length,
     nSegments: project.segments.length,

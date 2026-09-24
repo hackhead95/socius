@@ -20,6 +20,7 @@ area: lib/assistant
 - [[ai-tools.ts]] · type-only
 
 ## Tested by
+- [[menu-knowledge.test.ts]] · import
 - [[scenarios.test.ts]] · import
 - [[units.test.ts]] · import
 
@@ -38,6 +39,7 @@ area: lib/assistant
 - [[tools/help.ts]] · type-only
 - [[tools/index.ts]] · type-only
 - [[transform.ts]] · type-only
+- [[menu-knowledge.test.ts]] · value
 - [[scenarios.test.ts]] · value
 - [[units.test.ts]] · value
 
@@ -48,4 +50,4 @@ AssistantPermissions (line 10) · AppSnapshot (line 22) · ToolContext (line 29)
 
 ### DEFAULT_PERMISSIONS
 *const* · line 19 · exported
-- Used in: [[chat-store.ts]], [[scenarios.test.ts]], [[units.test.ts]]
+- Used in: [[chat-store.ts]], [[menu-knowledge.test.ts]], [[scenarios.test.ts]], [[units.test.ts]]

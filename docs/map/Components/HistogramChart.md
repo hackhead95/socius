@@ -16,13 +16,13 @@ area: features/charts
 - [[scale.ts#barPath|barPath()]]
 - [[scale.ts#formatTick|formatTick()]]
 - [[scale.ts#formatValue|formatValue()]]
-- [[charts/common.tsx#headerLayout|headerLayout()]]
 - [[HistogramChart.tsx#histogramDesc|histogramDesc()]]
 - [[scale.ts#linear|linear()]]
 - [[charts/common.tsx#maxLabelWidth|maxLabelWidth()]]
 - [[charts/common.tsx#measureText|measureText()]]
 - [[scale.ts#niceTicks|niceTicks()]]
 - [[scale.ts#normalCurvePoints|normalCurvePoints()]]
+- [[useHeaderLayout|useHeaderLayout()]]
 
 ## Renders
 - [[ChartHeader|<ChartHeader>]]

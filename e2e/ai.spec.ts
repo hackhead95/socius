@@ -96,9 +96,16 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   await dlg.getByRole('button', { name: 'Test connection' }).click();
   await expect(dlg.locator('.ai-check-error')).toContainText('Too many AI requests');
 
-  // The key is kept in this browser's localStorage only.
+  // By default the key stays in this tab only (sessionStorage), not in localStorage, which every site
+  // at hackhead95.github.io could read. "Remember this key on this computer" keeps it in localStorage.
+  const remember = dlg.getByRole('checkbox', { name: 'Remember this key on this computer' });
+  await expect(remember).not.toBeChecked();
+  await expect(dlg.locator('.ai-remember')).toContainText('other sites hosted on hackhead95.github.io');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}'))).toMatchObject({ provider: 'gemini', gemini: { apiKey: '', model: '' } });
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('socius.ai.keys') ?? '{}').gemini)).toBe('AIza-e2e-key');
+  await remember.check();
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}'));
-  expect(stored).toMatchObject({ provider: 'gemini', gemini: { apiKey: 'AIza-e2e-key', model: '' } });
+  expect(stored).toMatchObject({ provider: 'gemini', gemini: { apiKey: 'AIza-e2e-key', model: '' }, remember: { gemini: true } });
   await dlg.getByRole('button', { name: 'Forget key' }).click();
   await expect(key).toHaveValue('');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}').gemini.apiKey)).toBe('');

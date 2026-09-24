@@ -2,13 +2,13 @@
 id: "src/features/transform/common.tsx#TransformModal"
 type: component
 file: src/features/transform/common.tsx
-line: 31
+line: 55
 area: features/transform
 ---
 
 # <TransformModal>
 
-*React component* · defined in [[transform/common.tsx]] (line 31) · area [[features - transform|features/transform]]
+*React component* · defined in [[transform/common.tsx]] (line 55) · area [[features - transform|features/transform]]
 
 - **Exported:** yes
 

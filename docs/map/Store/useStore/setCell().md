@@ -2,13 +2,13 @@
 id: "store-action:useStore.setCell"
 type: store-action
 file: src/core/store.ts
-line: 103
+line: 105
 area: core
 ---
 
 # useStore.setCell()
 
-*Store action* · defined in [[store.ts]] (line 103) · area [[core]]
+*Store action* · defined in [[store.ts]] (line 105) · area [[core]]
 
 - **Store:** useStore
 

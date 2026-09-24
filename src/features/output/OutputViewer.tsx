@@ -11,9 +11,11 @@ import { formatNumber } from './format';
 import { OutputTableView } from './OutputTableView';
 import { useOutputPrefs } from './viewPrefs';
 import { formatItemTime } from './reportHtml';
+import { formatDateTime, formatTime } from '../../core/format-date';
 import { REPORT_FORMATS, confirmAndClearOutputs, copyItem, copyTable, copyText, exportReport, saveChartPng, saveChartSvg, saveTableXlsx, type ReportFormat } from './actions';
 import { IconChart, IconChevron, IconCopy, IconDown, IconDownload, IconOutline, IconTable, IconText, IconTrash, IconUp, IconWarn, IconX } from './icons';
 import { useUi } from '../../app/ui-store';
+import { modKey } from '../../app/shortcuts';
 import { ExplainPanel } from '../ai/ExplainPanel';
 import { isExplainable } from '../ai/explainPrompt';
 import { useExplain } from '../ai/explainStore';
@@ -31,14 +33,24 @@ const QUICK_START: string[][] = [['frequencies'], ['crosstabs'], ['ttest-indepen
 const blockAnchor = (itemId: string, i: number) => `out-${itemId}-b${i}`;
 const itemAnchor = (itemId: string) => `out-${itemId}`;
 
-/** Table and figure numbers across the whole document (APA numbering). */
+/**
+ * Table and figure numbers across the whole document (APA numbering), keyed "itemId:blockIndex".
+ * Tables and figures are counted separately, as in the Word and HTML exports.
+ */
+export function outputNumbering(outputs: OutputItem[]): Map<string, number> {
+  const numbers = new Map<string, number>();
+  let t = 0;
+  let f = 0;
+  for (const it of outputs)
+    it.blocks.forEach((b, i) => {
+      if (b.kind === 'table') numbers.set(`${it.id}:${i}`, ++t);
+      else if (b.kind === 'chart') numbers.set(`${it.id}:${i}`, ++f);
+    });
+  return numbers;
+}
+
 function useNumbering(outputs: OutputItem[]) {
-  return useMemo(() => {
-    const tables = new Map<string, number>();
-    let t = 0;
-    for (const it of outputs) it.blocks.forEach((b, i) => { if (b.kind === 'table') tables.set(`${it.id}:${i}`, ++t); });
-    return tables;
-  }, [outputs]);
+  return useMemo(() => outputNumbering(outputs), [outputs]);
 }
 
 function blockLabel(b: OutputBlock): string | null {
@@ -60,9 +72,7 @@ export function OutputViewer() {
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
-  const [undo, setUndo] = useState<{ item: OutputItem; index: number } | null>(null);
   const docRef = useRef<HTMLDivElement>(null);
-  const undoTimer = useRef<number | undefined>(undefined);
 
   const opts = { style: prefs.tableStyle, includeInterpretations: prefs.showInterpretations, includeSyntax: prefs.showSyntax };
 
@@ -142,23 +152,13 @@ export function OutputViewer() {
     return () => io.disconnect();
   }, [outputs]);
 
+  // Deleting a result says so, with Undo: the same step as Edit > Undo (Ctrl+Z) in this tab.
   const doDelete = (item: OutputItem) => {
-    const index = outputs.findIndex((o) => o.id === item.id);
     removeOutput(item.id);
-    setUndo({ item, index });
-    window.clearTimeout(undoTimer.current);
-    undoTimer.current = window.setTimeout(() => setUndo(null), 7000);
+    useStore.getState().toast(`Deleted “${item.title}”. Undo brings it back (also Edit > Undo, ${modKey()}+Z).`, 'info', {
+      action: { label: 'Undo', run: () => void useStore.getState().restoreOutput() },
+    });
   };
-  const doUndo = () => {
-    if (!undo) return;
-    const st = useStore.getState();
-    const outs = st.outputs.slice();
-    outs.splice(Math.min(undo.index, outs.length), 0, undo.item);
-    useStore.setState({ outputs: outs });
-    setUndo(null);
-    window.clearTimeout(undoTimer.current);
-  };
-  useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
   const toggleCollapsed = (id: string) =>
     setCollapsed((prev) => {
@@ -212,8 +212,8 @@ export function OutputViewer() {
               {outputs.map((it) => (
                 <li key={it.id} className={it.id === active ? 'active' : undefined}>
                   <button className="ov-outline-item" onClick={() => scrollTo(itemAnchor(it.id), it.id)} aria-current={it.id === active ? 'true' : undefined}>
-                    <span className="ov-outline-title">{it.title}</span>
-                    <span className="ov-outline-time num">{new Date(it.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="ov-outline-title" title={it.title}>{it.title}</span>
+                    <span className="ov-outline-time num" title={formatDateTime(it.createdAt)}>{formatTime(it.createdAt)}</span>
                   </button>
                   <ol>
                     {it.blocks.map((b, i) => {
@@ -221,7 +221,7 @@ export function OutputViewer() {
                       if (!label) return null;
                       return (
                         <li key={i}>
-                          <button className="ov-outline-block" onClick={() => { setCollapsed((p) => { const n = new Set(p); n.delete(it.id); return n; }); requestAnimationFrame(() => scrollTo(blockAnchor(it.id, i), it.id)); }}>
+                          <button className="ov-outline-block" title={label} onClick={() => { setCollapsed((p) => { const n = new Set(p); n.delete(it.id); return n; }); requestAnimationFrame(() => scrollTo(blockAnchor(it.id, i), it.id)); }}>
                             {b.kind === 'table' ? <IconTable /> : b.kind === 'chart' ? <IconChart /> : <IconText />}
                             <span>{label}</span>
                           </button>
@@ -256,12 +256,6 @@ export function OutputViewer() {
         </div>
       )}
 
-      {undo ? (
-        <div className="ov-undo" role="status">
-          <span>Deleted “{undo.item.title}”.</span>
-          <button className="btn btn-sm" onClick={doUndo}>Undo</button>
-        </div>
-      ) : null}
 
     </div>
   );
@@ -432,7 +426,7 @@ function BlockView({ block, number }: { block: OutputBlock; number?: number }) {
         </>
       );
     case 'chart':
-      return <ChartBlock block={block} />;
+      return <ChartBlock block={block} number={prefs.tableStyle === 'apa' ? number : undefined} />;
     case 'text':
       if (block.style === 'interpretation') {
         if (!prefs.showInterpretations) return null;
@@ -479,7 +473,12 @@ function BlockView({ block, number }: { block: OutputBlock; number?: number }) {
   }
 }
 
-function ChartBlock({ block }: { block: Extract<OutputBlock, { kind: 'chart' }> }) {
+/**
+ * A chart in the Output view. In APA style it is a numbered figure like the tables: "Figure N" in
+ * bold and the title in italics above the chart, which then leaves its own title out (so the title
+ * is shown once). In SPSS style the chart keeps its title inside, as SPSS does.
+ */
+function ChartBlock({ block, number }: { block: Extract<OutputBlock, { kind: 'chart' }>; number?: number }) {
   const [showData, setShowData] = useState(false);
   const [busy, setBusy] = useState(false);
   const data = showData ? chartDataTable(block.chart) : null;
@@ -493,9 +492,15 @@ function ChartBlock({ block }: { block: Extract<OutputBlock, { kind: 'chart' }> 
   };
   return (
     <>
-      <div className="ob-chart">
-        <Chart spec={block.chart} />
-      </div>
+      <figure className="ob-chart" aria-label={number !== undefined ? `Figure ${number}: ${block.chart.title}` : undefined}>
+        {number !== undefined ? (
+          <figcaption className="ob-fig-caption">
+            <span className="ob-fig-number">Figure {number}</span>
+            <span className="ob-fig-title">{block.chart.title}</span>
+          </figcaption>
+        ) : null}
+        <Chart spec={block.chart} showTitle={number === undefined} />
+      </figure>
       <div className="ob-actions">
         <button className="btn btn-ghost btn-sm" aria-pressed={showData} onClick={() => setShowData((s) => !s)}>
           <IconTable /> {showData ? 'Hide data' : 'Show data'}

@@ -2,15 +2,16 @@
 id: "src/features/ai/AiSettingsDialog.tsx#GeminiSection"
 type: component
 file: src/features/ai/AiSettingsDialog.tsx
-line: 245
+line: 274
 area: features/ai
 ---
 
 # <GeminiSection>
 
-*React component* · defined in [[AiSettingsDialog.tsx]] (line 245) · area [[features - ai|features/ai]]
+*React component* · defined in [[AiSettingsDialog.tsx]] (line 274) · area [[features - ai|features/ai]]
 
 ## Calls
+- [[platform/ai.ts#dismissAiNotice|dismissAiNotice()]]
 - [[platform/ai.ts#forgetAiKey|forgetAiKey()]]
 - [[ai-http.ts#geminiKeyWarning|geminiKeyWarning()]]
 - [[ai-http.ts#geminiModelName|geminiModelName()]]
@@ -22,6 +23,7 @@ area: features/ai
 
 ## Renders
 - [[KeyField|<KeyField>]]
+- [[RememberKey|<RememberKey>]]
 
 ## Uses
 - [[platform/ai.ts#GEMINI_AUTO_FLASH|GEMINI_AUTO_FLASH]]
@@ -29,9 +31,11 @@ area: features/ai
 
 ## Reads
 - [[aiSettings/gemini|aiSettings.gemini]] · alias
+- [[notice|aiSettings.notice]] · alias
 
 ## Writes
 - [[aiSettings/gemini|aiSettings.gemini]] · setter
+- [[notice|aiSettings.notice]] · setter
 
 ## Rendered by
 - [[AiSettingsDialog|<AiSettingsDialog>]]

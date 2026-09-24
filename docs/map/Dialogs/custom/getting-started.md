@@ -20,5 +20,5 @@ area: dialogs
 
 ## Opened by
 - [[Welcome (app-Welcome)|<Welcome>]]
+- [[menus.ts#buildMenus|buildMenus()]]
 - [[Getting started|Help > Getting started]]
-- [[useMenus|useMenus()]]

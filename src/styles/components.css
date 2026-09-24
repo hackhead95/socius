@@ -4,10 +4,13 @@
 .varpicker { display: flex; flex-direction: column; min-width: 0; }
 .varpicker-search {
   display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 1px solid var(--border-strong);
-  border-radius: var(--r-md); background: var(--surface); color: var(--muted);
+  border-radius: var(--r-md); background: var(--surface-2); color: var(--muted);
 }
-.varpicker-search:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* Focus: the field turns to paper white with the focus-coloured border and ring (the input itself
+   changes too, so the focus is visible however the box is styled around it). */
+.varpicker-search:focus-within { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus), 0 0 0 4px var(--accent-soft); background: var(--surface); color: var(--focus); }
 .varpicker-input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-size: var(--fs-sm); color: var(--text); height: 100%; }
+.varpicker-input:focus { background: var(--surface); }
 .varpicker-bulk { display: inline-flex; gap: 8px; }
 .varpicker-list {
   margin-top: 6px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: 3px;
@@ -34,7 +37,9 @@
   display: flex; align-items: center; gap: 4px; padding: 6px var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border);
   overflow-x: auto; min-height: 40px; flex: none; scrollbar-width: thin;
 }
-.view-toolbar > .btn, .view-toolbar > .toolbar-status { flex: none; } /* scroll the toolbar instead of squashing its buttons */
+.view-toolbar > .btn { flex: none; } /* scroll the toolbar instead of squashing its buttons */
+/* The status text gives way instead: it shortens with "..." (full text in its tooltip). */
+.view-toolbar > .toolbar-status { flex: 0 1 auto; min-width: 13ch; overflow: hidden; text-overflow: ellipsis; }
 .toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex: none; }
 .toolbar-status { font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; padding-left: 8px; }
 

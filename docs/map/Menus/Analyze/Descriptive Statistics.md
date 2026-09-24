@@ -20,9 +20,12 @@ area: app
 ## Tested by
 - [[ai-features.spec.ts]] · menu label
 - [[ai-local.spec.ts]] · menu label
+- [[commands-smoke-app.spec.ts]] · menu label
+- [[errorlog.spec.ts]] · menu label
 - [[qual.spec.ts]] · menu label
 - [[quant.spec.ts]] · menu label
 - [[shell-fixes.spec.ts]] · menu label
+- [[ui-overlays-focus.spec.ts]] · menu label
 - [[scenarios.test.ts]] · menu label
 - [[stats-core/procedures.test.ts]] · menu label
 - [[sample-survey.test.ts]] · menu label

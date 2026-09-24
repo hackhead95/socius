@@ -2,13 +2,13 @@
 id: "store-action:useUi.focusGrid"
 type: store-action
 file: src/app/ui-store.ts
-line: 38
+line: 44
 area: app
 ---
 
 # useUi.focusGrid()
 
-*Store action* · defined in [[ui-store.ts]] (line 38) · area [[Areas/app|app]]
+*Store action* · defined in [[ui-store.ts]] (line 44) · area [[Areas/app|app]]
 
 - **Store:** useUi
 
@@ -16,8 +16,9 @@ area: app
 - [[gridTarget|useUi.gridTarget]]
 
 ## Called by
-- [[Sidebar|<Sidebar>]] · selector
+- [[VariableList|<VariableList>]] · selector
 - [[VariableViewInner|<VariableViewInner>]] · selector
+- [[transform/common.tsx#applyTransform|applyTransform()]] · getState
 - [[useEntries|useEntries()]] · getState alias
 
 ## Store

@@ -7,7 +7,7 @@ area: features/data
 
 # src/features/data/DataView.tsx
 
-*Module* · area [[features - data|features/data]] · 519 lines
+*Module* · area [[features - data|features/data]] · 524 lines
 
 > Data View: toolbar, virtualised grid, find bar, context menus and quick column statistics.
 
@@ -26,11 +26,15 @@ area: features/data
 - [[Icon.tsx]] · value
 - [[Menu.tsx]] · value
 
+## Tested by
+- [[shortcut-precedence.test.tsx]] · import
+
 ## Imported by
 - [[App.tsx]] · value
+- [[shortcut-precedence.test.tsx]] · value
 
 ## Private helpers
-MAX_COPY_CELLS (line 16) · fmt() (line 464)
+MAX_COPY_CELLS (line 16) · fmt() (line 469)
 
 ## Symbols
 
@@ -39,7 +43,7 @@ MAX_COPY_CELLS (line 16) · fmt() (line 464)
 - Renders: [[DataViewInner|<DataViewInner>]]
 - Calls: [[useStore]]
 - Reads: [[dataset|useStore.dataset]]
-- Rendered by: [[Components/App|<App>]]
+- Rendered by: [[Components/App|<App>]], [[shortcut-precedence.test.tsx]]
 
 ### DataViewInner
 *component* · line 24 · note: [[DataViewInner|<DataViewInner>]]
@@ -50,15 +54,15 @@ MAX_COPY_CELLS (line 16) · fmt() (line 464)
 - Store actions: [[addOutput()|useStore.addOutput()]], [[addVariable()|useStore.addVariable()]], [[deleteCases()|useStore.deleteCases()]], [[deleteVariables()|useStore.deleteVariables()]], [[focusVariableView()|useUi.focusVariableView()]], [[insertCases()|useStore.insertCases()]], [[mutateDataset()|useStore.mutateDataset()]], [[setCell()|useStore.setCell()]], [[setCurrentVarId()|useUi.setCurrentVarId()]], [[setShowValueLabels()|useStore.setShowValueLabels()]], [[setTab()|useStore.setTab()]], [[toast()|useStore.toast()]]
 
 ### FindBar
-*component* · line 363 · note: [[FindBar|<FindBar>]]
+*component* · line 368 · note: [[FindBar|<FindBar>]]
 - Renders: [[Icon|<Icon>]]
 - Calls: [[find.ts#findNext|findNext()]]
 
 ### GotoBar
-*component* · line 426 · note: [[GotoBar|<GotoBar>]]
+*component* · line 431 · note: [[GotoBar|<GotoBar>]]
 - Renders: [[Icon|<Icon>]]
 
 ### StatsPopover
-*component* · line 466 · note: [[StatsPopover|<StatsPopover>]]
+*component* · line 471 · note: [[StatsPopover|<StatsPopover>]]
 - Renders: [[Icon|<Icon>]]
 - Calls: [[DataView.tsx]]

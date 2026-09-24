@@ -2,13 +2,13 @@
 id: "store-key:useUi.restoredAt"
 type: store-key
 file: src/app/ui-store.ts
-line: 57
+line: 63
 area: app
 ---
 
 # useUi.restoredAt
 
-*Store state key* · defined in [[ui-store.ts]] (line 57) · area [[Areas/app|app]]
+*Store state key* · defined in [[ui-store.ts]] (line 63) · area [[Areas/app|app]]
 
 > Show the "Restored your last session" notice (with a Start fresh action).
 

@@ -1,5 +1,6 @@
-// Client-side request pacing for free tiers (Google's free Gemini tier allows only a few requests a
-// minute). Counts requests in a sliding one-minute window, per provider and key.
+// Client-side request pacing for free tiers. Counts requests in a sliding one-minute window, per
+// provider and key. The limit can change while in use (Gemini's real per-model limits are learned from
+// its 429 replies: see src/platform/ai-pace.ts, which uses this class).
 
 export class RateLimiter {
   private stamps: number[] = [];
@@ -13,7 +14,9 @@ export class RateLimiter {
     const t = this.now();
     this.stamps = this.stamps.filter((s) => t - s < 60_000);
     if (this.stamps.length < this.perMinute) return 0;
-    return Math.max(0, 60_000 - (t - this.stamps[0]) + 50);
+    // The request that must leave the window before another fits (the limit may have been lowered).
+    const oldest = this.stamps[this.stamps.length - this.perMinute];
+    return Math.max(0, 60_000 - (t - oldest) + 50);
   }
 
   record(): void {

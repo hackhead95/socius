@@ -13,4 +13,4 @@ area: shortcuts
 
 ## Bound in
 - [[Floating|<Floating>]]
-- [[MenuButton (features-coding-ui)|<MenuButton>]]
+- [[MenuButton|<MenuButton>]]

@@ -10,6 +10,9 @@ type: package
 ## Imported by
 - [[subpath.spec.ts]] · value
 - [[navigation-audit.test.tsx]] · value
+- [[ui-overlays.test.tsx]] · value
+- [[ui-fixes.test.tsx]] · value
+- [[format-date.test.ts]] · dynamic
 - [[io.fuzz.test.ts]] · value
 - [[findings.ts]] · value
 - [[procedures-oracle.fuzz.test.ts]] · value
@@ -21,3 +24,5 @@ type: package
 - [[sav-write.test.ts]] · value
 - [[xlsx.test.ts]] · value
 - [[zip.test.ts]] · value
+- [[data-fixes.test.ts]] · value
+- [[dialog-transforms.test.ts]] · value

@@ -19,5 +19,9 @@ area: app
 ## Part of
 - [[File]]
 
+## Tested by
+- [[ai-speed.spec.ts]] · menu label
+- [[about-storage.test.tsx]] · menu label
+
 ## Documents shortcut
 - [[Mod+S]] · File > Save project

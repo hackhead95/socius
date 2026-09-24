@@ -2,13 +2,13 @@
 id: "store-key:useStore.showValueLabels"
 type: store-key
 file: src/core/store.ts
-line: 91
+line: 93
 area: core
 ---
 
 # useStore.showValueLabels
 
-*Store state key* · defined in [[store.ts]] (line 91) · area [[core]]
+*Store state key* · defined in [[store.ts]] (line 93) · area [[core]]
 
 > Data View shows value labels instead of codes.
 

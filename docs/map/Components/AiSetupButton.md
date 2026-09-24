@@ -2,13 +2,13 @@
 id: "src/features/ai/AiBits.tsx#AiSetupButton"
 type: component
 file: src/features/ai/AiBits.tsx
-line: 16
+line: 17
 area: features/ai
 ---
 
 # <AiSetupButton>
 
-*React component* · defined in [[AiBits.tsx]] (line 16) · area [[features - ai|features/ai]]
+*React component* · defined in [[AiBits.tsx]] (line 17) · area [[features - ai|features/ai]]
 
 - **Exported:** yes
 
@@ -20,4 +20,3 @@ area: features/ai
 
 ## Rendered by
 - [[AiGate|<AiGate>]]
-- [[CodingWorkspace|<CodingWorkspace>]]

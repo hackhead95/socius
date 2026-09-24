@@ -7,7 +7,7 @@ area: procedures
 
 # src/procedures/models/plum.ts
 
-*Module* · area [[procedures]] · 387 lines
+*Module* · area [[procedures]] · 398 lines
 
 > Ordinal Regression (SPSS PLUM, logit link): proportional-odds cumulative logit model. SPSS parameterisation: logit P(Y <= j) = threshold_j - (location), so a positive location estimate means higher outcome categories become more likely.
 
@@ -20,16 +20,19 @@ area: procedures
 - [[logistic.ts]] · value
 - [[models-util.ts]] · value
 - [[ordinal.ts]] · value
+- [[core/common.ts]] · value
 - [[models/common.ts]] · value
+- [[procedures/text.ts]] · value
 
 ## Calls
 - [[models/common.ts#buildTerms|buildTerms()]]
 - [[models/common.ts#capitalize|capitalize()]]
 - [[models/common.ts#caseNote|caseNote()]]
-- [[core/data.ts#categoryLabel|categoryLabel()]]
 - [[output.ts#cell|cell()]]
 - [[distributions.ts#chi2Sf|chi2Sf()]]
 - [[models/common.ts#coefCell|coefCell()]]
+- [[models/common.ts#colProse|colProse()]]
+- [[procedures/text.ts#confLevel|confLevel()]]
 - [[models/common.ts#countPatterns|countPatterns()]]
 - [[ordinal.ts#cumulativeNullLogLik|cumulativeNullLogLik()]]
 - [[models/common.ts#describeCols|describeCols()]]
@@ -40,7 +43,9 @@ area: procedures
 - [[models/common.ts#footName|footName()]]
 - [[output.ts#hcell|hcell()]]
 - [[models/common.ts#heading|heading()]]
+- [[procedures/text.ts#labelOf|labelOf()]]
 - [[models/common.ts#levelsOf|levelsOf()]]
+- [[procedures/text.ts#levelText|levelText()]]
 - [[models/common.ts#listText|listText()]]
 - [[models/common.ts#makeItem|makeItem()]]
 - [[models/common.ts#marginalCaseSummary|marginalCaseSummary()]]
@@ -52,16 +57,17 @@ area: procedures
 - [[ordinal.ts#ordinalGoodnessOfFit|ordinalGoodnessOfFit()]]
 - [[models/common.ts#patternKeyFn|patternKeyFn()]]
 - [[models/common.ts#pCell|pCell()]]
+- [[models/common.ts#proseNamer|proseNamer()]]
 - [[logistic.ts#pseudoR2|pseudoR2()]]
 - [[models/common.ts#rawValues|rawValues()]]
 - [[core/data.ts#requireVariable|requireVariable()]]
 - [[logistic.ts#screenCollinear|screenCollinear()]]
 - [[models/common.ts#selectAll|selectAll()]]
+- [[core/common.ts#selMissing|selMissing()]]
 - [[models/common.ts#slot|slot()]]
 - [[models-util.ts#sum|sum()]]
 - [[models/common.ts#syntaxPreamble|syntaxPreamble()]]
 - [[models/common.ts#textBlock|textBlock()]]
-- [[models/common.ts#textName|textName()]]
 - [[ordinal.ts#waldCI|waldCI()]]
 
 ## Uses
@@ -71,15 +77,15 @@ area: procedures
 - [[models/index.ts]] · value
 
 ## Private helpers
-runOrdinal() (line 99) · buildSyntax() (line 371)
+runOrdinal() (line 102) · buildSyntax() (line 382)
 
 ## Symbols
 
 ### ordinalRegression
-*const* · line 56 · exported
-- Calls: [[models/common.ts#slot|slot()]], [[plum.ts]]
+*const* · line 59 · exported
+- Calls: [[models/common.ts#slot|slot()]], [[plum.ts]], [[procedures/text.ts#ciOption|ciOption()]]
 - Used in: [[models/index.ts]]
 
 ### tbl
-*function* · line 95
+*function* · line 98
 - Output: [[table]]

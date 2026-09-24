@@ -41,6 +41,7 @@ area: lib/assistant
 - [[assistant.spec.ts]] · tool name
 - [[ai-tools.test.ts]] · tool name
 - [[scenarios.test.ts]] · tool name
+- [[ai-latency.test.ts]] · tool name
 
 ## Implemented by
 - [[tools/data.ts#overview|overview()]]

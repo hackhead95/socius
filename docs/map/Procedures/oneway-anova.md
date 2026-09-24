@@ -34,7 +34,6 @@ area: procedures
 | scheffe | checkbox | Scheffe | Post hoc | false |
 | gamesHowell | checkbox | Games-Howell (unequal variances) | Post hoc | false |
 | subsets | checkbox | Homogeneous subsets (Tukey) | Post hoc | false |
-| ciLevel | number | Confidence level (%) | Options | 95 |
 | plot | checkbox | Means plot | Options | false |
 
 ## Calls
@@ -59,7 +58,13 @@ area: procedures
 - [[core/common.ts#caseNote|caseNote()]] · procedure helper
 - [[core/common.ts#caseNoteTail|caseNoteTail()]] · procedure helper
 - [[core/common.ts#categoriesOf|categoriesOf()]] · procedure helper
+- [[procedures/text.ts#CI_MAX|CI_MAX]] · procedure helper
+- [[procedures/text.ts#CI_MIN|CI_MIN]] · procedure helper
+- [[procedures/text.ts#ciOption|ciOption()]] · procedure helper
+- [[procedures/text.ts#cleanBlocks|cleanBlocks()]] · procedure helper
 - [[core/common.ts#COHEN_NOTE|COHEN_NOTE]] · procedure helper
+- [[procedures/text.ts#confLevel|confLevel()]] · procedure helper
+- [[procedures/text.ts#countText|countText()]] · procedure helper
 - [[core/common.ts#decFmt|decFmt()]] · procedure helper
 - [[core/common.ts#filterCounts|filterCounts()]] · procedure helper
 - [[core/common.ts#filterVar|filterVar()]] · procedure helper
@@ -68,14 +73,17 @@ area: procedures
 - [[core/common.ts#heading|heading()]] · procedure helper
 - [[core/common.ts#item|item()]] · procedure helper
 - [[core/common.ts#labelEta2|labelEta2()]] · procedure helper
+- [[procedures/text.ts#levelText|levelText()]] · procedure helper
 - [[core/common.ts#listProse|listProse()]] · procedure helper
 - [[core/common.ts#numericValues|numericValues()]] · procedure helper
+- [[procedures/text.ts#numText|numText()]] · procedure helper
 - [[core/common.ts#one|one()]] · procedure helper
 - [[core/common.ts#optBool|optBool()]] · procedure helper
-- [[core/common.ts#optNum|optNum()]] · procedure helper
 - [[core/common.ts#pcell|pcell()]] · procedure helper
+- [[procedures/text.ts#rangeMessage|rangeMessage()]] · procedure helper
 - [[core/common.ts#requireNumeric|requireNumeric()]] · procedure helper
 - [[core/common.ts#sameValue|sameValue()]] · procedure helper
+- [[core/common.ts#selMissing|selMissing()]] · procedure helper
 - [[core/common.ts#selN|selN()]] · procedure helper
 - [[core/common.ts#syntaxPrefix|syntaxPrefix()]] · procedure helper
 - [[core/common.ts#tableBlock|tableBlock()]] · procedure helper
@@ -92,7 +100,9 @@ area: procedures
 - [[search.spec.ts]] · menu label
 - [[search.test.ts]] · menu label
 - [[scenarios.test.ts]] · procedure id
+- [[findings-repro.test.ts]] · procedure id
 - [[procedures-oracle.fuzz.test.ts]] · procedure id
+- [[fuzz-fixes.test.ts]] · procedure id
 - [[stats-core/procedures.test.ts]] · procedure id
 - [[sample-survey.test.ts]] · procedure id
 

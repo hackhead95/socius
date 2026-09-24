@@ -8,6 +8,7 @@ import {
 import type { ChartSpec, OutputItem, OutputTable } from '../../core/output';
 import { formatCell, layoutRows, percentColumns } from './format';
 import { blockVisible, itemMeta, type ReportOptions } from './reportHtml';
+import { formatLongDate } from '../../core/format-date';
 
 export interface ChartImage {
   bytes: Uint8Array;
@@ -120,7 +121,7 @@ function para(text: string, opts: { size?: number; italics?: boolean; color?: st
 export async function buildDocx(items: OutputItem[], opts: ReportOptions, chartImage: ChartImageProvider, title = 'Analysis report'): Promise<Uint8Array> {
   const children: Array<Paragraph | Table> = [];
   const datasets = [...new Set(items.map((i) => i.datasetName).filter(Boolean))] as string[];
-  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const date = formatLongDate(Date.now());
   children.push(new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: title, font: FONT, size: 36, bold: true, color: '000000' })] }));
   children.push(para([datasets.length ? `Data: ${datasets.join(', ')}` : '', `Created ${date}`].filter(Boolean).join('. ') + '.', { size: 20, color: '555555', after: 240 }));
 

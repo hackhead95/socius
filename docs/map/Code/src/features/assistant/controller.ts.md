@@ -7,7 +7,7 @@ area: features/assistant
 
 # src/features/assistant/controller.ts
 
-*Module* · area [[features - assistant|features/assistant]] · 150 lines
+*Module* · area [[features - assistant|features/assistant]] · 154 lines
 
 > What the panel's buttons do: send a message through the agent, stop, retry, apply what the assistant proposed. Reads the live app store at the moment each tool runs.
 
@@ -28,11 +28,13 @@ area: features/assistant
 
 ## Tested by
 - [[scenarios.test.ts]] · import
+- [[ai-latency.test.ts]] · import
 
 ## Imported by
 - [[AssistantPanel.tsx]] · value
 - [[AssistantRoot.tsx]] · value
 - [[scenarios.test.ts]] · value
+- [[ai-latency.test.ts]] · dynamic
 
 ## Types
 SendOptions (line 30)
@@ -51,7 +53,7 @@ upsertStep() (line 22)
 ### sendMessage
 *function* · line 36 · exported
 > Send a message. Resolves when the answer is complete, stopped or failed (never rejects).
-- Calls: [[agent.ts#runAgent|runAgent()]], [[ai-diagnose.ts#aiErrorReport|aiErrorReport()]], [[controller.ts#appSnapshot|appSnapshot()]], [[controller.ts]], [[core/types.ts#newId|newId()]], [[drivers.ts#createDriver|createDriver()]], [[errorlog.ts#logError|logError()]], [[platform/ai.ts#aiErrorText|aiErrorText()]], [[platform/ai.ts#effectiveProvider|effectiveProvider()]], [[platform/ai.ts#providerLabel|providerLabel()]], [[platform/ai.ts#refreshAiStatus|refreshAiStatus()]], [[prompt.ts#compactSystemPrompt|compactSystemPrompt()]], [[prompt.ts#systemPrompt|systemPrompt()]], [[tools/index.ts#allTools|allTools()]], [[tools/index.ts#compactTools|compactTools()]]
+- Calls: [[agent.ts#runAgent|runAgent()]], [[ai-diagnose.ts#aiErrorReport|aiErrorReport()]], [[controller.ts#appSnapshot|appSnapshot()]], [[controller.ts]], [[core/types.ts#newId|newId()]], [[drivers.ts#createDriver|createDriver()]], [[errorlog.ts#logError|logError()]], [[errorlog.ts#logWarn|logWarn()]], [[platform/ai.ts#aiErrorIsAppFault|aiErrorIsAppFault()]], [[platform/ai.ts#aiErrorText|aiErrorText()]], [[platform/ai.ts#effectiveProvider|effectiveProvider()]], [[platform/ai.ts#providerLabel|providerLabel()]], [[platform/ai.ts#recordAiConnection|recordAiConnection()]], [[platform/ai.ts#refreshAiStatus|refreshAiStatus()]], [[prompt.ts#compactSystemPrompt|compactSystemPrompt()]], [[prompt.ts#systemPrompt|systemPrompt()]], [[tools/index.ts#allTools|allTools()]], [[tools/index.ts#compactTools|compactTools()]]
 - Uses: [[controller.ts#appSnapshot|appSnapshot()]], [[useAssistantChat]], [[useStore]]
 - Reads: [[controller|useAssistantChat.controller]], [[datasetId|useAssistantChat.datasetId]], [[dataset|useStore.dataset]], [[entries|useAssistantChat.entries]], [[outputs|useStore.outputs]], [[permissions|useAssistantChat.permissions]], [[running|useAssistantChat.running]], [[useAssistantChat/focusOutputId|useAssistantChat.focusOutputId]], [[useAssistantChat/history|useAssistantChat.history]]
 - Writes: [[controller|useAssistantChat.controller]], [[datasetId|useAssistantChat.datasetId]], [[draft|useAssistantChat.draft]], [[entries|useAssistantChat.entries]], [[running|useAssistantChat.running]], [[useAssistantChat/focusOutputId|useAssistantChat.focusOutputId]], [[useAssistantChat/history|useAssistantChat.history]]
@@ -59,13 +61,13 @@ upsertStep() (line 22)
 - Used in: [[AssistantPanel.tsx]], [[AssistantRoot.tsx]], [[scenarios.test.ts]]
 
 ### stopAssistant
-*function* · line 104 · exported
+*function* · line 108 · exported
 - Uses: [[useAssistantChat]]
 - Reads: [[controller|useAssistantChat.controller]]
 - Used in: [[AssistantPanel.tsx]], [[scenarios.test.ts]]
 
 ### retryLast
-*function* · line 109 · exported
+*function* · line 113 · exported
 > Ask the last question again (after an error or Stop).
 - Calls: [[controller.ts#sendMessage|sendMessage()]]
 - Uses: [[useAssistantChat]]
@@ -74,7 +76,7 @@ upsertStep() (line 22)
 - Used in: [[AssistantPanel.tsx]], [[scenarios.test.ts]]
 
 ### runArtifact
-*function* · line 120 · exported
+*function* · line 124 · exported
 > Run an artifact's button: add an analysis to Output, apply a data change, open a dialog.
 - Calls: [[assistant/actions.ts#addToOutput|addToOutput()]], [[assistant/actions.ts#applyProposal|applyProposal()]]
 - Uses: [[useAssistantChat]], [[useStore]]
@@ -83,17 +85,17 @@ upsertStep() (line 22)
 - Used in: [[AssistantPanel.tsx]], [[scenarios.test.ts]]
 
 ### dismissArtifact
-*function* · line 137 · exported
+*function* · line 141 · exported
 - Uses: [[useAssistantChat]]
 - Store actions: [[patchEntry()|useAssistantChat.patchEntry()]]
 - Used in: [[AssistantPanel.tsx]]
 
 ### copyAnswer
-*function* · line 141 · exported
+*function* · line 145 · exported
 - Calls: [[host.ts#copyToClipboard|copyToClipboard()]]
 - Used in: [[AssistantPanel.tsx]]
 
 ### aiReady
-*function* · line 146 · exported
+*function* · line 150 · exported
 > Is an AI provider set up (no request is made)?
 - Calls: [[platform/ai.ts#getAiStatus|getAiStatus()]]

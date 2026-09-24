@@ -20,7 +20,7 @@ area: app
 - [[Analyze/Scale|Analyze > Scale]]
 
 ## Defined by
-- [[useMenus|useMenus()]]
+- [[menus.ts#buildMenus|buildMenus()]]
 
 ## Listed by
 - [[commands|Search palette: commands]]

@@ -60,16 +60,16 @@ export function BinningDialog({ ds, onClose }: { ds: Dataset; onClose: () => voi
     }
   }, [ds, v, spec, upper]);
 
-  const maxCount = preview?.p ? Math.max(1, ...preview.p.bins.map((b) => b.count)) : 1;
+  const maxCount = preview?.p ? preview.p.bins.reduce((m, b) => Math.max(m, b.count), 1) : 1;
   const run = () =>
     tryRun(() => {
       if (!v || !spec) throw new Error('Choose a variable and how to cut it.');
-      applyTransform(visualBin(ds, { sourceId: v.id, name, label: label.trim() || undefined, method: spec, upperIncluded: upper }));
+      applyTransform(visualBin(ds, { sourceId: v.id, name, label: label.trim() || undefined, method: spec, upperIncluded: upper }), 'Visual binning');
       onClose();
     }, setError);
 
   return (
-    <TransformModal title="Visual Binning" subtitle="Group a scale variable into ordered categories, for example age into 18-29, 30-44, 45-64, 65+." onClose={onClose} onOk={run} okDisabled={!v || !spec || !!preview?.err || !name.trim()} error={error} size="wide">
+    <TransformModal title="Visual Binning" subtitle="Group a scale variable into ordered categories, for example age into 18 to 29, 30 to 44, 45 to 64 and 65+." onClose={onClose} onOk={run} okDisabled={!v || !spec || !!preview?.err || !name.trim()} error={error} size="wide">
       <div className="dialog-cols">
         <div className="stack">
           <div className="label">Variable to group</div>
@@ -95,7 +95,7 @@ export function BinningDialog({ ds, onClose }: { ds: Dataset; onClose: () => voi
             </div>
           ) : null}
           {method === 'count' ? <NumField id="bn-groups" label="Number of groups" value={groups} onChange={setGroups} help="4 = quartiles, 5 = quintiles" /> : null}
-          <label className="check"><input type="checkbox" checked={upper} onChange={(e) => setUpper(e.target.checked)} /> A cutpoint belongs to the lower group (29 is in 18-29)</label>
+          <label className="check"><input type="checkbox" checked={upper} onChange={(e) => setUpper(e.target.checked)} /> A cutpoint belongs to the lower group (29 is in 18 to 29)</label>
           <div className="row" style={{ alignItems: 'flex-start' }}>
             <TextField id="bn-name" label="New variable" value={name} onChange={setName} mono width={160} />
             <TextField id="bn-label" label="Label" value={label} onChange={setLabel} />
@@ -183,7 +183,7 @@ export function SelectCasesDialog({ ds, onClose }: { ds: Dataset; onClose: () =>
       });
       if (!ok) return;
     }
-    applyTransform(res);
+    applyTransform(res, 'Select cases');
     onClose();
   };
 
@@ -283,7 +283,7 @@ export function WeightDialog({ ds, onClose }: { ds: Dataset; onClose: () => void
   const warns = check ? weightWarnings(check) : [];
   const run = () =>
     tryRun(() => {
-      applyTransform(weightCases(ds, on ? ids[0] ?? null : null));
+      applyTransform(weightCases(ds, on ? ids[0] ?? null : null), on ? 'Weight cases' : 'Turn weighting off');
       onClose();
     }, setError);
   return (
@@ -317,7 +317,7 @@ export function SortDialog({ ds, onClose }: { ds: Dataset; onClose: () => void }
   };
   const run = () =>
     tryRun(() => {
-      applyTransform(sortCases(ds, keys));
+      applyTransform(sortCases(ds, keys), 'Sort cases');
       onClose();
     }, setError);
   return (

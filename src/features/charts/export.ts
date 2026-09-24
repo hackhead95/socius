@@ -8,6 +8,11 @@ import { Chart } from './Chart';
 
 export const EXPORT_WIDTH = 680;
 
+export interface ChartRenderOptions {
+  /** Draw the title inside the image (default true). False when the document prints "Figure N" and the title above it. */
+  showTitle?: boolean;
+}
+
 /** Custom properties declared on the top-level `:root` rule (the light theme), read from the live stylesheets. */
 function lightTokens(): Record<string, string> {
   const out: Record<string, string> = {};
@@ -139,7 +144,7 @@ export function serializeChart(container: HTMLElement): { svg: string; width: nu
 }
 
 /** Render a chart offscreen at a fixed width in the light theme and run `fn` on its container. */
-export function withOffscreenChart<T>(spec: ChartSpec, fn: (el: HTMLElement) => T, width = EXPORT_WIDTH): T {
+export function withOffscreenChart<T>(spec: ChartSpec, fn: (el: HTMLElement) => T, width = EXPORT_WIDTH, opts: ChartRenderOptions = {}): T {
   const host = document.createElement('div');
   host.setAttribute('aria-hidden', 'true');
   host.style.cssText = `position:fixed;left:-20000px;top:0;width:${width}px;pointer-events:none;color-scheme:light;`;
@@ -149,7 +154,7 @@ export function withOffscreenChart<T>(spec: ChartSpec, fn: (el: HTMLElement) => 
   document.body.appendChild(host);
   const root = createRoot(host);
   try {
-    flushSync(() => root.render(createElement(Chart, { spec, width })));
+    flushSync(() => root.render(createElement(Chart, { spec, width, showTitle: opts.showTitle ?? true })));
     return fn(host);
   } finally {
     root.unmount();
@@ -157,8 +162,8 @@ export function withOffscreenChart<T>(spec: ChartSpec, fn: (el: HTMLElement) => 
   }
 }
 
-export function chartToSvg(spec: ChartSpec, width = EXPORT_WIDTH): { svg: string; width: number; height: number } {
-  return withOffscreenChart(spec, serializeChart, width);
+export function chartToSvg(spec: ChartSpec, width = EXPORT_WIDTH, opts: ChartRenderOptions = {}): { svg: string; width: number; height: number } {
+  return withOffscreenChart(spec, serializeChart, width, opts);
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -183,14 +188,14 @@ export async function svgToPng(svg: string, width: number, height: number, scale
   return { blob, bytes: new Uint8Array(await blob.arrayBuffer()), width, height };
 }
 
-export async function chartToPng(spec: ChartSpec, width = EXPORT_WIDTH, scale = 2) {
-  const s = chartToSvg(spec, width);
+export async function chartToPng(spec: ChartSpec, width = EXPORT_WIDTH, scale = 2, opts: ChartRenderOptions = {}) {
+  const s = chartToSvg(spec, width, opts);
   return svgToPng(s.svg, s.width, s.height, scale);
 }
 
 /** PNG as a data: URL (for rich-HTML clipboard copies). */
-export async function chartToPngDataUrl(spec: ChartSpec, width = EXPORT_WIDTH): Promise<{ url: string; width: number; height: number }> {
-  const png = await chartToPng(spec, width, 2);
+export async function chartToPngDataUrl(spec: ChartSpec, width = EXPORT_WIDTH, opts: ChartRenderOptions = {}): Promise<{ url: string; width: number; height: number }> {
+  const png = await chartToPng(spec, width, 2, opts);
   const url = await new Promise<string>((resolve, reject) => {
     const fr = new FileReader();
     fr.onload = () => resolve(String(fr.result));
