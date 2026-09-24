@@ -47,6 +47,8 @@ interface CodingUiState {
   kwicQuery: string;
   /** Sources analysed in the Analyse view: 'all', 'document', 'response' or 'q:<varId>' (one question). */
   analyseSources: string;
+  /** Memo id of the loaded worked example: its note shows above the responses while that memo exists. */
+  exampleNote: string | null;
   set: (patch: Partial<CodingUiState>) => void;
 }
 
@@ -68,6 +70,7 @@ export const useCodingUi = create<CodingUiState>((set) => ({
   docAttr: null,
   kwicQuery: '',
   analyseSources: 'all',
+  exampleNote: null,
   set: (patch) => set(patch),
 }));
 

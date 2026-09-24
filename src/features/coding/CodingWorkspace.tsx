@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useStore } from '../../core/store';
 import { aiAvailable } from '../../platform/host';
-import { canUndo, setActiveCoder, undoCoding } from './actions';
-import { toast } from './hooks';
+import { canUndo, loadWorkedExample, setActiveCoder, undoCoding } from './actions';
+import { canBuildWorkedExample } from '../../lib/coding/example';
+import { plural, toast } from './hooks';
 import { useCodingUi, openLocalDialog, type CodingView } from './uiStore';
 import { SourcesPanel } from './SourcesPanel';
 import { CodebookPanel } from './CodebookPanel';
@@ -156,7 +157,7 @@ export function CodingWorkspace() {
         {showSources ? <SourcesPanel /> : null}
         <main className="cw-center" aria-label="Coding area">
           {empty && (view === 'documents' || view === 'responses') ? (
-            <Welcome hasDataset={!!dataset} />
+            <Welcome hasDataset={!!dataset} offerExample={!coding.codes.length && canBuildWorkedExample(dataset)} />
           ) : view === 'documents' ? (
             activeDoc ? (
               <Reader key={activeDoc.id} doc={activeDoc} />
@@ -186,7 +187,23 @@ export function CodingWorkspace() {
   );
 }
 
-function Welcome({ hasDataset }: { hasDataset: boolean }) {
+function exploreExample() {
+  const ex = loadWorkedExample();
+  if (!ex) {
+    toast('The worked example needs the sample survey with its open-ended question q_challenge.', 'warning');
+    return;
+  }
+  const pct = Math.round((100 * ex.nCoded) / ex.docs.length);
+  const nCodes = ex.codes.filter((c) => c.parentId).length;
+  toast(
+    `Example loaded: ${plural(ex.docs.length, 'answer')} to q_challenge and ${plural(nCodes, 'starter code')}. ` +
+      `Keyword rules coded ${ex.nCoded.toLocaleString()} answers (${pct}%), so review them. ` +
+      'Then try Analyse > Codes by attribute, or Export > Codes to dataset variables and run a Crosstab by gender. Undo removes the example.',
+    'success',
+  );
+}
+
+function Welcome({ hasDataset, offerExample }: { hasDataset: boolean; offerExample: boolean }) {
   return (
     <div className="cw-welcome">
       <div className="eyebrow">Text coding</div>
@@ -195,6 +212,13 @@ function Welcome({ hasDataset }: { hasDataset: boolean }) {
         Build a codebook of themes, highlight passages in transcripts, code survey responses row by row, then compare themes across groups or turn them into variables for your statistics.
       </p>
       <div className="cw-welcome-grid">
+        {offerExample ? (
+          <button className="cw-welcome-card is-featured" onClick={exploreExample}>
+            <span className="cw-welcome-tag">Example</span>
+            <b>Explore a worked example</b>
+            <span>Load the sample survey’s answers about neighbourhood problems with a starter codebook, already coded by keyword rules for you to review.</span>
+          </button>
+        ) : null}
         <button className="cw-welcome-card" onClick={() => openLocalDialog('import', { tab: 'files' })}>
           <b>Import documents</b>
           <span>Word (.docx) or text transcripts, field notes, or a CSV/Excel file of responses.</span>

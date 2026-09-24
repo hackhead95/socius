@@ -7,6 +7,7 @@ import { newId } from '../../core/types';
 import { addSegmentMerged, subtractRange, trimRange } from '../../lib/coding/segments';
 import { nextCodeColor } from '../../lib/coding/palette';
 import { canReparent, descendantIds } from '../../lib/coding/tree';
+import { buildWorkedExample, canBuildWorkedExample, type WorkedExample } from '../../lib/coding/example';
 import { useCodingUi } from './uiStore';
 
 const HISTORY_LIMIT = 40;
@@ -82,6 +83,26 @@ export function deleteDocs(docIds: string[]): void {
   }));
   const ui = useCodingUi.getState();
   if (ui.activeDocId && drop.has(ui.activeDocId)) ui.set({ activeDocId: null, pending: null });
+}
+
+/**
+ * Load the worked example for the bundled sample survey (answers, starter codebook, keyword
+ * auto-coding and an explanatory memo) as one undo step, and open the Responses view.
+ */
+export function loadWorkedExample(): WorkedExample | null {
+  const st = useStore.getState();
+  if (!canBuildWorkedExample(st.dataset)) return null;
+  const ex = buildWorkedExample(st.dataset!, st.coding.activeCoder, st.coding);
+  if (!ex.docs.length) return null;
+  commit('Load the worked example', (c) => ({
+    ...c,
+    docs: [...c.docs, ...ex.docs],
+    codes: [...c.codes, ...ex.codes],
+    segments: [...c.segments, ...ex.segments],
+    memos: [ex.memo, ...c.memos],
+  }));
+  useCodingUi.getState().set({ view: 'responses', exampleNote: ex.memo.id, selectedCodeId: null });
+  return ex;
 }
 
 // ---------- Codes ----------

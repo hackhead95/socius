@@ -123,6 +123,49 @@ test('open-ended answers: import, keyboard coding, filters and undo', async ({ p
   await expect(page.locator('.cw-resp-tools .help')).toHaveText('628 shown · 2 of 630 coded');
 });
 
+test('worked example: one click loads answers, a starter codebook and keyword coding; one undo removes it', async ({ page }) => {
+  await ready(page);
+  await page.getByRole('tab', { name: 'Text coding', exact: true }).click();
+  const card = page.locator('.cw-welcome-card', { hasText: 'Explore a worked example' });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('keyword rules');
+  await card.click();
+
+  // Responses view with the 630 answers, most of them coded by the rules.
+  await expect(page.locator('.cw-viewtabs [role=tab][aria-selected=true]')).toContainText('Responses');
+  const counts = page.locator('.cw-resp-tools .help');
+  await expect(counts).toHaveText(/^630 shown · \d+ of 630 coded$/);
+  const coded = Number(/(\d+) of 630/.exec(await counts.innerText())![1]);
+  expect(coded / 630).toBeGreaterThan(0.6);
+  await expect(page.locator('.toast')).toContainText('Example loaded');
+  await expect(page.locator('.toast')).toContainText('review them');
+  const note = page.locator('.cw-example-note');
+  await expect(note).toContainText('Worked example.');
+  await expect(note).toContainText(`coded ${coded} of 630 answers automatically`);
+  await expect(page.locator('.cw-resp-row').first()).toContainText('area:');
+  for (const name of ['Infrastructure and services', 'Water supply', 'Drainage and flooding', 'Safety at night', 'Rent and housing', 'Air pollution']) {
+    await expect(page.locator('.cw-code', { hasText: name }).first()).toBeVisible();
+  }
+
+  // The note's shortcuts: review, export to the dataset, codes by attribute.
+  await note.locator('button', { hasText: 'Show answers not coded' }).click();
+  await expect(counts).toHaveText(`${630 - coded} shown · ${coded} of 630 coded`);
+  await note.locator('button', { hasText: 'Export codes to dataset' }).click();
+  await expect(page.locator('.modal')).toContainText('Water supply');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.modal')).toHaveCount(0);
+  await note.locator('button', { hasText: 'Codes by attribute' }).click();
+  await expect(page.locator('.cw-viewtabs [role=tab][aria-selected=true]')).toContainText('Analyse');
+  await page.locator('.cw-viewtabs [role=tab]', { hasText: 'Memos' }).click();
+  await expect(page.locator('.cw-main')).toContainText('About this worked example');
+
+  // One undo step removes the whole example and the offer comes back.
+  await page.locator('.cw-toolbar button', { hasText: /^Undo$/ }).click();
+  await page.locator('.cw-viewtabs [role=tab]', { hasText: 'Responses' }).click();
+  await expect(card).toBeVisible();
+  await expect(page.locator('.cw-toolbar button', { hasText: /^Undo$/ })).toBeDisabled();
+});
+
 test('auto-coding preview, apply, undo and apply again', async ({ page }) => {
   await ready(page);
   await importChallenge(page);

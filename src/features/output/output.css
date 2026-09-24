@@ -55,8 +55,10 @@
 .ov-scrim { display: none; }
 
 .ov-doc { overflow: auto; min-height: 0; min-width: 0; padding: var(--space-5) var(--space-4) var(--space-6); scroll-padding-top: 16px; }
+/* The paper grows with the window so wide tables fit; running text keeps a reading measure (--ov-measure). */
 .ov-paper {
-  max-width: 900px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  --ov-measure: 38rem; /* about 70ch of the 15.5px report serif, plus box padding */
+  width: min(100%, 1180px); margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
   box-shadow: var(--shadow-1); padding: var(--space-2) 48px var(--space-6);
 }
 
@@ -89,6 +91,7 @@
 .ob:hover .ob-actions, .ob:focus-within .ob-actions { opacity: 1; }
 .ob-label { font-family: var(--font-ui); font-size: var(--fs-xs); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--muted); }
 
+.ob-interp, .ob-apa, .ob-warning, .ob-note, .ob-heading { max-width: var(--ov-measure); }
 .ob-interp {
   font-family: var(--font-report); font-size: 15.5px; line-height: 1.5; color: var(--text);
   border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 10px 16px 12px; border-radius: 0 var(--r-md) var(--r-md) 0;
@@ -122,8 +125,24 @@
 /* Output tables */
 .ot { margin: var(--space-2) 0 0; --ot-pad: 10px; }
 .ot-caption { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.ot-frame { position: relative; max-width: 100%; }
 .ot-scroll { overflow-x: auto; max-width: 100%; }
 .ot-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* Scroll affordance: a fade and an edge shadow on whichever side has more columns out of view. */
+.ot-frame::before, .ot-frame::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 44px; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 1;
+}
+.ot-frame::before {
+  left: 0;
+  background: linear-gradient(to right, color-mix(in srgb, var(--text) 16%, transparent), transparent 10px), linear-gradient(to right, var(--surface) 15%, transparent);
+}
+.ot-frame::after {
+  right: 0;
+  background: linear-gradient(to left, color-mix(in srgb, var(--text) 16%, transparent), transparent 10px), linear-gradient(to left, var(--surface) 15%, transparent);
+}
+.ot-frame.more-left::before, .ot-frame.more-right::after { opacity: 1; }
+.ot-more { display: none; font-family: var(--font-ui); font-size: var(--fs-xs); color: var(--muted); margin-top: 4px; }
+.ot-frame.more-left + .ot-more, .ot-frame.more-right + .ot-more { display: block; }
 .ot table { border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
 .ot th, .ot td { padding: 4px var(--ot-pad); vertical-align: top; text-align: left; }
 .ot td.num { text-align: right; white-space: nowrap; }
@@ -131,7 +150,8 @@
 .ot thead th.stub { text-align: left; }
 .ot tbody th { font-weight: 400; }
 .ot .nw { white-space: nowrap; }
-.ot tbody th.stub { min-width: 10em; }
+/* Row labels: short ones stay on one line; long ones wrap, but never into a sliver. */
+.ot tbody th.stub:not(.nw) { min-width: 8em; }
 .ot .b { font-weight: 700; }
 .ot .i { font-style: italic; }
 .ot sup { font-size: 0.72em; line-height: 0; margin-left: 1px; }
@@ -141,7 +161,7 @@
 .ot .tone-warn .tv { background: var(--warn-soft); color: var(--warn); }
 .ot .tone-bad .tv { background: var(--bad-soft); color: var(--bad); }
 .ot .tone-muted { color: var(--muted); }
-.ot-notes { margin-top: 6px; font-size: 13px; color: var(--text-2); }
+.ot-notes { margin-top: 6px; font-size: 13px; color: var(--text-2); max-width: var(--ov-measure, 38rem); }
 .ot-notes p + p { margin-top: 2px; }
 
 /* APA 7: number bold, title italic; rules only at top, under the header and at the bottom. */

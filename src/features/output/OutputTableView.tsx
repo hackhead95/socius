@@ -1,12 +1,39 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OutputTable } from '../../core/output';
 import { formatCell, isSignificantP, layoutRows, percentColumns, stubCount, type TableStyle } from './format';
+
+/** Which sides of a horizontal scroller have content out of view (updates on scroll and resize). */
+function useScrollEdges() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setEdges((p) => (p.left === left && p.right === right ? p : { left, right }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    ro?.observe(el);
+    if (el.firstElementChild) ro?.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro?.disconnect();
+    };
+  }, []);
+  return { ref, ...edges };
+}
 
 /** An output table on screen: APA (horizontal rules only) or SPSS (light grid) style. */
 export function OutputTableView({ table, style, number }: { table: OutputTable; style: TableStyle; number?: number }) {
   const geo = useMemo(() => ({ head: layoutRows(table.header), body: layoutRows(table.rows), pct: percentColumns(table), stubs: stubCount(table) }), [table]);
   const rules = new Set(table.ruleBefore ?? []);
   const apa = style === 'apa';
+  const scroll = useScrollEdges();
+  const frameCls = ['ot-frame', scroll.left ? 'more-left' : '', scroll.right ? 'more-right' : ''].filter(Boolean).join(' ');
   return (
     <figure className={`ot ot-${style}`}>
       <figcaption className="ot-caption">
@@ -14,73 +41,76 @@ export function OutputTableView({ table, style, number }: { table: OutputTable; 
         <span className="ot-title">{table.title}</span>
         {table.subtitle ? <span className="ot-subtitle">{table.subtitle}</span> : null}
       </figcaption>
-      <div className="ot-scroll" tabIndex={0} role="region" aria-label={`${table.title} (scrolls sideways)`}>
-        <table>
-          {geo.head.grid.length ? (
-            <thead>
-              {geo.head.grid.map((row, r) => (
-                <tr key={r}>
+      <div className={frameCls}>
+        <div className="ot-scroll" ref={scroll.ref} tabIndex={0} role="region" aria-label={`${table.title} (scrolls sideways)`}>
+          <table>
+            {geo.head.grid.length ? (
+              <thead>
+                {geo.head.grid.map((row, r) => (
+                  <tr key={r}>
+                    {row.map((g, i) => {
+                      const f = formatCell(g.cell, { style, percentColumn: geo.pct[g.col] });
+                      const isStub = g.col < geo.stubs;
+                      const lowest = r + g.rowSpan >= geo.head.grid.length;
+                      return (
+                        <th
+                          key={i}
+                          scope="col"
+                          colSpan={g.colSpan > 1 ? g.colSpan : undefined}
+                          rowSpan={g.rowSpan > 1 ? g.rowSpan : undefined}
+                          className={[isStub ? 'stub' : '', g.colSpan > 1 ? 'spanner' : '', lowest ? 'lowest' : ''].filter(Boolean).join(' ') || undefined}
+                          style={g.cell.align ? { textAlign: g.cell.align } : undefined}
+                        >
+                          {f.text}
+                          {f.mark ? <sup>{f.mark}</sup> : null}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </thead>
+            ) : null}
+            <tbody>
+              {geo.body.grid.map((row, r) => (
+                <tr key={r} className={rules.has(r) ? 'rule' : undefined}>
                   {row.map((g, i) => {
-                    const f = formatCell(g.cell, { style, percentColumn: geo.pct[g.col] });
+                    const c = g.cell;
+                    const f = formatCell(c, { style, percentColumn: geo.pct[g.col] });
                     const isStub = g.col < geo.stubs;
-                    const lowest = r + g.rowSpan >= geo.head.grid.length;
+                    const tone = c.tone ?? (isSignificantP(c) ? 'good' : undefined);
+                    const cls = [
+                      f.numeric && !isStub ? 'num' : '',
+                      tone ? `tone-${tone}` : '',
+                      c.bold ? 'b' : '',
+                      c.italic ? 'i' : '',
+                      typeof c.v === 'number' && Number.isNaN(c.v) ? 'na' : '',
+                    ].filter(Boolean).join(' ');
+                    const st = { textAlign: c.align, paddingLeft: c.indent ? `calc(var(--ot-pad) + ${c.indent * 14}px)` : undefined };
+                    const Tag = isStub ? 'th' : 'td';
+                    // Keep short stubs and single-token values (e.g. "6.215E-6", "<.001") on one line.
+                    const short = isStub ? f.text.length <= 24 : !/\s/.test(f.text);
                     return (
-                      <th
+                      <Tag
                         key={i}
-                        scope="col"
+                        scope={isStub ? 'row' : undefined}
                         colSpan={g.colSpan > 1 ? g.colSpan : undefined}
                         rowSpan={g.rowSpan > 1 ? g.rowSpan : undefined}
-                        className={[isStub ? 'stub' : '', g.colSpan > 1 ? 'spanner' : '', lowest ? 'lowest' : ''].filter(Boolean).join(' ') || undefined}
-                        style={g.cell.align ? { textAlign: g.cell.align } : undefined}
+                        className={[isStub ? 'stub' : '', short ? 'nw' : '', cls].filter(Boolean).join(' ') || undefined}
+                        style={c.align || c.indent ? st : undefined}
+                        title={tone === 'good' && c.fmt === 'p' ? 'Below .05' : undefined}
                       >
-                        {f.text}
+                        {tone ? <span className="tv">{f.text}</span> : f.text}
                         {f.mark ? <sup>{f.mark}</sup> : null}
-                      </th>
+                      </Tag>
                     );
                   })}
                 </tr>
               ))}
-            </thead>
-          ) : null}
-          <tbody>
-            {geo.body.grid.map((row, r) => (
-              <tr key={r} className={rules.has(r) ? 'rule' : undefined}>
-                {row.map((g, i) => {
-                  const c = g.cell;
-                  const f = formatCell(c, { style, percentColumn: geo.pct[g.col] });
-                  const isStub = g.col < geo.stubs;
-                  const tone = c.tone ?? (isSignificantP(c) ? 'good' : undefined);
-                  const cls = [
-                    f.numeric && !isStub ? 'num' : '',
-                    tone ? `tone-${tone}` : '',
-                    c.bold ? 'b' : '',
-                    c.italic ? 'i' : '',
-                    typeof c.v === 'number' && Number.isNaN(c.v) ? 'na' : '',
-                  ].filter(Boolean).join(' ');
-                  const st = { textAlign: c.align, paddingLeft: c.indent ? `calc(var(--ot-pad) + ${c.indent * 14}px)` : undefined };
-                  const Tag = isStub ? 'th' : 'td';
-                  // Keep short stubs and single-token values (e.g. "6.215E-6", "<.001") on one line.
-                  const short = isStub ? f.text.length <= 24 : !/\s/.test(f.text);
-                  return (
-                    <Tag
-                      key={i}
-                      scope={isStub ? 'row' : undefined}
-                      colSpan={g.colSpan > 1 ? g.colSpan : undefined}
-                      rowSpan={g.rowSpan > 1 ? g.rowSpan : undefined}
-                      className={[isStub ? 'stub' : '', short ? 'nw' : '', cls].filter(Boolean).join(' ') || undefined}
-                      style={c.align || c.indent ? st : undefined}
-                      title={tone === 'good' && c.fmt === 'p' ? 'Below .05' : undefined}
-                    >
-                      {tone ? <span className="tv">{f.text}</span> : f.text}
-                      {f.mark ? <sup>{f.mark}</sup> : null}
-                    </Tag>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
+      <p className="ot-more" aria-hidden="true">Scroll sideways to see all columns.</p>
       {table.footnotes?.length ? (
         <div className="ot-notes">
           {table.footnotes.map((fn, i) => (

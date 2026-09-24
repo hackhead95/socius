@@ -23,6 +23,9 @@ export function ResponsesView() {
   const quick = useQuickKeyCodes();
   const ai = useCodingUi((s) => s.ai);
   const selectedCodeId = useCodingUi((s) => s.selectedCodeId);
+  const exampleMemo = useCodingUi((s) => s.exampleNote);
+  const exampleNote = useStore((s) => !!exampleMemo && s.coding.memos.some((m) => m.id === exampleMemo));
+  const allSegments = useStore((s) => s.coding.segments);
 
   const responses = useMemo(() => allDocs.filter((d) => d.kind === 'response'), [allDocs]);
   const questions = useMemo(() => {
@@ -58,6 +61,7 @@ export function ResponsesView() {
   }, [scoped, search, codeFilter, attrKey, attrVal, segIndex]);
 
   const nCoded = useMemo(() => scoped.filter((d) => segIndex.get(d.id)?.length).length, [scoped, segIndex]);
+  const nAutoCoded = useMemo(() => (exampleNote ? new Set(allSegments.filter((s) => s.origin === 'auto-rule').map((s) => s.docId)).size : 0), [exampleNote, allSegments]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -261,6 +265,23 @@ export function ResponsesView() {
           {rows.length.toLocaleString()} shown · {nCoded.toLocaleString()} of {scoped.length.toLocaleString()} coded
         </span>
       </div>
+
+      {exampleNote ? (
+        <div className="cw-example-note" role="note" aria-label="About the worked example">
+          <div className="cw-example-text">
+            <b>Worked example.</b> These are the sample survey’s answers about the biggest challenge facing the neighbourhood. Keyword rules from the starter codebook coded{' '}
+            {nAutoCoded.toLocaleString()} of {responses.length.toLocaleString()} answers automatically. Rules miss answers worded differently and sometimes pick up a word used in passing, so check the codes before you rely on them.
+          </div>
+          <div className="cw-example-actions">
+            <button className="btn btn-sm" onClick={() => { setCodeFilter('__coded'); scrollRef.current?.focus(); }}>Review coded answers</button>
+            <button className="btn btn-sm" onClick={() => { setCodeFilter('__uncoded'); scrollRef.current?.focus(); }}>Show answers not coded</button>
+            <button className="btn btn-sm" onClick={() => useCodingUi.getState().set({ view: 'analyse', analyseTab: 'attribute' })}>Codes by attribute</button>
+            <button className="btn btn-sm" onClick={() => openLocalDialog('export-dataset')} disabled={!dataset}>Export codes to dataset…</button>
+            <span className="spacer" />
+            <button className="btn btn-sm btn-ghost" onClick={() => useCodingUi.getState().set({ exampleNote: null })}>Hide note</button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="cw-resp-keys">
         <span className="help">Keys:</span>
