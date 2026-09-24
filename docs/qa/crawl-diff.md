@@ -1,18 +1,16 @@
 # Crawl diff
 
-Run 2026-09-24 20:07 UTC (commit `07c5b4b`) against the previous report (2026-09-24 19:08 UTC, commit `29e1e76`).
-Scope: all areas; 50 combination(s).
+Run 2026-09-24 20:19 UTC (commit `7d81a51`) against the previous report (2026-09-24 20:16 UTC, commit `7d81a51`).
+Scope: all areas; 1 combination(s).
 
-- New: 4
-- Fixed (in scope, not seen any more): 0
-- Still present: 7
+- New: 0
+- Fixed (in scope, not seen any more): 2
+- Still present: 1
 
-## New
+## Fixed
 
-- P2 `ed5485ecd3` mobile: Text is clipped: I trust the local municipal body to act in residents' intere
 - P2 `72330bc36a` output: No visible focus indicator: No formal schooling: 40
 - P2 `2f702f7345` output: No visible focus indicator: Primary: 64
-- P2 `bf5ae283d5` mobile: Text is clipped: I trust the local municipal body to act in residents' intere
 
 ## Curated bugs (UI-BUGS.md) with crawler keys
 

@@ -1,59 +1,10 @@
 {
- "generatedAt": "2026-09-24T20:07:29.163Z",
- "commit": "07c5b4b",
+ "generatedAt": "2026-09-24T20:19:44.502Z",
+ "commit": "7d81a51",
  "scope": {
   "areas": null,
   "combos": [
-   "analyses @ 1024x768 dark",
-   "analyses @ 1024x768 light",
-   "analyses @ 1280x800 dark",
-   "analyses @ 1280x800 light",
-   "analyses @ 1440x900 dark",
-   "analyses @ 1440x900 light",
-   "analyses @ 400x800 dark",
-   "analyses @ 400x800 light",
-   "analyses @ 768x1024 dark",
-   "analyses @ 768x1024 light",
-   "coding @ 1024x768 dark",
-   "coding @ 1024x768 light",
-   "coding @ 1280x800 dark",
-   "coding @ 1280x800 light",
-   "coding @ 1440x900 dark",
-   "coding @ 1440x900 light",
-   "coding @ 400x800 dark",
-   "coding @ 400x800 light",
-   "coding @ 768x1024 dark",
-   "coding @ 768x1024 light",
-   "first-visit @ 1024x768 dark",
-   "first-visit @ 1024x768 light",
-   "first-visit @ 1280x800 dark",
-   "first-visit @ 1280x800 light",
-   "first-visit @ 1440x900 dark",
-   "first-visit @ 1440x900 light",
-   "first-visit @ 400x800 dark",
-   "first-visit @ 400x800 light",
-   "first-visit @ 768x1024 dark",
-   "first-visit @ 768x1024 light",
-   "sample @ 1024x768 dark",
-   "sample @ 1024x768 light",
-   "sample @ 1280x800 dark",
-   "sample @ 1280x800 light",
-   "sample @ 1440x900 dark",
-   "sample @ 1440x900 light",
-   "sample @ 400x800 dark",
-   "sample @ 400x800 light",
-   "sample @ 768x1024 dark",
-   "sample @ 768x1024 light",
-   "weighted @ 1024x768 dark",
-   "weighted @ 1024x768 light",
-   "weighted @ 1280x800 dark",
-   "weighted @ 1280x800 light",
-   "weighted @ 1440x900 dark",
-   "weighted @ 1440x900 light",
-   "weighted @ 400x800 dark",
-   "weighted @ 400x800 light",
-   "weighted @ 768x1024 dark",
-   "weighted @ 768x1024 light"
+   "analyses @ 400x800 light"
   ]
  },
  "depths": {
@@ -109,6 +60,24 @@
   "weighted @ 768x1024 light": 2
  },
  "coverage": {
+  "combinations": 1,
+  "checks": 82,
+  "menu-items": 41,
+  "dialogs": 25,
+  "focus-checks": 25,
+  "dialog-closes": 25,
+  "tab-switches": 6,
+  "rebuilds": 2,
+  "dialog-controls": 27,
+  "toolbar-buttons": 46,
+  "palette": 1,
+  "dialog-tabs": 2,
+  "ai-chip": 1,
+  "assistant": 1,
+  "focus-ring-stops": 9,
+  "minutes": 3
+ },
+ "baseCoverage": {
   "combinations": 50,
   "checks": 6453,
   "menu-hover-checks": 32,
@@ -129,74 +98,8 @@
   "context-menus": 60,
   "minutes": 223
  },
- "baseCoverage": null,
- "baseGeneratedAt": null,
- "ownerReports": [
-  {
-   "type": "owner",
-   "id": "menu-hover",
-   "status": "not reproduced",
-   "note": "menubar and menu item highlight followed the pointer after clicking every tab",
-   "combo": "first-visit @ 1440x900 light",
-   "at": "2026-09-24T19:10:13.646Z"
-  },
-  {
-   "type": "owner",
-   "id": "ai",
-   "status": "partly",
-   "note": "3 provider choices: On this computerFree, private / Google GeminiFree key / Other serviceAdvanced; Google GeminiFree key: test with a made-up key → Not connected. The steps below show where it failed and what to do.; Other serviceAdvanced: test with a made-up key → Not connected. The steps below show where it failed and what to do.",
-   "combo": "first-visit @ 1440x900 light",
-   "at": "2026-09-24T19:10:24.537Z"
-  },
-  {
-   "type": "owner",
-   "id": "ai",
-   "status": "partly",
-   "note": "dialog opened",
-   "combo": "first-visit @ 400x800 light",
-   "at": "2026-09-24T19:15:44.379Z"
-  },
-  {
-   "type": "owner",
-   "id": "rename",
-   "status": "not reproduced",
-   "note": "double-click the Name cell, select all, type a new name, press Enter: OK; click the Name cell once and start typing, press Enter: OK; select the Name cell and press F2, type, press Tab: OK; double-click the Name cell, type a new name, then click another row: OK; double-click the Name cell, type a new name, then click the Data View tab: OK; double-click the Name cell, type a new name, then open a menu: OK; invalid name: error shown",
-   "combo": "sample @ 1440x900 light",
-   "at": "2026-09-24T19:15:50.532Z"
-  },
-  {
-   "type": "owner",
-   "id": "home",
-   "status": "not reproduced",
-   "note": "logo is <button>; click: DOM changed (http://127.0.0.1:4533/socius/|tab-data → http://127.0.0.1:4533/socius/|); guide link \"Open Socius\" → ../ (200); guide opened as http://127.0.0.1:4533/socius/guide: \"Open Socius\" resolves to http://127.0.0.1:4533/socius/; \"Open Socius\" in the guide → http://127.0.0.1:4533/socius/ (app loads)",
-   "combo": "sample @ 1440x900 light",
-   "at": "2026-09-24T19:15:54.150Z"
-  },
-  {
-   "type": "owner",
-   "id": "menu-hover",
-   "status": "not reproduced",
-   "note": "menubar and menu item highlight followed the pointer after clicking every tab",
-   "combo": "sample @ 1440x900 light",
-   "at": "2026-09-24T19:16:04.746Z"
-  },
-  {
-   "type": "owner",
-   "id": "rename",
-   "status": "not reproduced",
-   "note": "double-click the Name cell, select all, type a new name, press Enter: OK; click the Name cell once and start typing, press Enter: OK; select the Name cell and press F2, type, press Tab: OK; double-click the Name cell, type a new name, then click another row: OK; double-click the Name cell, type a new name, then click the Data View tab: OK; double-click the Name cell, type a new name, then open a menu: OK; invalid name: error shown",
-   "combo": "sample @ 400x800 light",
-   "at": "2026-09-24T19:32:59.381Z"
-  },
-  {
-   "type": "owner",
-   "id": "home",
-   "status": "not reproduced",
-   "note": "logo is <button>; click: DOM changed (http://127.0.0.1:4533/socius/|tab-data → http://127.0.0.1:4533/socius/|); guide link \"Open Socius\" → ../ (200); guide opened as http://127.0.0.1:4533/socius/guide: \"Open Socius\" resolves to http://127.0.0.1:4533/socius/; \"Open Socius\" in the guide → http://127.0.0.1:4533/socius/ (app loads)",
-   "combo": "sample @ 400x800 light",
-   "at": "2026-09-24T19:33:02.680Z"
-  }
- ],
+ "baseGeneratedAt": "2026-09-24T20:07:29.163Z",
+ "ownerReports": [],
  "crawlErrors": [],
  "summary": {
   "data": {
@@ -222,7 +125,7 @@
   "output": {
    "P0": 0,
    "P1": 0,
-   "P2": 2
+   "P2": 0
   },
   "charts": {
    "P0": 0,
@@ -247,7 +150,7 @@
   "mobile": {
    "P0": 0,
    "P1": 1,
-   "P2": 2
+   "P2": 0
   },
   "theme": {
    "P0": 0,
@@ -257,9 +160,7 @@
  },
  "byRule": {
   "occluded": 2,
-  "focus-ring": 2,
-  "layout-shift": 5,
-  "overflow-text": 2
+  "layout-shift": 5
  },
  "findings": [
   {
@@ -296,7 +197,8 @@
    },
    "vp": "768x1024",
    "th": "light",
-   "count": 10
+   "count": 10,
+   "carriedOver": true
   },
   {
    "key": "eeb3fffd34",
@@ -304,27 +206,24 @@
    "priority": "P1",
    "area": "mobile",
    "title": "Control covered by another element: aside.as-panel",
-   "detail": "aside.as-panel covers 16 control(s) so they cannot be clicked: \"Socius home: start screen and \", \"Menu\", \"Search Socius\", \"AI help: the on-device model (\", \"Undo\", \"Redo\", \"Theme: Dark\", \"Data View\"",
+   "detail": "aside.as-panel covers 26 control(s) so they cannot be clicked: \"Socius home: start screen and \", \"Menu\", \"Search Socius\", \"AI help: not set up\", \"Undo\", \"Redo\", \"Theme: Light\", \"Rename (used as the file name \"",
    "selector": "div#root > div.app > aside.as-panel",
    "label": "aside.as-panel",
    "screenshot": "docs/qa/shots/c-eeb3fffd34.jpg",
    "steps": [
     "Viewport 400×800, light theme (View > Theme)",
-    "Open the app in a fresh browser profile (no saved session)",
+    "Open the app in a fresh browser profile",
+    "Welcome screen: click \"Load sample survey\"",
+    "Run Analyze > Descriptive Statistics > Frequencies... (Frequencies of educ)",
+    "Run Analyze > Descriptive Statistics > Crosstabs... (Crosstabs civic_meet × migrant)",
+    "Run Analyze > Compare Means > Independent-Samples T Test... (Independent-samples t test of life_sat by migrant)",
+    "Run Analyze > Regression > Linear Regression... (Linear regression life_sat on age and yrs_nbhd)",
+    "Run Graphs > Bar Chart... (Bar chart of educ)",
     "Press Ctrl+J"
    ],
-   "where": "first-visit @ 400x800 light",
+   "where": "analyses @ 400x800 light",
    "occurrences": [
-    "analyses @ 400x800 dark",
-    "analyses @ 400x800 light",
-    "coding @ 400x800 dark",
-    "coding @ 400x800 light",
-    "first-visit @ 400x800 dark",
-    "first-visit @ 400x800 light",
-    "sample @ 400x800 dark",
-    "sample @ 400x800 light",
-    "weighted @ 400x800 dark",
-    "weighted @ 400x800 light"
+    "analyses @ 400x800 light"
    ],
    "data": {
     "coveredBy": "div#root > div.app > aside.as-panel",
@@ -332,71 +231,7 @@
    },
    "vp": "400x800",
    "th": "light",
-   "count": 10
-  },
-  {
-   "key": "72330bc36a",
-   "rule": "focus-ring",
-   "priority": "P2",
-   "area": "output",
-   "title": "No visible focus indicator: No formal schooling: 40",
-   "detail": "\"No formal schooling: 40\" receives keyboard focus (Tab stop 29) with no visible focus indicator",
-   "selector": "div.oi-body > div.ob.ob-chart > figure.ob-chart > div.chart > svg.chart-svg > rect.chart-hit",
-   "label": "No formal schooling: 40",
-   "screenshot": "docs/qa/shots/c-72330bc36a.jpg",
-   "steps": [
-    "Viewport 400×800, light theme (View > Theme)",
-    "Open the app in a fresh browser profile",
-    "Welcome screen: click \"Load sample survey\"",
-    "Run Analyze > Descriptive Statistics > Frequencies... (Frequencies of educ)",
-    "Run Analyze > Descriptive Statistics > Crosstabs... (Crosstabs civic_meet × migrant)",
-    "Run Analyze > Compare Means > Independent-Samples T Test... (Independent-samples t test of life_sat by migrant)",
-    "Run Analyze > Regression > Linear Regression... (Linear regression life_sat on age and yrs_nbhd)",
-    "Run Graphs > Bar Chart... (Bar chart of educ)",
-    "Press Tab repeatedly from the top of the page"
-   ],
-   "where": "analyses @ 400x800 light",
-   "occurrences": [
-    "analyses @ 400x800 dark",
-    "analyses @ 400x800 light",
-    "analyses @ 768x1024 dark",
-    "analyses @ 768x1024 light"
-   ],
-   "vp": "400x800",
-   "th": "light",
-   "count": 4
-  },
-  {
-   "key": "2f702f7345",
-   "rule": "focus-ring",
-   "priority": "P2",
-   "area": "output",
-   "title": "No visible focus indicator: Primary: 64",
-   "detail": "\"Primary: 64\" receives keyboard focus (Tab stop 30) with no visible focus indicator",
-   "selector": "div.oi-body > div.ob.ob-chart > figure.ob-chart > div.chart > svg.chart-svg > rect.chart-hit",
-   "label": "Primary: 64",
-   "screenshot": "docs/qa/shots/c-2f702f7345.jpg",
-   "steps": [
-    "Viewport 400×800, light theme (View > Theme)",
-    "Open the app in a fresh browser profile",
-    "Welcome screen: click \"Load sample survey\"",
-    "Run Analyze > Descriptive Statistics > Frequencies... (Frequencies of educ)",
-    "Run Analyze > Descriptive Statistics > Crosstabs... (Crosstabs civic_meet × migrant)",
-    "Run Analyze > Compare Means > Independent-Samples T Test... (Independent-samples t test of life_sat by migrant)",
-    "Run Analyze > Regression > Linear Regression... (Linear regression life_sat on age and yrs_nbhd)",
-    "Run Graphs > Bar Chart... (Bar chart of educ)",
-    "Press Tab repeatedly from the top of the page"
-   ],
-   "where": "analyses @ 400x800 light",
-   "occurrences": [
-    "analyses @ 400x800 dark",
-    "analyses @ 400x800 light",
-    "analyses @ 768x1024 dark",
-    "analyses @ 768x1024 light"
-   ],
-   "vp": "400x800",
-   "th": "light",
-   "count": 4
+   "count": 1
   },
   {
    "key": "0edb065a53",
@@ -424,7 +259,8 @@
    ],
    "vp": "400x800",
    "th": "light",
-   "count": 2
+   "count": 2,
+   "carriedOver": true
   },
   {
    "key": "c5bfe0c4d6",
@@ -459,7 +295,8 @@
    ],
    "vp": "1440x900",
    "th": "light",
-   "count": 12
+   "count": 12,
+   "carriedOver": true
   },
   {
    "key": "8a66c05409",
@@ -493,7 +330,8 @@
    ],
    "vp": "1440x900",
    "th": "light",
-   "count": 6
+   "count": 6,
+   "carriedOver": true
   },
   {
    "key": "acb5e9b308",
@@ -524,7 +362,8 @@
    ],
    "vp": "1440x900",
    "th": "light",
-   "count": 6
+   "count": 6,
+   "carriedOver": true
   },
   {
    "key": "d38198ca1a",
@@ -552,76 +391,8 @@
    ],
    "vp": "1440x900",
    "th": "light",
-   "count": 6
-  },
-  {
-   "key": "bf5ae283d5",
-   "rule": "overflow-text",
-   "priority": "P2",
-   "area": "mobile",
-   "title": "Text is clipped: I trust the local municipal body to act in residents' intere",
-   "detail": "text truncated with an ellipsis (49px hidden) and no tooltip with the full text",
-   "selector": "div.palette-backdrop > div.palette > div#_r_4_-list.palette-list > div.palette-section > div#_r_4_-opt-0.palette-item > span.palette-text > span.palette-detail",
-   "label": "I trust the local municipal body to act in residents' intere",
-   "screenshot": "docs/qa/shots/c-bf5ae283d5.jpg",
-   "steps": [
-    "Viewport 400×800, light theme (View > Theme)",
-    "Open the app in a fresh browser profile",
-    "Welcome screen: click \"Load sample survey\"",
-    "Press Ctrl+K",
-    "Type \"trust\""
-   ],
-   "where": "sample @ 400x800 light",
-   "occurrences": [
-    "coding @ 400x800 dark",
-    "coding @ 400x800 light",
-    "sample @ 400x800 dark",
-    "sample @ 400x800 light",
-    "weighted @ 400x800 dark",
-    "weighted @ 400x800 light"
-   ],
-   "data": {
-    "ow": 49,
-    "oh": 0
-   },
-   "vp": "400x800",
-   "th": "light",
-   "count": 6
-  },
-  {
-   "key": "ed5485ecd3",
-   "rule": "overflow-text",
-   "priority": "P2",
-   "area": "mobile",
-   "title": "Text is clipped: I trust the local municipal body to act in residents' intere",
-   "detail": "text truncated with an ellipsis (49px hidden) and no tooltip with the full text",
-   "selector": "div.palette-backdrop > div.palette > div#_r_a_-list.palette-list > div.palette-section > div#_r_a_-opt-0.palette-item > span.palette-text > span.palette-detail",
-   "label": "I trust the local municipal body to act in residents' intere",
-   "screenshot": "docs/qa/shots/c-ed5485ecd3.jpg",
-   "steps": [
-    "Viewport 400×800, light theme (View > Theme)",
-    "Open the app in a fresh browser profile",
-    "Welcome screen: click \"Load sample survey\"",
-    "Run Analyze > Descriptive Statistics > Frequencies... (Frequencies of educ)",
-    "Run Analyze > Descriptive Statistics > Crosstabs... (Crosstabs civic_meet × migrant)",
-    "Run Analyze > Compare Means > Independent-Samples T Test... (Independent-samples t test of life_sat by migrant)",
-    "Run Analyze > Regression > Linear Regression... (Linear regression life_sat on age and yrs_nbhd)",
-    "Run Graphs > Bar Chart... (Bar chart of educ)",
-    "Press Ctrl+K",
-    "Type \"trust\""
-   ],
-   "where": "analyses @ 400x800 light",
-   "occurrences": [
-    "analyses @ 400x800 dark",
-    "analyses @ 400x800 light"
-   ],
-   "data": {
-    "ow": 49,
-    "oh": 0
-   },
-   "vp": "400x800",
-   "th": "light",
-   "count": 2
+   "count": 6,
+   "carriedOver": true
   }
  ]
 }

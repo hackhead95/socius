@@ -375,7 +375,7 @@ export function focusInfo(): { sel: string; label: string; inDialog: boolean; vi
   const top = modals[modals.length - 1];
   const snap = () => {
     const cs = getComputedStyle(el);
-    return [cs.outlineStyle, cs.outlineWidth, cs.outlineColor, cs.boxShadow, cs.backgroundColor, cs.borderColor, cs.color, cs.textDecorationLine].join('|');
+    return [cs.outlineStyle, cs.outlineWidth, cs.outlineColor, cs.boxShadow, cs.backgroundColor, cs.borderColor, cs.color, cs.textDecorationLine, cs.stroke, cs.strokeWidth].join('|');
   };
   const focused = snap();
   // Compare with the unfocused look. Blur and re-focus without scrolling; restore :focus-visible by
