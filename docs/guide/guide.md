@@ -36,7 +36,7 @@ Nothing. Socius is free to use. There is no account, no sign-up and no trial per
 
 Socius runs entirely inside your browser. When you open a file, it is read on your computer and is never uploaded anywhere. Socius keeps a copy of your current work in the browser so it is there when you come back, but that copy lives only in this browser on this computer. To keep your work safe, save a project file (see [Saving and sharing your work](#saving-and-sharing-your-work)).
 
-The one exception is the optional AI help for text coding. It is off until you set it up, and it never sends anything until you click a button that asks it to (see [AI help](#ai-help-optional)).
+The one exception is the optional AI help. It is off until you set it up, and it never sends anything until you click a button or ask a question. Each AI feature tells you what it will send, and to whom, before it does (see [Getting help from AI](#getting-help-from-ai)).
 
 ## What you need
 
@@ -62,13 +62,15 @@ Click **Load sample survey** now. The practice data opens, and you see the main 
 
 The numbers in the picture show the parts of the screen:
 
-1. **Menu bar.** Everything Socius can do is in these menus: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding and Help.
-2. **Dataset bar.** The name of the open dataset, how many cases (rows) and variables (columns) it has, and small labels that tell you when a weight or a filter is switched on.
-3. **Main tabs.** **Data View** shows the data, one row per respondent. **Variable View** describes the variables. **Output** collects your results. **Text coding** is where you code interviews and open-ended answers.
-4. **Variable list.** All your variables with their labels. Type in the search box to find one quickly. **View > Variable list** hides and shows it.
-5. **Toolbar.** Buttons for the current tab. In Data View you can switch between codes and value labels, add cases or variables, sort, and search.
-6. **Data grid.** The data itself. Each row is a case (usually a respondent) and each column is a variable (usually a question).
-7. **Feedback, Undo, Redo and theme.** **Feedback** opens a form to tell us about a problem. Undo and Redo reverse your last changes. The last button switches between light and dark colours.
+1. **Menu bar.** Everything Socius can do is in these menus: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, AI and Help.
+2. **Search.** Type what you are looking for, such as "chi square" or a variable name, and Socius finds the menu item, variable, result or help page (see [Finding anything with Search](#finding-anything-with-search)).
+3. **AI, Feedback, Undo, Redo and theme.** The **AI** chip shows whether AI help is set up ("not set up" until you choose an option). **Feedback** opens a form to tell us about a problem. Undo and Redo reverse your last changes. The last button switches between light and dark colours.
+4. **Dataset bar.** The name of the open dataset, how many cases (rows) and variables (columns) it has, and small labels that tell you when a weight or a filter is switched on.
+5. **Main tabs.** **Data View** shows the data, one row per respondent. **Variable View** describes the variables. **Output** collects your results. **Text coding** is where you code interviews and open-ended answers.
+6. **Variable list.** All your variables with their labels. Type in the search box to find one quickly. **View > Variable list** hides and shows it.
+7. **Toolbar.** Buttons for the current tab. In Data View you can switch between codes and value labels, add cases or variables, sort, and search.
+8. **Data grid.** The data itself. Each row is a case (usually a respondent) and each column is a variable (usually a question).
+9. **Assistant button.** Opens the Socius assistant, which answers questions about your data and methods once AI help is set up (see [The Socius assistant](#the-socius-assistant)).
 
 :::spss For SPSS users
 Data View, Variable View and the Output tab work like their SPSS counterparts. The main difference is that output lives in a tab of the same window instead of a separate viewer window.
@@ -92,6 +94,35 @@ These are the variables this guide uses:
 | `vote` | Voted in the last municipal election (0 = No, 1 = Yes) |
 | `wt` | A survey weight |
 | `q_challenge` | Open question: "What is the biggest challenge facing your neighbourhood today?" |
+
+# Finding anything with Search
+
+You do not need to remember where things are in the menus. Search finds commands, variables, results and help pages for you.
+
+## Open Search
+
+- Press [[Ctrl+K]] ([[Cmd+K]] on a Mac), from anywhere in Socius.
+- Or press [[/]] when you are not typing in a box or in the Data View grid.
+- Or click the **Search Socius** box in the top bar. On a narrow screen it becomes a magnifying-glass button, and on a phone the search opens full screen.
+
+Start typing. Use the arrow keys to move through the results, [[Enter]] to open one and [[Esc]] to close Search. Small typing mistakes are fine: "crostabs" still finds Crosstabs.
+
+![Searching for "chi square". Type in the box (1). Commands (2) run the menu item, Help topics (3) open this guide at the right page, and the last line (4) asks the Socius assistant.](img/search-palette.png){width=75}
+
+## What you can search for
+
+| Type this | What you get |
+|---|---|
+| chi square | **Crosstabs** (under Analyze > Descriptive Statistics). Enter opens the dialog. |
+| t test, anova, regression, alpha | The matching analysis. "alpha" or "reliability" finds Reliability Analysis. |
+| recode, weight, filter | The matching Transform or Data command. |
+| trust | Your variables whose name, label or value labels contain "trust". [[Enter]] selects its column in Data View; the **Variable View** and **Frequencies** buttons on each row open it there or in Frequencies. |
+| the title of a result, such as Crosstabs | **Results in Output**: jumps to that result. |
+| missing values | **Help topics**: opens this guide at that section, in a new tab. |
+| a word from your interviews, such as water | Once you have texts in Text coding: **Search in texts for "water"** lists every passage that contains it (Keyword in context). |
+| any question | **Ask the assistant: ...** (always the last line) sends your question to the Socius assistant. |
+
+With an empty box, Search shows **Recent** (what you opened from Search lately) and **Suggestions**. Commands that cannot run yet are greyed out and say why, for example "Open or create a dataset first".
 
 # Opening your data
 
@@ -482,7 +513,7 @@ Every analysis you run is added to the **Output** tab, newest at the bottom. The
 1. **APA tables / SPSS tables** switches the table style.
 2. **Interpretations** and **Syntax** show or hide the plain-language boxes and the SPSS commands.
 3. **Export report** saves all the output in one file.
-4. **Copy** at the top right of each result copies that result.
+4. **Copy** at the top right of each result copies that result. Next to it, **Explain with AI** asks the optional AI help to explain the result (see [Explain a result](#explain-a-result)).
 5. The **Outline** lists every result, so you can jump between them.
 
 ## APA style or SPSS style
@@ -681,37 +712,209 @@ To show that your coding is trustworthy, a second person codes the same material
 - **Cohen's κ (kappa)** and **Krippendorff's α (alpha)** correct for agreement by chance. For published work, .70 to .80 or higher is usually expected. The **Strength** column gives a verbal label ("substantial", "almost perfect").
 - **Disagreements to review**, further down, lists the answers where you differ. Discuss them, sharpen the code definitions, and code a fresh sample if needed.
 
-# AI help (optional)
+# Getting help from AI
 
-Socius can ask an AI model to help with text coding: it can suggest a codebook, suggest codes for your open-ended answers, and summarise the passages under a code. It is switched off until you set it up, and everything else in Socius works without it.
+Socius can ask an AI model to help you. Once it is set up, AI can:
+
+- **answer your questions** about your data and methods, and run the analysis for you (the Socius assistant);
+- **explain a result** in plain language, with what to watch out for and how to report it;
+- **help with text coding**: suggest a codebook, suggest codes for open-ended answers and summarise a code.
+
+AI help is optional and free. It is switched off until you set it up, and everything else in Socius works without it. Setting it up takes about two minutes.
 
 ## Set it up
 
-1. Choose **Help > AI assistant settings**.
-2. Choose where the AI should run.
-3. Follow the short set-up steps for that choice, then click **Test connection**.
+1. Choose **AI > AI assistant settings** (the same item is under **Help > AI assistant settings**). You can also click the **AI** chip at the top right and then **Set up AI help**.
+2. Under **Where should the AI run?**, choose one of the two free options below.
+3. Follow the steps for that option, then click **Test connection**.
 
+![The AI menu. Every AI feature starts here, and the last item opens the settings.](img/ai-menu.png){width=35}
 
-There are two free options:
+### Option 1: Google Gemini with your own free key (recommended)
 
-- **On this computer.** A small AI model runs inside your browser. Nothing leaves your computer, and after a one-time download of 1 to 2 GB it even works offline. It needs a recent Chrome or Edge on a desktop or laptop, and it is slower and less accurate than online services.
-- **Google Gemini.** Good and fast. You need a free key from Google: the settings explain how to get one in a minute with a Google account, and where to paste it. Leave **Model** empty: Socius picks a suitable free model for you.
+Google Gemini is fast and gives good answers. You need a free "API key" from Google: a long password that lets Socius use Gemini on your behalf. You only need a Google account (for example a Gmail address).
 
-![Google Gemini selected: paste your free key, then click Test connection (1).](img/ai-gemini.png)
+1. In the settings, choose **Google Gemini** (1).
+2. Click the link **Google AI Studio** (2), or go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Sign in with your Google account.
+3. Click **Create API key**. Accept the terms if Google asks.
+4. Copy the key. It starts with "AIza".
+5. Back in Socius, paste it into **API key** (3).
+6. Leave **Model** (4) empty. Socius then picks the newest free Gemini model your key can use, and keeps doing so when Google retires old models.
+7. Click **Test connection** (5).
 
-Your settings and keys are stored in this browser only, never in project files.
+![Setting up Google Gemini: choose it (1), get a key from Google AI Studio (2), paste it (3), leave Model empty (4) and click Test connection (5).](img/ai-gemini.png){width=100 .big}
+
+The key is stored in this browser only. It never goes into project files or exports. On a shared computer, click **Forget key** when you are done.
+
+### Option 2: On this computer (private)
+
+A small AI model runs inside your browser, on your computer's graphics chip. Nothing leaves your computer, and after a one-time download of 1 to 2 GB it even works offline. This is the right choice for confidential interviews.
+
+1. In the settings, choose **On this computer**.
+2. Socius checks whether your browser can run the model. It needs a recent **Chrome or Edge** on a desktop or laptop.
+3. Pick a model and click **Download model**. You can also skip this: the first AI request downloads it.
+4. Click **Test connection**.
+
+The on-device model is slower and less accurate than Gemini. It is fine for explaining a result or suggesting codes, but it is noticeably weaker as the Socius assistant.
+
+:::note Other options
+**Other service** connects Socius to Groq, OpenRouter or a model on your own computer (Ollama, LM Studio). These are for experienced users. If you open Socius inside Claude, a **Claude** option may also appear, which needs no set-up.
+:::
+
+### "AI is ready. Try it"
+
+When the test works, the settings say "Connected" and a green panel appears.
+
+![After a successful Test connection (1), the panel "AI is ready. Try it" (2) starts any AI feature with one click.](img/ai-ready.png)
+
+Click one of the buttons to try a feature straight away, or click **Done**. The **AI** chip in the top bar now shows a green dot and the service, for example "AI Gemini".
 
 ## Before you send anything
 
 :::warn Protect your participants
-With an online service, the excerpts you send leave your computer. On free tiers, the provider may use them to improve its products, and people may read them. Before you use online AI help on real data:
+With Google Gemini (or another online service), what you send leaves your computer and goes to that company. On free tiers, the provider may use it to improve its products, and people may read it. Before you use online AI help on real data:
 
-- Remove names, places, employers and other details that could identify someone.
-- Check that your participants' consent and your ethics approval allow sharing data with an outside service.
-- For confidential interviews, use **On this computer**, where nothing leaves your computer.
+- **Know what is sent.** Explain a result sends the result's tables and summary, never individual answers. The assistant sends variable information, summary statistics and analysis results; individual cases only if you switch that on. Text coding features send the excerpts you choose.
+- **Anonymise first.** Remove names, places, employers and other details that could identify someone from texts before you send them.
+- **Check consent and ethics approval.** Make sure your participants' consent and your ethics approval allow sharing data with an outside service.
+- **Use On this computer for confidential material,** where nothing leaves your computer.
 :::
 
-Each AI dialog says what will be sent where before you click, and nothing is sent until you do. Suggestions are only suggestions: you accept or reject every one. Read them as a starting point for your own analysis, check every quote against the data, and say in your methods section that AI assistance was used and how.
+Every AI feature says what it will send, and to whom, before you click. Nothing is sent until you do.
+
+## Where to find AI in Socius
+
+**The AI menu** in the menu bar lists everything AI can do:
+
+| Menu item | What it does |
+|---|---|
+| **Ask the Socius assistant** | Opens the assistant, where you can ask questions in your own words ([[Ctrl+J]]). |
+| **Explain a result** | Explains one result from Output in plain language. With several results, you choose which one. |
+| **Suggest a codebook** | Reads a sample of your interviews or open-ended answers and proposes codes with definitions and example quotes. |
+| **Suggest codes for open-ended answers** | Applies your codebook to survey answers and suggests codes for each answer, which you accept or reject. |
+| **Summarise a code** | Drafts a short summary of the passages coded with one code. |
+| **AI assistant settings** | Set-up, as described above. |
+
+If something is missing, the menu tells you what to do first. For example, **Explain a result** with no results yet says **Run an analysis first** and offers a button **Open Crosstabs**. If AI is not set up, any item opens the settings and explains what that feature will do.
+
+**The AI chip** at the top right shows the status of AI help. Click it to see the same features, each with a one-line description.
+
+![The AI chip (1) with a green dot means AI help is ready. Click it for a list of the AI features.](img/ai-chip.png){width=40 .big}
+
+You also find AI in three other places: the **Assistant** button at the bottom right of every screen, the **Explain with AI** button on every result in Output, and **AI suggestions** in the Text coding toolbar. All three are described below.
+
+## Explain a result
+
+Every result in Output has an **Explain with AI** button. It asks the AI to explain the result as a patient statistics tutor would: what was tested, what the numbers mean, whether the warnings matter and how to report it.
+
+**Try it** with the crosstab from [Crosstabs with chi-square](#crosstabs-with-chi-square-are-two-categories-related) (`gender` by `trust5`):
+
+1. Run the crosstab, or scroll to it in Output.
+2. Click **Explain with AI** at the top right of the result, next to **Copy** (see the picture below).
+3. A panel opens under the result. It says what will be sent and to whom (1 in the second picture). Click **What will be sent** (2) to read the exact text. The tables, Socius's summary, the APA sentence and the warnings are sent; individual answers are not.
+4. Click **Explain** (3).
+
+![Explain with AI (1) is next to Copy on every result.](img/explain-button.png)
+
+![Before anything is sent: who receives what (1), the exact text (2) and the Explain button (3).](img/explain-confirm.png){width=85 .big}
+
+The explanation appears under five headings: **What was tested**, **What the numbers mean**, **Assumptions and warnings**, **How to report it** and **Cautions**.
+
+![An explanation of the crosstab, labelled as AI-generated (1). Add to output (2) keeps it with the result; Discuss with the assistant (3) lets you ask follow-up questions. Example answer; your AI's wording will differ.](img/explain-done.png){width=85 .big}
+
+- **Add to output** (2) attaches the explanation to the result as a note marked **AI-GENERATED**. It is exported with your report like any note.
+- **Copy** copies the text; **Explain again** asks for a new version.
+- **Discuss with the assistant** (3) opens the Socius assistant with this result attached, so you can ask follow-up questions such as "What does Cramér's V mean here?".
+
+:::tip Read it critically
+The AI can be wrong, even when it sounds sure. Check every number against the tables above it: here χ²(8, N = 630) = 35.02 and V = .17 match the Chi-Square Tests and Symmetric Measures tables. Watch for claims the tables cannot support, such as causes ("gender causes fear"). Use the explanation to understand your result, then write the results section in your own words.
+:::
+
+## The Socius assistant
+
+The assistant is a chat panel where you ask questions in your own words, as you would ask a helpful methods tutor. It can look at your dataset, run analyses on it, read your results, prepare recodes and scales, and answer "how do I" questions from this guide.
+
+### Open it
+
+- Click the round blue **Assistant** button at the bottom right of any screen (number 9 in the [tour](#a-five-minute-tour)).
+- Or press [[Ctrl+J]] ([[Cmd+J]] on a Mac). Press it again to close the panel.
+- Or choose **AI > Ask the Socius assistant**, or type a question in Search and choose **Ask the assistant**.
+
+The panel opens on the right. Drag its left edge to make it wider. Close it with the cross at the top right or [[Esc]]. Your conversation stays while Socius is open, even when you switch tabs; reloading the page clears it.
+
+![The assistant panel: the AI service in use (1), what the assistant can see (2), suggested questions (3) and the message box (4).](img/assistant-start.png){width=100 .big}
+
+When the conversation is empty, the assistant suggests questions (3) that fit your data and the tab you are on. Click one to send it, or type your own question in the box (4) and press [[Enter]]. [[Shift+Enter]] starts a new line.
+
+### What it can see
+
+Click the eye button (2) to see and change what the assistant may send to the AI service.
+
+![What the assistant can see. Individual cases are off unless you switch them on.](img/assistant-see.png){width=45}
+
+- **Variable information and summary statistics** (on): names, labels, value labels, missing codes, counts, means and analysis results. No individual answers.
+- **Individual cases** (off): the raw rows of your data, up to 30 at a time. Switch this on only for anonymised data that your ethics approval lets you share. It switches off again every time you reload the page.
+- **Excerpts from coded texts** (on): quotes from your Text coding documents and answers. Anonymise names and places first.
+
+The line at the bottom of the panel always says which AI service answers, and that only what is listed here is sent.
+
+### Good first questions
+
+With the sample survey open, try:
+
+- "Describe my dataset"
+- "Which test should I use to compare life satisfaction between migrants and non-migrants?"
+- "Is trust in neighbours related to gender?"
+- "Help me build a trust scale"
+- "How do I export my results to Word?"
+
+Ask one thing at a time and use your own words; you do not need variable names. You can ask follow-up questions ("Why not ANOVA?", "How do I report that?").
+
+### What it does with your question
+
+The assistant does not guess. It checks your variables, runs the analysis in Socius on your data and reads the real tables before it answers.
+
+![The assistant answers a question about life satisfaction. What I did (1) lists each step; the card (2) adds the t-test to Output. Example answer; your AI's wording will differ.](img/assistant-answer.png){width=75 .big}
+
+- **What I did** (1) lists every step it took, such as "Looked at life_sat, migrant" and "Ran Independent-Samples T Test: life_sat by migrant". Click it to see the steps.
+- The answer quotes the real numbers, here t(628) = 4.51, p < .001, d = 0.36, the same as in [Comparing two groups](#comparing-two-groups-the-independent-samples-t-test).
+- An analysis the assistant runs is **not** added to Output by itself. Click **Add this analysis to Output** (2) to keep it.
+- Some answers end with **Open dialog**, which opens the analysis dialog with the variables filled in. Check them and click **Run**.
+
+When a question needs new variables, the assistant prepares the change and shows it to you first.
+
+![Asked to build a trust scale, the assistant first proposes to reverse trust3 (1). Nothing changes until you click Apply (2). Example answer; your AI's wording will differ.](img/assistant-proposal.png){width=75 .big}
+
+A **Proposed change** card (1) describes the recode, reverse-coding, scale or computed variable, shows the first cases before and after, and gives the SPSS syntax. Nothing changes until you click **Apply** (2); **Dismiss** throws the proposal away. After Apply, the change is logged in Output like any Transform command, and **Edit > Undo** reverses it. The assistant only creates new variables; it never overwrites your data.
+
+### Know its limits
+
+- **It can be wrong.** It may misread a table, pick an unsuitable test or phrase a finding too strongly. Check its numbers against the tables in Output, and think about whether its advice fits your research question.
+- **Free tiers have limits.** Google's free tier allows only a few requests a minute and a daily allowance. The assistant paces itself, so a complex question can take 20 to 60 seconds. If you see "Too many AI requests at once, or the free allowance is used up for now", wait a minute (or until the next day) and click **Retry**.
+- **The on-device model is weaker.** On this computer, the assistant works with a small model: slower, with fewer tools and simpler answers. For the assistant, Gemini works much better. Use anonymised data with it.
+- **It cannot replace your judgement** or your supervisor. It is a tutor at your side, not an authority.
+
+## AI in Text coding
+
+In the Text coding tab, the **AI suggestions** button in the toolbar has three helpers. If AI is not set up, the button is greyed out and a **Set up AI** link sits next to it.
+
+![The AI suggestions menu (1) in the Text coding toolbar.](img/coding-ai.png){width=75}
+
+- **Suggest a codebook** reads a sample of your documents or answers and proposes codes, each with a definition and an example quote. Keep the ones you want and click **Add** (the button shows how many codes). Treat them as a first draft: rename, merge and define them in your own terms.
+- **Suggest codes for responses** applies your existing codebook to open-ended answers and suggests codes for each one. You **Accept** or **Reject** every suggestion, or **Accept all**. Accepted codes are marked as AI suggestions, so you can review them later.
+- **Summarise a code** opens the **Retrieve** view. Pick a code and click **Summarise this code** for a short summary of its passages. **Save as memo** keeps it as a memo on the code. Check it against the quotes.
+
+Each dialog says how many excerpts will be sent, and to whom, before you click. For intercoder reliability, AI suggestions do not count as a second coder: a person must code independently.
+
+## Reporting AI use
+
+If AI helped with your analysis, say so in your methods section, as you would for any software. Name the tool and the model, say what it did and how you checked it. For example:
+
+:::apa An example for your methods section
+Open-ended answers were coded in Socius. An initial codebook was drafted with AI assistance (Google Gemini, via Socius's "Suggest a codebook"), then revised by the author; all codes were applied and checked by hand. Plain-language explanations of statistical output were generated with the same model and checked against the output tables. No identifiable data were sent to the AI service.
+:::
+
+Follow your university's and your journal's rules on AI, which differ and change often. Keep a note of what you used AI for while you work; it is much harder to remember afterwards.
 
 # Saving and sharing your work
 
@@ -768,13 +971,36 @@ It is a warning, not a block. Often the fix is to set the right level in the Mea
 Clearing browsing data, a private window, or another browser or computer loses the autosaved session. Only a saved project file is safe. Save one regularly with **File > Save project**.
 
 **Where is my data stored?**
-Only in your browser, on your computer. Files you open are never uploaded. The only thing that can leave your computer is the text excerpts you choose to send with the optional online AI help.
+Only in your browser, on your computer. Files you open are never uploaded. The only things that can leave your computer are what you choose to send with the optional online AI help (see [Before you send anything](#before-you-send-anything)).
+
+**I set up AI but I don't see a way to use it.**
+Use the **AI** menu in the menu bar, the **Assistant** button at the bottom right (or [[Ctrl+J]]), **Explain with AI** on any result in Output, or **AI suggestions** in the Text coding toolbar. The **AI** chip at the top right lists every AI feature. See [Where to find AI in Socius](#where-to-find-ai-in-socius).
+
+**Test connection fails.**
+Read the red message next to the button; it says what went wrong.
+
+- "The AI service did not accept the key": copy the key again from Google AI Studio, including every character and no spaces, and paste it into **API key**. If it still fails, create a new key.
+- "The AI service did not recognise the model name": empty the **Model** box, so that Socius picks the model for you.
+- "Could not reach the AI service": check your internet connection. Some university or office networks block AI services; try another network.
+- Google AI Studio is not available in every country and asks you to be 18 or older. If you cannot create a key, use **On this computer** instead.
+
+**The AI says the free allowance is used up ("rate limit").**
+Free tiers allow only a few requests a minute and a limited number a day. Wait a minute and click **Retry** (or **Try again**). If it keeps happening, try again the next day, send fewer excerpts at a time, or switch to **On this computer**.
+
+**"This browser cannot run the on-device model" (no WebGPU).**
+The on-device model needs WebGPU, which only recent Chrome and Edge on a desktop or laptop offer reliably. Update your browser, or use another computer. Check that hardware acceleration is on (Chrome: Settings > System). Otherwise use Google Gemini with anonymised data.
+
+**AI buttons are greyed out.**
+In Text coding, a grey **AI suggestions** button means AI help is not set up: click **Set up AI** next to it. If AI is set up but a single item is grey, it has nothing to work on yet: **Suggest a codebook** needs imported texts, **Suggest codes for responses** needs imported answers and at least one code, and **Summarise a code** needs coded passages. The **Explain** button in the Explain panel stays grey until AI help is set up.
+
+**The assistant's numbers differ from Output.**
+Trust the tables in Output. The assistant runs the same analyses, but it can misread or round them. Run the analysis from the menu (or click **Add this analysis to Output**) and report the numbers from Output.
 
 **Can I use Socius on a phone?**
 Yes, for looking at data and results. For coding and analysis, a computer with a mouse and keyboard is much easier.
 
 **Where are the keyboard shortcuts?**
-**Help > Keyboard shortcuts** lists them all. **Help > Getting started** gives a six-step overview.
+**Help > Keyboard shortcuts** lists them all. The two most useful are [[Ctrl+K]] for Search and [[Ctrl+J]] for the assistant. **Help > Getting started** gives a six-step overview.
 
 # Giving feedback
 
@@ -794,8 +1020,8 @@ Thank you for trying Socius.
 
 | I want to... | Where to find it |
 |---|---|
+| Find any command, variable or result | Search box at the top, or [[Ctrl+K]] |
 | Open an SPSS, CSV or Excel file | **File > Open data file** |
-| Load the practice survey | **File > Load sample survey** |
 | See labels, missing values, measure | **Variable View** tab |
 | Show labels instead of codes in the data | **View > Value labels in Data View** |
 | Copy labels to other variables | **Data > Copy variable properties** |
@@ -822,7 +1048,9 @@ Thank you for trying Socius.
 | Auto-code with keywords | **Text coding > Auto-code with keyword rules** |
 | Turn codes into variables | **Text coding > Export codes to dataset** |
 | Check agreement between coders | **Text coding > Intercoder reliability** |
-| Set up AI help | **Help > AI assistant settings** |
+| Set up AI help | **AI > AI assistant settings** |
+| Ask a question about my data or methods | **Assistant** button (bottom right), or [[Ctrl+J]] |
+| Explain a result in plain language | **Explain with AI** on the result in Output |
 | Save everything | **File > Save project** ([[Ctrl+S]]) |
 | Save data for SPSS | **File > Save data as > SPSS data (.sav)** |
 | Undo | **Edit > Undo** ([[Ctrl+Z]]) |
@@ -858,3 +1086,7 @@ Thank you for trying Socius.
 | Intercoder reliability | How far two coders who code the same material independently agree, beyond chance. Measured with Cohen's kappa (κ) or Krippendorff's alpha (α); .70 to .80 or higher is usually expected. |
 | APA style | The reporting style of the American Psychological Association (7th edition), used by many social science journals. |
 | Syntax | The SPSS commands that reproduce a result. Socius shows them under each result. |
+| AI model | A computer program trained on large amounts of text that writes answers in ordinary language. It can be wrong, so check what it says. |
+| API key | A long password from an AI provider, such as Google, that lets Socius use its AI model on your behalf. Keep it private. |
+| Socius assistant | The chat panel ([[Ctrl+J]]) where an AI model answers your questions, using Socius to look at your data and run analyses. |
+| Search | The box at the top ([[Ctrl+K]]) that finds commands, variables, results and help pages. |

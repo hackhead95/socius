@@ -30,15 +30,105 @@ const H = 900;
 const ORANGE = '#d9480f';
 
 // ---------------------------------------------------------------- helpers
-async function launch() {
-  const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
+let BROWSER = null;
+
+async function newPage(browser) {
   const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, colorScheme: 'light', acceptDownloads: true });
   // Web fonts come from locally installed copies (see README); do not wait for Google Fonts.
   await context.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await mockGemini(context);
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const page = await context.newPage();
   page.on('pageerror', (e) => console.log('  [pageerror]', e.message));
+  return { context, page };
+}
+
+async function launch() {
+  const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
+  BROWSER = browser;
+  const { context, page } = await newPage(browser);
   return { browser, context, page };
+}
+
+// ---------------------------------------------------------------- mocked Gemini
+// No request ever reaches Google: the Gemini API is answered here (see e2e/ai-features.spec.ts and
+// e2e/assistant.spec.ts). The AI text is written by hand from the sample survey's real results, and
+// the assistant's tool calls run on the live data in the page. The guide marks these answers as examples.
+const GEMINI_MODEL = 'gemini-3.6-flash';
+
+const EXPLAIN_TEXT = [
+  '## What was tested\nWhether men, women and people of other genders differ in how safe they feel walking alone in their neighbourhood after dark. The chi-square test asks whether the answers could be independent of gender.\n\n',
+  '## What the numbers mean\n- Men were more likely to feel safe: **44.8%** agreed or strongly agreed, against **29.3%** of women.\n- Women were more likely to strongly disagree (14.5% against 5.3% of men).\n',
+  '- χ²(8, N = 630) = 35.02, p < .001: a difference this large is very unlikely if gender and feeling safe were unrelated.\n- Cramér\'s V = .17: the relationship is real but **weak**.\n\n',
+  '## Assumptions and warnings\n3 cells (20.0%) have an expected count below 5. They are in the small "Other / prefer to self-describe" group (19 people). That is at the usual 20% limit, so the test is acceptable, but do not read much into the percentages for that group.\n\n',
+  '## How to report it\nA chi-square test of independence showed a significant association between gender and feeling safe walking alone after dark, χ²(8, N = 630) = 35.02, p < .001, Cramér\'s V = .17. Men were more likely than women to agree that they felt safe (44.8% vs. 29.3%).\n\n',
+  '## Cautions\n- This is an association, not a cause. Experiences of harassment, street lighting or daily routines may lie behind it.\n- The answers are self-reported, from one point in time.',
+];
+
+/** The Socius assistant: round 1 asks Socius to run tools, round 2 answers from their real output. */
+function assistantParts(body) {
+  const contents = body.contents ?? [];
+  const last = contents[contents.length - 1]?.parts ?? [];
+  const question = contents
+    .filter((c) => c.role === 'user')
+    .flatMap((c) => c.parts ?? [])
+    .map((p) => p.text ?? '')
+    .filter(Boolean)
+    .pop() ?? '';
+  const results = last.filter((p) => p.functionResponse).map((p) => p.functionResponse);
+  const trust = /trust scale/i.test(question);
+  if (!results.length) {
+    return trust
+      ? [
+          { text: 'Let me look at the five trust items first.' },
+          { functionCall: { name: 'describe_variables', args: { names: ['trust1', 'trust2', 'trust3', 'trust4', 'trust5'] } } },
+          { functionCall: { name: 'propose_transform', args: { kind: 'reverse', items: ['trust3'] } } },
+        ]
+      : [
+          { text: 'Let me check both variables and run the test.' },
+          { functionCall: { name: 'describe_variables', args: { names: ['life_sat', 'migrant'] } } },
+          { functionCall: { name: 'run_analysis', args: { procedure_id: 'ttest-independent', variables: { variables: ['life_sat'], group: ['migrant'] } } } },
+        ];
+  }
+  if (trust)
+    return [
+      {
+        text:
+          '## First, reverse one item\n`trust3` ("You have to be very careful with people in this neighbourhood") is worded the other way round: agreeing means **less** trust. If you add it as it is, it pulls the scale apart and lowers Cronbach\'s alpha.\n\n' +
+          'I prepared **trust3_r** below: 1 becomes 5, 2 becomes 4, and so on. The missing codes 8 and 9 stay missing.\n\n' +
+          '## Next steps\n1. Check the preview and click **Apply**.\n2. Then ask me to build the scale from trust1, trust2, trust3_r, trust4 and trust5. I will check its alpha.',
+      },
+    ];
+  const out = results.map((r) => String(r.response?.result ?? '')).join('\n');
+  const apa = /APA sentence: (.*)/.exec(out)?.[1]?.trim();
+  if (!apa || !apa.includes('t(628) = 4.51')) console.log('  [warn] unexpected t-test result:', (apa ?? out).slice(0, 300));
+  return [
+    {
+      text:
+        '## Short answer\nUse an **independent-samples t-test**. `life_sat` is a 0 to 10 score and `migrant` has two groups, so you are comparing two means.\n\n' +
+        '## What your data show\n| Group | N | Mean | SD |\n|---|--:|--:|--:|\n| Born in this city | 366 | 6.37 | 1.80 |\n| Migrated | 264 | 5.70 | 1.85 |\n\n' +
+        'People born in the city are somewhat more satisfied with life. The difference is statistically significant and small to medium: t(628) = 4.51, p < .001, d = 0.36. Levene\'s test (p = .595) is not significant, so read the row *Equal variances assumed*.\n\n' +
+        '## Next steps\n1. Click **Add this analysis to Output** to keep the tables and the APA sentence.\n2. Check these numbers against the tables in Output.\n3. To take age or education into account as well, ask me about a linear regression.',
+    },
+  ];
+}
+
+async function mockGemini(context) {
+  await context.route('https://generativelanguage.googleapis.com/**', async (route) => {
+    const req = route.request();
+    const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    if (req.method() === 'GET')
+      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ models: [{ name: `models/${GEMINI_MODEL}`, supportedGenerationMethods: ['generateContent'] }] }) });
+    const reply = (parts) => ({ candidates: [{ content: { role: 'model', parts }, finishReason: 'STOP' }] });
+    if (!req.url().includes('streamGenerateContent'))
+      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(reply([{ text: 'OK' }])) });
+    const body = req.postDataJSON();
+    await new Promise((r) => setTimeout(r, 300));
+    const events = body.tools ? [assistantParts(body)] : EXPLAIN_TEXT.map((t) => [{ text: t }]);
+    const sse = events.map((parts) => `data: ${JSON.stringify(reply(parts))}\r\n\r\n`).join('');
+    return route.fulfill({ status: 200, headers: { ...cors, 'Content-Type': 'text/event-stream' }, body: sse }).catch(() => undefined);
+  });
 }
 
 async function ready(page) {
@@ -185,11 +275,16 @@ async function unmark(page) {
 }
 
 const manifest = {};
-async function shot(page, name, clip, note = '') {
+async function shot(page, name, clip, note = '', { fab = !clip } = {}) {
   const path = `${OUT}/${name}.png`;
-  // Toasts are transient; keep them out of the pictures.
-  await page.evaluate(() => document.querySelectorAll('.toast').forEach((t) => (t.style.visibility = 'hidden')));
+  // Toasts are transient; keep them out of the pictures. The floating Assistant button shows only in
+  // full-screen pictures (it would cover the corner of a cropped dialog or result).
+  await page.evaluate((fab) => {
+    document.querySelectorAll('.toast').forEach((t) => (t.style.visibility = 'hidden'));
+    document.querySelectorAll('.as-fab').forEach((b) => (b.style.visibility = fab ? '' : 'hidden'));
+  }, fab);
   await page.screenshot({ path, clip: clip ?? undefined });
+  await page.evaluate(() => document.querySelectorAll('.as-fab').forEach((b) => (b.style.visibility = '')));
   manifest[name] = { note, clip: clip ?? null };
   console.log('  saved', name);
 }
@@ -240,20 +335,24 @@ sections.tour = async (page) => {
   await page.getByRole('tab', { name: 'Data View' }).click();
   await page.waitForTimeout(300);
   const menubar = union(await box(page.getByRole('menuitem', { name: 'File', exact: true })), await box(page.getByRole('menuitem', { name: 'Help', exact: true })));
+  const search = await box(page.locator('.topbar-search'));
   const dsbar = await box(page.locator('.datasetbar'));
   const tabs = union(await box(page.getByRole('tab', { name: 'Data View' })), await box(page.getByRole('tab', { name: /Text coding/ })));
   const side = await box(page.locator('.sidebar, aside').first());
   const toolbar = await box(page.locator('.view-toolbar').first());
   const grid = await box(page.locator('.grid-scroll'));
-  const right = await box(page.locator('.topbar-right'));
+  const right = union(await box(page.locator('.ai-chip')), await box(page.getByRole('button', { name: /^Theme/ })));
+  const fab = await box(page.locator('.as-fab'));
   await mark(page, [
-    { n: 1, box: menubar, at: 'r' },
-    { n: 2, box: { ...dsbar, width: 520 }, at: 'r' },
-    { n: 3, box: tabs, at: 'r' },
-    { n: 4, box: side, at: 'c', ring: true, dy: 120 },
-    { n: 5, box: toolbar, at: 'c', ring: true, dx: 80 },
-    { n: 6, box: { ...grid, y: grid.y + 4, height: grid.height - 8 }, at: 'ri', ring: true },
-    { n: 7, box: right, at: 'l' },
+    { n: 1, box: menubar, at: 'b', dx: 260 },
+    { n: 2, box: search, at: 'b' },
+    { n: 3, box: right, at: 'l' },
+    { n: 4, box: { ...dsbar, width: 470 }, at: 'r' },
+    { n: 5, box: tabs, at: 'r' },
+    { n: 6, box: side, at: 'c', ring: true, dy: 120 },
+    { n: 7, box: toolbar, at: 'c', ring: true, dx: 80 },
+    { n: 8, box: { ...grid, y: grid.y + 4, height: grid.height - 90 }, at: 'ri', ring: true },
+    { n: 9, box: fab, at: 'l' },
   ]);
   await shot(page, 'tour', null);
   await unmark(page);
@@ -560,6 +659,31 @@ sections.saving = async (page) => {
   await page.keyboard.press('Escape');
 };
 
+sections.search = async (page) => {
+  await dismissBanner(page);
+  await closeMenus(page);
+  await page.getByRole('tab', { name: 'Data View' }).click();
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Control+k');
+  const pal = page.getByRole('dialog', { name: 'Search Socius' });
+  await pal.waitFor();
+  await page.keyboard.type('chi square');
+  await page.waitForTimeout(400);
+  console.log('  palette:', (await pal.innerText()).replace(/\n+/g, ' | ').slice(0, 600));
+  const opt = (t) => pal.getByRole('option').filter({ hasText: t }).first();
+  const pb = await box(pal);
+  await mark(page, [
+    { n: 1, loc: pal.getByRole('combobox', { name: 'Search Socius' }), at: 'l', ring: false, dx: -6 },
+    { n: 2, loc: opt('Crosstabs'), at: 'r', ring: false, dx: -60 },
+    { n: 3, loc: opt('Crosstabs with chi-square'), at: 'r', ring: false, dx: -60 },
+    { n: 4, loc: opt('Ask the assistant'), at: 'r', ring: false, dx: -60 },
+  ]);
+  await shot(page, 'search-palette', pad({ x: pb.x - 30, y: 0, width: pb.width + 60, height: pb.y + pb.height }, 10));
+  await unmark(page);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+};
+
 sections.help = async (page) => {
   await dismissBanner(page);
   await hoverMenu(page, 'Help');
@@ -827,25 +951,218 @@ sections.interviews = async (page) => {
 };
 
 
-sections.ai = async (page) => {
-  await closeMenus(page);
-  await menu(page, 'Help', 'AI assistant settings...');
-  await page.waitForTimeout(500);
-  console.log('  ai dialog:', (await page.locator('.modal').innerText()).slice(0, 1200).replace(/\n+/g, ' | '));
-  await shotModal(page, 'ai-settings');
-  const gem = page.locator('.modal label.ai-choice', { hasText: 'Google Gemini' });
-  if (await gem.count()) {
-    await gem.click();
+// The AI chapter runs in a fresh browser context (a first visit, no AI set up yet) with Gemini mocked.
+sections.ai = async () => {
+  const { context, page } = await newPage(BROWSER);
+  try {
+    await page.goto(BASE);
+    await page.getByRole('button', { name: /Load sample survey/ }).click();
+    await page.locator('.grid-scroll').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(800);
+    await dismissBanner(page);
+
+    // The AI menu
+    await hoverMenu(page, 'AI');
+    const am = await box(page.locator('[role=menu]').last());
+    const at = await box(page.getByRole('menuitem', { name: 'AI', exact: true }));
+    console.log('  ai menu:', (await page.locator('[role=menu]').last().innerText()).replace(/\n+/g, ' | '));
+    await shot(page, 'ai-menu', pad(union(at, am, { x: am.x, y: am.y, width: am.width + 20, height: am.height }), 14));
+
+    // Settings: Google Gemini with a free key
+    await item(page, 'AI assistant settings...').click();
+    const dlg = page.getByRole('dialog', { name: 'AI assistant' });
+    await dlg.waitFor();
+    await dlg.getByRole('radio', { name: /Google Gemini/ }).check();
+    await page.locator('#ai-gemini-key').fill('AIzaSyD-example-key-for-the-guide-0000');
     await page.waitForTimeout(400);
-    console.log('  gemini:', (await page.locator('.modal').innerText()).slice(0, 1500).replace(/\n+/g, ' | '));
-    await mark(page, [{ n: 1, loc: page.locator('.modal button', { hasText: 'Test connection' }), at: 'tl' }]).catch(() => {});
-    await shotModal(page, 'ai-gemini');
+    await tall(page, 1500, async (vh) => {
+      await mark(page, [
+        { n: 1, loc: dlg.locator('label.ai-choice', { hasText: 'Google Gemini' }), at: 'li', ring: true, dx: -40 },
+        { n: 2, loc: dlg.getByRole('link', { name: 'Google AI Studio' }), at: 'r', dx: 262 },
+        { n: 3, loc: page.locator('#ai-gemini-key'), at: 'tr' },
+        { n: 4, loc: page.locator('#ai-gemini-model'), at: 'tr' },
+        { n: 5, loc: dlg.getByRole('button', { name: 'Test connection' }), at: 'r' },
+      ]);
+      await shot(page, 'ai-gemini', pad(await box(page.locator('.modal')), 0, W, vh));
+      await unmark(page);
+    });
+    await dlg.getByRole('button', { name: 'Test connection' }).click();
+    await page.locator('.ai-ready').waitFor({ timeout: 15000 });
+    await page.waitForTimeout(300);
+    console.log('  test:', (await page.locator('.ai-test').innerText()).replace(/\n+/g, ' | '));
+    await tall(page, 1500, async (vh) => {
+      await page.locator('.ai-ready').scrollIntoViewIfNeeded();
+      const mb = await box(page.locator('.modal'));
+      const rb = union(await box(page.locator('.ai-test')), await box(page.locator('.ai-ready')));
+      await mark(page, [
+        { n: 1, loc: page.locator('.ai-ok'), at: 'r' },
+        { n: 2, loc: page.locator('.ai-ready'), at: 'tr', ring: false, dx: -30, dy: 12 },
+      ]);
+      await shot(page, 'ai-ready', { x: mb.x + 1, y: rb.y - 14, width: mb.width - 2, height: rb.height + 28 });
+      await unmark(page);
+    });
+    await dlg.getByRole('button', { name: 'Done' }).click();
+    await page.waitForTimeout(400);
+
+    // The AI chip in the top bar
+    await page.locator('.ai-chip').click();
+    const pop = page.getByRole('dialog', { name: 'AI help' });
+    await pop.waitFor();
+    await page.waitForTimeout(300);
+    const cb = union(await box(page.locator('.ai-chip')), await box(pop));
+    await mark(page, [{ n: 1, loc: page.locator('.ai-chip'), at: 'l' }]);
+    await shot(page, 'ai-chip', pad({ ...cb, x: cb.x - 40, width: cb.width + 40 }, 12));
     await unmark(page);
-    // leave AI unset again
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Explain a result: Crosstabs gender by trust5, then Explain with AI
+    await page.getByRole('tab', { name: /^Output/ }).click();
+    await menu(page, 'Analyze', 'Descriptive Statistics', 'Crosstabs...');
+    await addVar(page, 0, 'gender');
+    await addVar(page, 1, 'trust5');
+    await run(page);
+    const it = lastItem(page);
+    await page.evaluate(() => [...document.querySelectorAll('.ov-doc article')].pop()?.scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(300);
+    await page.locator('.ov-doc').evaluate((el) => (el.scrollTop -= 60));
+    await page.waitForTimeout(200);
+    await mark(page, [{ n: 1, loc: it.locator('.oi-explain'), at: 't' }]);
+    const hb = await box(it.locator('.oi-head'));
+    await shot(page, 'explain-button', pad({ ...hb, y: hb.y - 36, height: hb.height + 36 }, 10));
+    await unmark(page);
+    await it.locator('.oi-explain').click();
+    const panel = it.locator('.ai-explain');
+    await panel.waitFor();
+    await panel.locator('.ai-preview summary').click();
+    await page.waitForTimeout(300);
+    await tall(page, 1800, async (vh) => {
+      await panel.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      await mark(page, [
+        { n: 1, loc: panel.locator('.ai-note'), at: 'l', ring: false },
+        { n: 2, loc: panel.locator('.ai-preview summary'), at: 'l', ring: false },
+        { n: 3, loc: panel.getByRole('button', { name: 'Explain', exact: true }), at: 'l' },
+      ]);
+      const b0 = await box(panel);
+      const b = { ...b0, x: b0.x - 30, width: b0.width + 30 };
+      const pre = await box(panel.locator('.ai-preview-text'));
+      console.log('  preview height', Math.round(pre.height));
+      await shot(page, 'explain-confirm', pad(b, 16, W, vh));
+      await unmark(page);
+    });
+    await panel.getByRole('button', { name: 'Explain', exact: true }).click();
+    await panel.getByRole('button', { name: 'Add to output' }).waitFor({ timeout: 20000 });
+    await page.waitForTimeout(500);
+    await tall(page, 1800, async (vh) => {
+      await panel.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      await mark(page, [
+        { n: 1, loc: panel.locator('.ai-explain-label'), at: 'r' },
+        { n: 2, loc: panel.getByRole('button', { name: 'Add to output' }), at: 'b' },
+        { n: 3, loc: panel.getByRole('button', { name: 'Discuss with the assistant' }), at: 't' },
+      ]);
+      const b = await box(panel);
+      await shot(page, 'explain-done', pad({ ...b, height: b.height + 30 }, 16, W, vh));
+      await unmark(page);
+    });
+    await panel.getByRole('button', { name: 'Add to output' }).click();
+    await page.waitForTimeout(400);
+
+    // The Socius assistant (Ctrl+J), on the Data View
+    await page.getByRole('tab', { name: 'Data View' }).click();
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Control+j');
+    const ap = page.getByTestId('assistant-panel');
+    await ap.waitFor();
+    await page.waitForTimeout(500);
+    console.log('  starters:', (await ap.locator('.as-starters').innerText()).replace(/\n+/g, ' | '));
+    await mark(page, [
+      { n: 1, loc: ap.locator('.as-provider'), at: 'b', dx: 60, dy: -4 },
+      { n: 2, loc: ap.getByRole('button', { name: 'What the assistant can see' }), at: 'b' },
+      { n: 3, loc: ap.locator('.as-starters'), at: 'l' },
+      { n: 4, loc: ap.locator('.as-compose'), at: 'l' },
+    ]);
+    await shot(page, 'assistant-start', null, '', { fab: false });
+    await unmark(page);
+
+    await ap.getByRole('button', { name: 'What the assistant can see' }).click();
+    const see = page.getByRole('dialog', { name: 'What the assistant can see' });
+    await see.waitFor();
+    await page.waitForTimeout(200);
+    await shot(page, 'assistant-see', pad(await box(see), 12));
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const ask = async (q) => {
+      await ap.getByLabel('Message to the assistant').fill(q);
+      await page.keyboard.press('Enter');
+      await ap.locator('[data-testid=assistant-message][data-status=done]').last().waitFor({ timeout: 30000 });
+      await page.waitForTimeout(500);
+      await ap.locator('.as-trace summary').last().click();
+      await page.waitForTimeout(300);
+    };
+    /** The conversation from the panel header down to the end of the last answer. */
+    const shootChat = async (name, marks) => {
+      await tall(page, 1700, async (vh) => {
+        await page.waitForTimeout(300);
+        await ap.locator('.as-body').evaluate((el) => (el.scrollTop = 0));
+        const pb = await box(ap);
+        const end = await box(ap.getByTestId('assistant-message').last());
+        await mark(page, await marks());
+        await shot(page, name, { x: pb.x, y: pb.y, width: W - pb.x, height: Math.min(vh - pb.y, end.y + end.height + 14 - pb.y) }, '', { fab: false });
+        await unmark(page);
+      });
+    };
+    // A wider panel keeps the answers from becoming tall, narrow pictures.
+    await ap.getByRole('separator', { name: 'Resize the assistant panel' }).focus();
+    for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(300);
+    await ask('Which test should I use to compare life satisfaction between migrants and non-migrants?');
+    console.log('  answer 1:', (await ap.getByTestId('assistant-message').last().innerText()).replace(/\n+/g, ' | ').slice(0, 900));
+    await shootChat('assistant-answer', async () => {
+      const msg = ap.getByTestId('assistant-message').last();
+      return [
+        { n: 1, loc: msg.locator('.as-trace summary'), at: 'r' },
+        { n: 2, loc: msg.getByRole('button', { name: 'Add this analysis to Output' }), at: 'r' },
+      ];
+    });
+    await ap.getByRole('button', { name: 'Add this analysis to Output' }).click();
+    await page.waitForTimeout(300);
+
+    await ap.getByRole('button', { name: 'Clear conversation' }).click();
+    await page.waitForTimeout(300);
+    await ask('Help me build a trust scale');
+    console.log('  answer 2:', (await ap.getByTestId('assistant-message').last().innerText()).replace(/\n+/g, ' | ').slice(0, 900));
+    await shootChat('assistant-proposal', async () => {
+      const card = ap.getByTestId('assistant-proposal-card');
+      return [
+        { n: 1, loc: card, at: 'tl', ring: false },
+        { n: 2, loc: card.getByRole('button', { name: 'Apply' }), at: 'l' },
+      ];
+    });
+    await page.keyboard.press('Control+j');
+    await page.waitForTimeout(300);
+
+    // Text coding: the AI suggestions menu in the toolbar
+    await page.getByRole('tab', { name: /^Text coding/ }).click();
+    await page.waitForTimeout(400);
+    await page.locator('.cw-welcome-card', { hasText: 'Explore a worked example' }).click();
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => document.querySelectorAll('.toast').forEach((t) => (t.style.display = 'none')));
+    await page.locator('.cw-ai-group .cw-menu-trigger').click();
+    await page.waitForTimeout(300);
+    const ml = page.locator('.cw-menu-list').last();
+    console.log('  ai suggestions:', (await ml.innerText()).replace(/\n+/g, ' | '));
+    const tb = await box(page.locator('.cw-ai-group'));
+    const mlb = await box(ml);
+    await mark(page, [{ n: 1, loc: page.locator('.cw-ai-group .cw-menu-trigger'), at: 't' }]);
+    await shot(page, 'coding-ai', pad({ x: tb.x - 380, y: tb.y - 44, width: W - (tb.x - 380), height: mlb.y + mlb.height - tb.y + 44 }, 10));
+    await unmark(page);
+    await page.keyboard.press('Escape');
+  } finally {
+    await context.close();
   }
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(300);
-  if (await page.locator('.modal').count()) await page.locator('.modal button', { hasText: /Close|Done|Cancel/ }).first().click().catch(() => {});
 };
 
 // ---------------------------------------------------------------- main
