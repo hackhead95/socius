@@ -14,7 +14,7 @@ async function menu(page: Page, top: string, item: string | RegExp) {
 
 /** Import q_challenge with gender and city as attributes. */
 async function importChallenge(page: Page) {
-  await menu(page, 'Text coding', 'Import open-ended answers from dataset…');
+  await menu(page, 'Text coding', 'Import open-ended answers from dataset...');
   const sel = page.locator('#cw-svar');
   const opts = await sel.locator('option').allInnerTexts();
   await sel.selectOption({ index: opts.findIndex((o) => o.includes('q_challenge')) });
@@ -196,7 +196,7 @@ test('codes exported to the dataset give a sensible crosstab by gender', async (
   await expect(page.locator('.modal .row').first()).toContainText('58 passages found');
   await page.locator('.modal .btn-primary').click();
   await page.locator('.modal button', { hasText: /^Close$/ }).first().click();
-  await menu(page, 'Text coding', 'Export codes to dataset…');
+  await menu(page, 'Text coding', 'Export codes to dataset...');
   await expect(page.locator('.modal tbody')).toContainText('58 of 630');
   await page.locator('.modal .btn-primary').click();
   await menu(page, 'Analyze', 'Descriptive Statistics');
@@ -233,7 +233,7 @@ test('intercoder reliability reports sources only one coder coded', async ({ pag
   // Rows 1001..1005: Coder 1 codes traffic, flooding, -, water, water
   await code(['3', '2', '-', '1', '1']);
   await page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'Coder:' }).click();
-  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Manage coders' }).click();
+  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Coders...' }).click();
   await page.locator('input[aria-label="New coder name"]').fill('Priya');
   await page.locator('.modal button', { hasText: 'Add coder' }).click();
   await page.locator('.modal button', { hasText: 'Code as Priya' }).click();
@@ -317,21 +317,33 @@ test('themes: co-occurrence and codes by attribute count sub-codes in their them
 
 test('outside the artifact, AI items lead to free set-up instead of disappearing', async ({ page }) => {
   await ready(page);
+  // AI features have one home, the AI menu: the Text coding menu lists only coding commands.
   await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
-  await expect(page.getByRole('menuitem', { name: /with AI/ })).toHaveCount(2);
+  await expect(page.locator('.menu-dropdown [role=menuitem]', { hasText: /\bAI\b/ })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await importChallenge(page);
   await expect(page.locator('.cw-ainote')).toContainText('Optional: AI can draft a codebook');
-  await expect(page.locator('.cw-ainote button', { hasText: 'Set up free AI help' })).toBeVisible();
+  await expect(page.locator('.cw-ainote button', { hasText: 'Set up AI' })).toBeVisible();
   // The toolbar's AI group stays visible, disabled, with a set-up link next to it.
   await expect(page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' })).toBeDisabled();
   await expect(page.locator('.cw-ai-group').getByRole('button', { name: 'Set up AI' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Suggest a codebook with AI…' }).click();
+  // AI > Suggest a codebook opens the set-up, saying what the feature will do.
+  await page.getByRole('menuitem', { name: 'AI', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Suggest a codebook...' }).click();
+  const settings = page.getByRole('dialog', { name: 'AI assistant' });
+  await expect(settings.locator('.ai-intent')).toContainText('Suggest a codebook needs AI help');
+  await settings.getByRole('button', { name: 'Done' }).click();
+  // A contextual shortcut (the codebook panel) leads to the same set-up dialog, with the same wording.
+  await page.locator('.cw-codebook .cw-menu-trigger', { hasText: 'More' }).click();
+  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Suggest a codebook' }).click();
   const gate = page.getByRole('dialog', { name: 'AI suggestions' });
   await expect(gate).toContainText('not set up yet');
-  await gate.getByRole('button', { name: 'Set up free AI help' }).click();
-  await expect(page.getByRole('dialog', { name: 'AI assistant' })).toBeVisible();
+  await gate.getByRole('button', { name: 'Set up AI' }).click();
+  await expect(settings).toBeVisible();
+  // Settings open on top of the other dialog; Escape closes only the top one.
+  await page.keyboard.press('Escape');
+  await expect(settings).toHaveCount(0);
+  await expect(gate).toBeVisible();
 });
 
 test('AI help with a mocked Claude: suggest a codebook, suggest codes, summarise, errors', async ({ page }) => {
@@ -363,8 +375,8 @@ test('AI help with a mocked Claude: suggest a codebook, suggest codes, summarise
     w.claude = { use: async (name: string) => (name === 'sample' ? sample : null) };
   });
   await ready(page);
-  await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
-  await expect(page.getByRole('menuitem', { name: /with AI/ })).toHaveCount(2);
+  await page.getByRole('menuitem', { name: 'AI', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Suggest a codebook...' })).toBeVisible();
   await page.keyboard.press('Escape');
   await importChallenge(page);
   await addCodes(page, ['water']);
@@ -390,7 +402,7 @@ test('AI help with a mocked Claude: suggest a codebook, suggest codes, summarise
   await page.locator('.modal [data-close]').click();
 
   await page.evaluate(() => ((window as any).__aiMode = 'ok'));
-  await aiMenu('Suggest codes for responses');
+  await aiMenu('Suggest codes for open-ended answers');
   await page.locator('#cw-smax').selectOption('50');
   await page.locator('.modal .btn-primary').click();
   await expect(page.locator('.modal .help', { hasText: 'batches done' })).toBeVisible();
@@ -403,7 +415,7 @@ test('AI help with a mocked Claude: suggest a codebook, suggest codes, summarise
   await expect(page.locator('.cw-code', { hasText: /^water/ }).first().locator('.cw-codecount')).toContainText(String(n - 1));
 
   await page.evaluate(() => ((window as any).__aiMode = 'rate_limited'));
-  await aiMenu('Suggest codes for responses');
+  await aiMenu('Suggest codes for open-ended answers');
   await page.locator('.modal .btn-primary').click();
   await expect(page.locator('.modal .callout-warn')).toContainText('Too many AI requests');
   await page.locator('.modal [data-close]').click();

@@ -14,7 +14,7 @@ async function menu(page: Page, top: string, item: string) {
 test('first run shows the welcome screen; loading the sample shows its banner', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.welcome')).toBeVisible({ timeout: 30_000 });
-  for (const b of [/Open data file/, /Open project/, /Load sample survey/, /New empty dataset/]) await expect(page.getByRole('button', { name: b })).toBeVisible();
+  for (const b of [/Open data file/, /Open project/, /Load sample survey/, /New dataset/]) await expect(page.getByRole('button', { name: b })).toBeVisible();
   await expect(page.locator('.dataset-size')).toHaveCount(0);
   await expect(page.locator('.sample-banner')).toHaveCount(0);
   await loadSampleFromWelcome(page);

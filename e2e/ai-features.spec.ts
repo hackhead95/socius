@@ -59,7 +59,7 @@ test('AI not set up: the AI menu, the chip and Text coding lead to set-up that n
   await chip.click();
   const pop = page.getByRole('dialog', { name: 'AI help' });
   await expect(pop).toContainText('AI help is not set up');
-  await expect(pop.getByRole('listitem')).toHaveText([/Ask the assistant/, /Explain a result/, /Suggest a codebook/, /Suggest codes for open-ended answers/, /Summarise a code/]);
+  await expect(pop.getByRole('listitem')).toHaveText([/Ask the Socius assistant/, /Explain a result/, /Suggest a codebook/, /Suggest codes for open-ended answers/, /Summarise a code/]);
   await pop.getByRole('listitem').filter({ hasText: 'Suggest a codebook' }).click();
   await expect(settings.locator('.ai-intent')).toContainText('Suggest a codebook needs AI help');
   await settings.getByRole('button', { name: 'Done' }).click();
@@ -96,7 +96,7 @@ test('set up Gemini, "AI is ready. Try it", run Crosstabs, Explain with AI (stre
   await settings.getByRole('button', { name: 'Test connection' }).click();
   const ready = settings.locator('.ai-ready');
   await expect(ready).toContainText('AI is ready. Try it:');
-  await expect(ready.getByRole('button')).toHaveText(['Ask the assistant', 'Explain a result', 'Suggest a codebook', 'Suggest codes for open-ended answers', 'Summarise a code']);
+  await expect(ready.getByRole('button')).toHaveText(['Ask the Socius assistant', 'Explain a result', 'Suggest a codebook', 'Suggest codes for open-ended answers', 'Summarise a code']);
 
   // No results yet: "Run an analysis first, for example Crosstabs".
   await ready.getByRole('button', { name: 'Explain a result' }).click();

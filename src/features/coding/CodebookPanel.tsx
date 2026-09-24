@@ -10,6 +10,7 @@ import { applyCode, createCode, createMemo, deleteCode, moveCode, updateCode } f
 import { useOrderedCodes, useVisibleSegments, toast, plural } from './hooks';
 import { useCodingUi, openLocalDialog } from './uiStore';
 import { MenuButton, Floating } from './ui';
+import { aiFeature } from '../ai/features';
 
 export function CodebookPanel(props: { quickKeys?: boolean }) {
   const codes = useStore((s) => s.coding.codes);
@@ -108,10 +109,10 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
           className="btn-sm"
           items={[
             { label: 'New code with details…', onSelect: () => openLocalDialog('code-edit', {}) },
-            { label: 'Auto-code with keyword rules…', onSelect: () => openLocalDialog('auto-code') },
-            { label: 'Suggest a codebook with AI…', onSelect: () => openLocalDialog('ai-codebook') },
-            { label: 'Import codebook (JSON, CSV)…', separator: true, onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
-            { label: 'Export codebook (Word, CSV, JSON)…', onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
+            // Contextual shortcuts to Text coding and AI menu commands, in the menus' wording.
+            { label: 'Auto-code with keyword rules...', onSelect: () => openLocalDialog('auto-code') },
+            { label: aiFeature('codebook').menuLabel, hint: 'AI', onSelect: () => openLocalDialog('ai-codebook') },
+            { label: 'Codebook export and import...', hint: 'Word, CSV, JSON', separator: true, onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
           ]}
         />
       </div>

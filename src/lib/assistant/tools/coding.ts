@@ -60,7 +60,7 @@ function listCodes(_a: Record<string, unknown>, ctx: ToolContext): ToolOutput {
     const sub = r && r.docsInclSub !== r.docs ? `, ${r.docsInclSub} incl. sub-codes` : '';
     lines.push(`${'  '.repeat(depth)}- ${c.name}: ${r?.docs ?? 0} docs (${pct(r?.pctDocs ?? 0)})${sub}; ${r?.segments ?? 0} segments${c.description ? ` - ${c.description.slice(0, 160)}` : ''}`);
   }
-  if (!p.codes.length) lines.push('(no codes yet: suggest Text coding > Suggest a codebook with AI... or creating codes in the Codebook panel)');
+  if (!p.codes.length) lines.push('(no codes yet: suggest AI > Suggest a codebook... or creating codes in the Codebook panel)');
   return { text: trimToBytes(lines.join('\n'), ctx.maxResultBytes), summary: `Looked at the codebook (${p.codes.length} codes)` };
 }
 

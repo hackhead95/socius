@@ -74,7 +74,7 @@ Opening a new file replaces the open data. If you have unsaved changes, Socius a
 
 Before any analysis, spend five minutes in Variable View. It saves a lot of wrong results later.
 
-1. Click the **Variable View** tab (or **Data > Define variable properties**).
+1. Click the **Variable View** tab (or **View > Variable View**).
 2. Check the **Measure** column. Nominal, ordinal and scale matter in Socius: regression treats nominal and ordinal variables that have value labels as categories and dummy-codes them automatically, and dialogs warn when a variable's level does not suit a box.
 3. Check the **Missing** column. Click a cell and press Enter to open the missing values dialog. In the sample, `trust1` shows 8 and 9, and `hh_income` shows 999999. Declared missing values are left out of every statistic. You can choose **No missing values**, **Discrete missing values** (up to three codes) or **Range plus one optional discrete value** (type LO or HI for an open end, for example 90 to HI).
 4. If a group of variables shares the same coding, set it once and use **Data > Copy variable properties** to copy value labels, missing values or the measure to the others (for example all items of a Likert battery).
@@ -343,11 +343,11 @@ To put one result into Word:
 
 The APA sentence has its own **Copy** button. The **Outline** button lists all items so you can jump between them, and you can move items up and down or delete them.
 
-To export everything at once, click **Export report** and choose:
+To export everything at once, click **Export report** in the Output tab (or **File > Export output report**) and choose:
 
-- **Word (.docx):** APA tables and figures, ready to edit.
+- **Word document (.docx):** APA tables and figures, ready to edit.
 - **Web page (.html):** standalone and printable. Open it in your browser and print, or save as PDF from the print dialog.
-- **Excel (.xlsx):** one sheet per table.
+- **Excel workbook (.xlsx):** one sheet per table.
 - **Plain text (.txt):** tables as aligned text.
 
 ## Reporting results in APA style
@@ -474,12 +474,12 @@ Socius can ask an AI model to explain results and to help with text coding. It i
 - **Ask the Socius assistant:** opens the assistant, which answers questions about methods and your data (for example "Which test should I use to compare trust between three cities?").
 - **Explain a result:** every result in Output has an **Explain with AI** button next to **Copy**. It first shows which provider will receive what, with a **What will be sent** preview: the result's tables (numbers and labels), Socius's own summary, the APA sentence and any warnings. Individual answers are never sent: scatter plot points, outlier values and tables that list single cases are left out. Click **Explain** and the answer appears under the result, in five parts: what was tested, what the numbers mean, whether the assumptions and warnings matter, how to report it, and cautions (such as association is not causation). **Stop** ends it, **Copy** copies it, and **Add to output** keeps it in the output as a note labelled AI-generated. **Discuss with the assistant** continues in the assistant. The explanation can be wrong: check every number against the tables.
 - **Suggest a codebook:** the AI reads a sample of your excerpts and proposes codes with definitions, inclusion and exclusion criteria and example quotes. Add a research question or focus to steer it. You choose which codes to keep.
-- **Suggest codes for responses:** the AI applies your existing codebook to open-ended responses, in batches. You review every suggestion and **Accept** or **Reject** it; nothing is coded without your approval. Accepted codes are marked as AI suggestions.
+- **Suggest codes for open-ended answers:** the AI applies your existing codebook to open-ended responses, in batches. You review every suggestion and **Accept** or **Reject** it; nothing is coded without your approval. Accepted codes are marked as AI suggestions.
 - **Summarise a code** (in Retrieve) drafts a short summary of the passages coded with one code, with representative quotes.
 
-In the Text coding workspace these are also under the **AI suggestions** button. When AI is not set up the button is shown greyed out with a **Set up AI** link next to it.
+The AI menu is their one home. In the Text coding workspace the **AI suggestions** button is a shortcut to the three coding features (the Text coding menu itself lists only non-AI commands). When AI is not set up the button is shown greyed out with a **Set up AI** link next to it.
 
-**Choose where the AI runs.** Open **AI > AI assistant settings...** (also under **Help**, or click the AI chip in the top bar):
+**Choose where the AI runs.** Open **AI > AI assistant settings...**, the one place for AI set-up. The AI chip in the top bar and every **Set up AI** button open the same settings:
 
 - **On this computer (free, private).** A small language model runs inside your browser. Nothing leaves your computer, and after a one-time download it works offline. Choose **Small and fast** (about 1 GB to download) or **Better quality** (about 1.8 GB, needs more graphics memory). Click **Download model** and wait for the progress bar; the browser keeps the model for next time. It needs WebGPU, which recent Chrome and Edge offer on Windows, Mac and ChromeOS desktops and laptops; the settings say whether your browser can run it. It is slower and less accurate than the online options, and handles fewer excerpts at a time. This is the option to use for confidential interviews.
 - **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and paste the key into the settings. Leave the model empty: Socius then picks the newest free Flash model your key can use. Click **Test connection** to check it.
@@ -537,7 +537,7 @@ This is a text encoding problem. Recent SPSS files state their encoding and open
 Every procedure is tested against scipy, statsmodels and other reference software, and p-values agree to at least six significant digits. If you still see a difference, copy the syntax Socius shows and run it in SPSS to compare like with like.
 
 **Where is my data stored?**
-Only in your browser, on your computer. Files you open are never uploaded. The autosaved session and the Recent projects list are kept in the browser's own storage (IndexedDB). Files you save go wherever your browser puts downloads. The only data that can leave your computer is the excerpts you choose to send with the optional AI suggestion features, and only to the provider you chose in **Help > AI assistant settings** (with the on-device option, nothing leaves at all). AI keys are kept in the browser, never in project files.
+Only in your browser, on your computer. Files you open are never uploaded. The autosaved session and the Recent projects list are kept in the browser's own storage (IndexedDB). Files you save go wherever your browser puts downloads. The only data that can leave your computer is the excerpts you choose to send with the optional AI suggestion features, and only to the provider you chose in **AI > AI assistant settings** (with the on-device option, nothing leaves at all). AI keys are kept in the browser, never in project files.
 
 **I lost my work after clearing the browser.**
 Clearing your browser's history, cookies or site data, using a private or incognito window, or switching to another browser or computer loses the autosaved session. **File > Close data and start fresh** also clears it on purpose. The autosave is a convenience, not a backup: use **File > Save project** regularly and keep the `.socius.json` file with your other research files.
@@ -548,6 +548,6 @@ Clearing your browser's history, cookies or site data, using a private or incogn
 **A dialog warns that a variable has the wrong measurement level.**
 It is a warning, not a block. Socius suggests which levels suit each box (for example scale for a t-test outcome). Often the fix is to set the right measure in Variable View.
 
-**Keyboard shortcuts.** **Help > Keyboard shortcuts** lists them all. **Help > Getting started** gives a six-step overview.
+**Keyboard shortcuts.** **Help > Keyboard shortcuts** lists them all, including the Responses view keys in Text coding. **Help > Getting started** gives a six-step overview.
 
 **Something is wrong, or I have a suggestion.** **Help > Send feedback or report a problem** (or **Feedback** in the top bar) opens a form on GitHub. Say what you did, what you expected and what happened; do not attach confidential data.

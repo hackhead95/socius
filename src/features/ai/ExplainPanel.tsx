@@ -6,7 +6,7 @@ import { aiPromptBudget } from '../../platform/ai';
 import { copyToClipboard } from '../../platform/host';
 import { useStore } from '../../core/store';
 import { openAssistant } from '../assistant/open';
-import { AiLoadProgress, AiProviderNote } from './AiBits';
+import { AiLoadProgress, AiProviderNote, SET_UP_AI } from './AiBits';
 import { AiText } from './AiText';
 import { buildExplainPrompt, byteLength, plainText } from './explainPrompt';
 import { useExplain } from './explainStore';
@@ -52,7 +52,7 @@ export function ExplainPanel({ item }: { item: OutputItem }) {
           ) : ai.ready === 'no' ? (
             <p className="help">
               AI help is not set up yet.{' '}
-              <button type="button" className="linkish" onClick={() => { ex.setPending(item.id); openAiSettings('explain'); }}>Set up AI help</button>
+              <button type="button" className="linkish" onClick={() => { ex.setPending(item.id); openAiSettings('explain'); }}>{SET_UP_AI}</button>
             </p>
           ) : (
             <p className="help">Checking the AI set-up…</p>

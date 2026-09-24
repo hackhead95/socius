@@ -8,6 +8,8 @@ import type { TableStyle } from './format';
 import { itemToHtml, reportToHtmlDocument, type ReportOptions } from './reportHtml';
 import { itemToText, reportToText } from './exportText';
 import { tableToHtml, tableToText } from './tableRender';
+import { useOutputPrefs } from './viewPrefs';
+import { useUi } from '../../app/ui-store';
 
 const MIME = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -144,4 +146,31 @@ export async function exportReport(items: OutputItem[], format: ReportFormat, op
   } catch (e) {
     toast(`Export failed: ${(e as Error).message}`, 'error');
   }
+}
+
+/** The report formats, in menu order. Shared by File > Export output report and the Output toolbar. */
+export const REPORT_FORMATS: Array<{ f: ReportFormat; label: string; help: string }> = [
+  { f: 'docx', label: 'Word document (.docx)', help: 'APA tables and figures, ready to edit' },
+  { f: 'html', label: 'Web page (.html)', help: 'Standalone and printable' },
+  { f: 'xlsx', label: 'Excel workbook (.xlsx)', help: 'One sheet per table' },
+  { f: 'txt', label: 'Plain text (.txt)', help: 'Tables as aligned text' },
+];
+
+/** Export every output item with the Output view's current settings (table style, interpretations, syntax). */
+export function exportAllOutput(format: ReportFormat): Promise<void> {
+  const { tableStyle, showInterpretations, showSyntax } = useOutputPrefs.getState();
+  return exportReport(useStore.getState().outputs, format, { style: tableStyle, includeInterpretations: showInterpretations, includeSyntax: showSyntax });
+}
+
+/** One confirmation for clearing the output, used by Edit > Clear output... and the Output toolbar. */
+export async function confirmAndClearOutputs(): Promise<void> {
+  const n = useStore.getState().outputs.length;
+  if (!n) return;
+  const ok = await useUi.getState().confirm({
+    title: 'Clear all output?',
+    message: `This removes all ${n} result${n === 1 ? '' : 's'} from the Output view and cannot be undone. Export a report first if you want to keep them.`,
+    confirmLabel: 'Clear output',
+    danger: true,
+  });
+  if (ok) useStore.getState().clearOutputs();
 }

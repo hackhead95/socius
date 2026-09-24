@@ -18,7 +18,7 @@ from PIL import Image
 MAX_W = 1600      # full-width pictures (screens, output tables)
 MAX_W_SMALL = 900  # menus and small dialogs are shown smaller on the page
 
-SMALL = {'file-menu', 'help-menu', 'save-menu', 'export-menu', 'missing-values', 'weight-chip', 'coders', 'ai-menu', 'ai-chip', 'assistant-see'}
+SMALL = {'file-menu', 'help-menu', 'coding-menu', 'save-menu', 'export-menu', 'missing-values', 'weight-chip', 'coders', 'ai-menu', 'ai-chip', 'assistant-see'}
 
 
 def main() -> None:

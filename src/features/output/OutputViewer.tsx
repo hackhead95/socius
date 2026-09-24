@@ -11,7 +11,7 @@ import { formatNumber } from './format';
 import { OutputTableView } from './OutputTableView';
 import { useOutputPrefs } from './viewPrefs';
 import { formatItemTime } from './reportHtml';
-import { copyItem, copyTable, copyText, exportReport, saveChartPng, saveChartSvg, saveTableXlsx, type ReportFormat } from './actions';
+import { REPORT_FORMATS, confirmAndClearOutputs, copyItem, copyTable, copyText, exportReport, saveChartPng, saveChartSvg, saveTableXlsx, type ReportFormat } from './actions';
 import { IconChart, IconChevron, IconCopy, IconDown, IconDownload, IconOutline, IconTable, IconText, IconTrash, IconUp, IconWarn, IconX } from './icons';
 import { useUi } from '../../app/ui-store';
 import { ExplainPanel } from '../ai/ExplainPanel';
@@ -22,14 +22,11 @@ import { openAiSettings } from '../ai/hooks';
 import '../ai/ai.css';
 import './output.css';
 
-/** Quick-start procedures for the empty state (first three that are registered). */
-const QUICK_START: Array<{ label: string; ids: string[] }> = [
-  { label: 'Frequencies', ids: ['frequencies'] },
-  { label: 'Crosstabs', ids: ['crosstabs'] },
-  { label: 'Compare means', ids: ['ttest-independent', 'means'] },
-  { label: 'Bar chart', ids: ['graph-bar'] },
-  { label: 'Histogram', ids: ['graph-histogram'] },
-];
+/**
+ * Quick-start procedures for the empty state (first three that are registered). They are shortcuts to
+ * Analyze and Graphs items, so each button shows the procedure's menu title.
+ */
+const QUICK_START: string[][] = [['frequencies'], ['crosstabs'], ['ttest-independent', 'means'], ['graph-bar'], ['graph-histogram']];
 
 const blockAnchor = (itemId: string, i: number) => `out-${itemId}-b${i}`;
 const itemAnchor = (itemId: string) => `out-${itemId}`;
@@ -60,7 +57,6 @@ export function OutputViewer() {
   const prefs = useOutputPrefs();
   const numbering = useNumbering(outputs);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-  const [confirmClear, setConfirmClear] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -195,7 +191,7 @@ export function OutputViewer() {
         </label>
         <span className="spacer" />
         <ExportMenu disabled={!outputs.length} onExport={(f) => exportReport(outputs, f, opts)} />
-        <button className="btn btn-sm btn-ghost" disabled={!outputs.length} onClick={() => setConfirmClear(true)}>
+        <button className="btn btn-sm btn-ghost" disabled={!outputs.length} onClick={() => void confirmAndClearOutputs()} title="Same as Edit > Clear output...">
           Clear output
         </button>
       </div>
@@ -267,19 +263,6 @@ export function OutputViewer() {
         </div>
       ) : null}
 
-      {confirmClear ? (
-        <ConfirmDialog
-          title="Clear all output?"
-          message={<>This removes all {outputs.length} results from the Output view. Export a report first if you want to keep them.</>}
-          confirmLabel="Clear output"
-          danger
-          onCancel={() => setConfirmClear(false)}
-          onConfirm={() => {
-            clearOutputs();
-            setConfirmClear(false);
-          }}
-        />
-      ) : null}
     </div>
   );
 }
@@ -300,12 +283,7 @@ function ExportMenu({ disabled, onExport }: { disabled: boolean; onExport: (f: R
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
-  const items: Array<{ f: ReportFormat; label: string; help: string }> = [
-    { f: 'docx', label: 'Word (.docx)', help: 'APA tables and figures, ready to edit' },
-    { f: 'html', label: 'Web page (.html)', help: 'Standalone and printable' },
-    { f: 'xlsx', label: 'Excel (.xlsx)', help: 'One sheet per table' },
-    { f: 'txt', label: 'Plain text (.txt)', help: 'Tables as aligned text' },
-  ];
+  const items = REPORT_FORMATS;
   const run = async (f: ReportFormat) => {
     setOpen(false);
     setBusy(f);
@@ -317,7 +295,7 @@ function ExportMenu({ disabled, onExport }: { disabled: boolean; onExport: (f: R
   };
   return (
     <div className="ov-menu" ref={ref}>
-      <button className="btn btn-sm btn-primary" disabled={disabled || !!busy} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button className="btn btn-sm btn-primary" disabled={disabled || !!busy} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Same as File > Export output report">
         <IconDownload /> {busy ? 'Preparing…' : 'Export report'}
       </button>
       {open ? (
@@ -342,7 +320,10 @@ function ExportMenu({ disabled, onExport }: { disabled: boolean; onExport: (f: R
 function EmptyState() {
   const openDialog = useStore((s) => s.openDialog);
   const hasData = useStore((s) => !!s.dataset);
-  const quick = QUICK_START.map((q) => ({ label: q.label, id: q.ids.find((id) => getProcedure(id)) })).filter((q): q is { label: string; id: string } => !!q.id).slice(0, 3);
+  const quick = QUICK_START.map((ids) => ids.map((id) => getProcedure(id)).find(Boolean))
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .map((p) => ({ id: p.id, label: p.title }))
+    .slice(0, 3);
   return (
     <div className="ov-empty">
       <div className="ov-empty-card">
@@ -352,7 +333,7 @@ function EmptyState() {
           Choose an analysis from the <b>Analyze</b> menu or a chart from the <b>Graphs</b> menu. Each result arrives here as a numbered table or figure with a plain-language
           reading, an APA-style sentence you can paste into your paper, and the equivalent SPSS syntax.
         </p>
-        <p className="muted">Export everything to Word, a web page, Excel or plain text with “Export report”.</p>
+        <p className="muted">Export everything to Word, a web page, Excel or plain text with “Export report” above.</p>
         {quick.length ? (
           <div className="ov-empty-actions">
             {quick.map((q) => (

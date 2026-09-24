@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from '../../core/store';
 import { openAiSettings, useAiStatus } from '../ai/hooks';
+import { AI_SETTINGS_LABEL, SET_UP_AI } from '../ai/AiBits';
 import type { Proposal, TraceStep } from '../../lib/assistant/types';
 import { useAssistantChat, type ArtifactEntry, type ChatEntry } from './chat-store';
 import { copyAnswer, dismissArtifact, retryLast, runArtifact, sendMessage, stopAssistant, appSnapshot } from './controller';
@@ -77,7 +78,7 @@ export function AssistantPanel({ onClose }: { onClose: () => void }) {
           <span className="as-provider" title={`Answers use ${status.label}`}>{status.label}</span>
         ) : (
           <button type="button" className="btn btn-sm btn-primary" onClick={openAiSettings}>
-            Set up free AI
+            {SET_UP_AI}
           </button>
         )}
         <span className="spacer" />
@@ -204,7 +205,7 @@ function Empty({ configured }: { configured: boolean }) {
         <div className="callout callout-info as-setup">
           <span>To start, choose a free AI option: Google Gemini with your own free key, or a model that runs on this computer.</span>
           <span>
-            <button type="button" className="btn btn-sm btn-primary" onClick={openAiSettings}>Set up free AI</button>
+            <button type="button" className="btn btn-sm btn-primary" onClick={openAiSettings}>{SET_UP_AI}</button>
           </span>
         </div>
       ) : null}
@@ -279,7 +280,7 @@ function AssistantMessage({ entry, last }: { entry: ChatEntry; last: boolean }) 
               <AsIcon name="retry" size={14} /> Retry
             </button>
             {/set up|settings|key|model|allowance/i.test(entry.error ?? '') ? (
-              <button type="button" className="btn btn-sm" onClick={openAiSettings}>AI settings</button>
+              <button type="button" className="btn btn-sm" onClick={openAiSettings}>{AI_SETTINGS_LABEL}</button>
             ) : null}
           </span>
         </div>

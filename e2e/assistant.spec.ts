@@ -48,7 +48,7 @@ test('floating button, Ctrl+J, starters, set-up prompt and privacy line without 
   await page.keyboard.press('Control+j');
   const panel = page.getByTestId('assistant-panel');
   await expect(panel).toBeVisible();
-  await expect(panel.getByRole('button', { name: 'Set up free AI' }).first()).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Set up AI' }).first()).toBeVisible();
   await expect(panel.getByRole('listitem')).toHaveText(['Describe my dataset', 'Which variables need cleaning?', /Which test should I use to compare .* across gender\?/, 'Build a trust scale']);
   await expect(page.getByTestId('assistant-privacy')).toContainText('nothing is sent anywhere');
   // "What the assistant can see": individual cases start off.

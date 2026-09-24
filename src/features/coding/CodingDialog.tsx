@@ -1,4 +1,4 @@
-// Dialog router for the "Text coding" menu (rendered by the app shell's DialogHost for store dialogs
+// Dialog router for the "Text coding" menu (and the coding AI features started from the AI menu) (rendered by the app shell's DialogHost for store dialogs
 // of kind 'coding') and for dialogs opened inside the workspace.
 
 import { useEffect } from 'react';
@@ -6,7 +6,7 @@ import { useStore } from '../../core/store';
 import { newId } from '../../core/types';
 import { sampleTranscripts } from '../../samples';
 import { normaliseText } from '../../lib/coding/importers';
-import { useAiStatus, openAiSettings } from '../ai/hooks';
+import { useAiStatus } from '../ai/hooks';
 import { AiSetupButton } from '../ai/AiBits';
 import { Modal } from '../../ui/Modal';
 import { addDocs } from './actions';
@@ -70,7 +70,7 @@ function AiGate({ children, onClose }: { children: React.ReactNode; onClose: () 
       footer={
         <>
           <button className="btn" onClick={onClose}>Close</button>
-          {ai.ready === 'no' ? <AiSetupButton label={chosen ? 'Open AI assistant settings' : 'Set up free AI help'} /> : null}
+          {ai.ready === 'no' ? <AiSetupButton /> : null}
         </>
       }
     >
@@ -92,15 +92,6 @@ function AiGate({ children, onClose }: { children: React.ReactNode; onClose: () 
       </div>
     </Modal>
   );
-}
-
-/** Opens the app-wide AI assistant settings, then closes this menu dialog. */
-function OpenAiSettings({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    openAiSettings();
-    onClose();
-  }, [onClose]);
-  return null;
 }
 
 export function CodingDialog(props: { id: string; params?: Record<string, unknown>; onClose: () => void }) {
@@ -128,8 +119,6 @@ export function CodingDialog(props: { id: string; params?: Record<string, unknow
           <AiSuggestDialog onClose={onClose} docIds={p.docIds as string[] | undefined} />
         </AiGate>
       );
-    case 'ai-settings':
-      return <OpenAiSettings onClose={onClose} />;
     case 'export':
       return <ExportDialog onClose={onClose} initialTab={(p.tab as any) ?? 'segments'} />;
     case 'export-report':

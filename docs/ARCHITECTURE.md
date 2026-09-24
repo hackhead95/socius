@@ -15,7 +15,7 @@ status via `subscribeAi`). Providers: Claude (automatic inside the Artifact, `sa
 the Artifact build), Google Gemini and OpenAI-compatible services (`ai-http.ts`, the user's own key).
 Settings and keys live in localStorage only. The settings dialog is `src/features/ai/`. App-wide AI entry points (AI menu, top-bar AI chip, "AI is ready. Try it") start features through `runAiFeature` in `src/features/ai/features.ts`; "Explain with AI" on Output items builds its prompt in `explainPrompt.ts` (aggregate tables only, never case-level values).
 
-The search palette (`src/app/CommandPalette.tsx`, Ctrl+K) searches the menu model from `menus.ts` (so a command is defined once), variables, Output results, guide sections (`helpTopics.ts`, checked against `public/guide/index.html` by a test) and coded text; matching and ranking are in `src/app/search.ts`.
+Every command has exactly one menu home; toolbars, the top bar and set-up prompts are contextual shortcuts with the menu's wording (`docs/NAVIGATION.md`, checked by `tests/app/navigation-audit.test.tsx`). The search palette (`src/app/CommandPalette.tsx`, Ctrl+K) searches the menu model from `menus.ts` (so a command is defined once), variables, Output results, guide sections (`helpTopics.ts`, checked against `public/guide/index.html` by a test) and coded text; matching and ranking are in `src/app/search.ts`.
 
 ## Stack
 

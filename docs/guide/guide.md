@@ -542,11 +542,11 @@ Click **Copy** in the **APA-style report** box and paste the sentence into your 
 
 ## Export the whole report
 
-Click **Export report** and choose a format:
+Click **Export report** in the Output tab, or choose **File > Export output report**, and pick a format:
 
-- **Word (.docx):** APA tables and charts, ready to edit. This is the one most people want.
+- **Word document (.docx):** APA tables and charts, ready to edit. This is the one most people want.
 - **Web page (.html):** a standalone page you can open in any browser and print, or save as PDF from the print dialog.
-- **Excel (.xlsx):** one sheet per table.
+- **Excel workbook (.xlsx):** one sheet per table.
 - **Plain text (.txt):** tables as aligned text.
 
 To tidy up before exporting, use the small arrows on each result to move it up or down, and the bin icon to delete it. **Clear output** removes everything.
@@ -554,6 +554,10 @@ To tidy up before exporting, use the small arrows on each result to move it up o
 # Coding open-ended answers
 
 Surveys often end with an open question, such as "What is the biggest challenge facing your neighbourhood today?". *Coding* means reading each answer and tagging it with one or more themes, called **codes**. The list of codes, with a definition for each, is your **codebook**. Once answers are coded, you can count the themes, compare them between groups, and even test the differences with statistics.
+
+Everything for coding is in the **Text coding** menu and the **Text coding** tab. The optional AI helpers for coding are in the **AI** menu (see [AI in Text coding](#ai-in-text-coding)).
+
+![The Text coding menu: import, code, analyse and export. The AI helpers are in the AI menu.](img/coding-menu.png){width=40}
 
 ## Start with the worked example
 
@@ -699,7 +703,7 @@ For a report of the whole codebook with counts and example quotes, choose **Text
 To show that your coding is trustworthy, a second person codes the same material independently, and you measure how often you agree.
 
 1. Agree on the codebook with written definitions first.
-2. Choose **Text coding > Coders** (or **Coder > Manage coders** in the toolbar). Add the second coder, for example "Priya", and click **Code as Priya**.
+2. Choose **Text coding > Coders** (or **Coders** under the **Coder** button in the toolbar). Add the second coder, for example "Priya", and click **Code as Priya**.
 3. Priya codes the same answers or documents. While she codes, she does not see the first coder's codes, so her coding stays independent.
 4. If you work on different computers, one person saves the project (**File > Save project**) and sends the `.socius.json` file to the other, who opens it, codes, and saves it again.
 5. Open the **Reliability** view and choose **Coder A** and **Coder B**.
@@ -724,7 +728,7 @@ AI help is optional and free. It is switched off until you set it up, and everyt
 
 ## Set it up
 
-1. Choose **AI > AI assistant settings** (the same item is under **Help > AI assistant settings**). You can also click the **AI** chip at the top right and then **Set up AI help**.
+1. Choose **AI > AI assistant settings**. This is the one place where AI help is set up. The **AI** chip at the top right and every **Set up AI** button (next to an AI feature that is greyed out) open the same settings.
 2. Under **Where should the AI run?**, choose one of the two free options below.
 3. Follow the steps for that option, then click **Test connection**.
 
@@ -896,12 +900,12 @@ A **Proposed change** card (1) describes the recode, reverse-coding, scale or co
 
 ## AI in Text coding
 
-In the Text coding tab, the **AI suggestions** button in the toolbar has three helpers. If AI is not set up, the button is greyed out and a **Set up AI** link sits next to it.
+The coding helpers live in the **AI** menu. In the Text coding tab, the **AI suggestions** button in the toolbar is a shortcut to the same three items. If AI is not set up, the button is greyed out and a **Set up AI** link sits next to it.
 
 ![The AI suggestions menu (1) in the Text coding toolbar.](img/coding-ai.png){width=75}
 
 - **Suggest a codebook** reads a sample of your documents or answers and proposes codes, each with a definition and an example quote. Keep the ones you want and click **Add** (the button shows how many codes). Treat them as a first draft: rename, merge and define them in your own terms.
-- **Suggest codes for responses** applies your existing codebook to open-ended answers and suggests codes for each one. You **Accept** or **Reject** every suggestion, or **Accept all**. Accepted codes are marked as AI suggestions, so you can review them later.
+- **Suggest codes for open-ended answers** applies your existing codebook to open-ended answers and suggests codes for each one. You **Accept** or **Reject** every suggestion, or **Accept all**. Accepted codes are marked as AI suggestions, so you can review them later.
 - **Summarise a code** opens the **Retrieve** view. Pick a code and click **Summarise this code** for a short summary of its passages. **Save as memo** keeps it as a memo on the code. Check it against the quotes.
 
 Each dialog says how many excerpts will be sent, and to whom, before you click. For intercoder reliability, AI suggestions do not count as a second coder: a person must code independently.
@@ -991,7 +995,7 @@ Free tiers allow only a few requests a minute and a limited number a day. Wait a
 The on-device model needs WebGPU, which only recent Chrome and Edge on a desktop or laptop offer reliably. Update your browser, or use another computer. Check that hardware acceleration is on (Chrome: Settings > System). Otherwise use Google Gemini with anonymised data.
 
 **AI buttons are greyed out.**
-In Text coding, a grey **AI suggestions** button means AI help is not set up: click **Set up AI** next to it. If AI is set up but a single item is grey, it has nothing to work on yet: **Suggest a codebook** needs imported texts, **Suggest codes for responses** needs imported answers and at least one code, and **Summarise a code** needs coded passages. The **Explain** button in the Explain panel stays grey until AI help is set up.
+In Text coding, a grey **AI suggestions** button means AI help is not set up: click **Set up AI** next to it. If AI is set up but a single item is grey, it has nothing to work on yet: **Suggest a codebook** needs imported texts, **Suggest codes for open-ended answers** needs imported answers and at least one code, and **Summarise a code** needs coded passages. The **Explain** button in the Explain panel stays grey until AI help is set up.
 
 **The assistant's numbers differ from Output.**
 Trust the tables in Output. The assistant runs the same analyses, but it can misread or round them. Run the analysis from the menu (or click **Add this analysis to Output**) and report the numbers from Output.
@@ -1000,7 +1004,7 @@ Trust the tables in Output. The assistant runs the same analyses, but it can mis
 Yes, for looking at data and results. For coding and analysis, a computer with a mouse and keyboard is much easier.
 
 **Where are the keyboard shortcuts?**
-**Help > Keyboard shortcuts** lists them all. The two most useful are [[Ctrl+K]] for Search and [[Ctrl+J]] for the assistant. **Help > Getting started** gives a six-step overview.
+**Help > Keyboard shortcuts** lists them all, including the keys of the Responses view in Text coding. The two most useful are [[Ctrl+K]] for Search and [[Ctrl+J]] for the assistant. **Help > Getting started** gives a six-step overview.
 
 # Giving feedback
 
@@ -1008,7 +1012,7 @@ Socius is young, and your experience helps make it better. If something does not
 
 Choose **Help > Send feedback or report a problem**, or click **Feedback** at the top right of the screen. A form opens on GitHub in a new tab. You can also go there directly: {{FEEDBACK_URL}}
 
-![The Help menu, with the user guide, the AI settings and the feedback form.](img/help-menu.png){width=40}
+![The Help menu, with the user guide, the keyboard shortcuts and the feedback form. AI set-up is in the AI menu.](img/help-menu.png){width=40}
 
 - Posting on GitHub needs a free GitHub account. Creating one takes a minute.
 - Say what you did, what you expected and what happened instead. A screenshot helps.
@@ -1042,13 +1046,13 @@ Thank you for trying Socius.
 | Check a scale's reliability | **Analyze > Scale > Reliability Analysis** |
 | Make a bar chart or histogram | **Graphs > Bar Chart**, **Graphs > Histogram** |
 | Copy a table into Word | **Copy table** under the table in Output |
-| Export all results to Word | **Export report > Word (.docx)** in Output |
+| Export all results to Word | **File > Export output report > Word document (.docx)** |
 | Code open-ended answers | **Text coding > Import open-ended answers from dataset** |
 | Import interview transcripts | **Text coding > Import documents** |
 | Auto-code with keywords | **Text coding > Auto-code with keyword rules** |
 | Turn codes into variables | **Text coding > Export codes to dataset** |
 | Check agreement between coders | **Text coding > Intercoder reliability** |
-| Set up AI help | **AI > AI assistant settings** |
+| Set up AI | **AI > AI assistant settings** |
 | Ask a question about my data or methods | **Assistant** button (bottom right), or [[Ctrl+J]] |
 | Explain a result in plain language | **Explain with AI** on the result in Output |
 | Save everything | **File > Save project** ([[Ctrl+S]]) |

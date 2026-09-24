@@ -11,8 +11,9 @@ async function ready(page: Page) {
   await openWithSample(page);
 }
 
-async function openSettingsFromHelp(page: Page) {
-  await page.getByRole('menuitem', { name: 'Help', exact: true }).click();
+/** AI assistant settings has one home: the AI menu (last item). */
+async function openSettingsFromAiMenu(page: Page) {
+  await page.getByRole('menuitem', { name: 'AI', exact: true }).click();
   await page.getByRole('menuitem', { name: 'AI assistant settings...' }).click();
   const dlg = page.getByRole('dialog', { name: 'AI assistant' });
   await expect(dlg).toBeVisible();
@@ -52,7 +53,7 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
     return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(geminiReply('OK')) });
   });
   await ready(page);
-  const dlg = await openSettingsFromHelp(page);
+  const dlg = await openSettingsFromAiMenu(page);
   // No Claude outside the artifact; the free options are offered.
   await expect(dlg.locator('.ai-choice-title')).toHaveText([/On this computer/, /Google Gemini/, /Other service/]);
   await expect(dlg.locator('.ai-choice', { hasText: 'Claude' })).toHaveCount(0);
@@ -116,7 +117,7 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
 /** Import q_challenge (630 answers) as responses. */
 async function importChallenge(page: Page) {
   await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Import open-ended answers from dataset…' }).click();
+  await page.getByRole('menuitem', { name: 'Import open-ended answers from dataset...' }).click();
   const sel = page.locator('#cw-svar');
   const opts = await sel.locator('option').allInnerTexts();
   await sel.selectOption({ index: opts.findIndex((o) => o.includes('q_challenge')) });
@@ -175,8 +176,8 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
   await dlg.getByRole('button', { name: 'Add 2 codes' }).click();
   await expect(page.locator('.cw-code[aria-level="2"]')).toHaveText(/Water insecurity/);
 
-  await aiMenu('Suggest codes for responses');
-  const sdlg = page.getByRole('dialog', { name: 'Suggest codes for responses' });
+  await aiMenu('Suggest codes for open-ended answers');
+  const sdlg = page.getByRole('dialog', { name: 'Suggest codes for open-ended answers' });
   await sdlg.locator('#cw-smax').selectOption('50');
   await expect(sdlg.locator('.ai-note')).toContainText('50 responses and your codebook will be sent to Google Gemini');
   await sdlg.locator('.btn-primary').click();
@@ -210,8 +211,8 @@ test('AI errors from Gemini show a friendly message in the coding dialog', async
   const dlg = page.getByRole('dialog', { name: 'Suggest a codebook' });
   await dlg.getByRole('button', { name: 'Suggest codes' }).click();
   await expect(dlg.locator('.callout-bad')).toContainText('did not accept the key');
-  // The note offers a way to fix it.
-  await dlg.locator('.ai-note').getByRole('button', { name: 'Change' }).click();
+  // The note offers a way to fix it, in the menu's wording.
+  await dlg.locator('.ai-note').getByRole('button', { name: 'AI assistant settings' }).click();
   await expect(page.getByRole('dialog', { name: 'AI assistant' })).toBeVisible();
 });
 
@@ -242,12 +243,9 @@ test('Help menu and top bar: user guide, feedback and About links', async ({ pag
   await expect(about).toContainText('It only sends what you choose, when you click, to the provider you choose.');
   await expect(about.getByRole('link', { name: 'User guide' })).toHaveAttribute('href', `${baseURL}/guide/`);
   await expect(about.getByRole('link', { name: 'Send feedback or report a problem' })).toHaveAttribute('href', 'https://github.com/hackhead95/socius/issues/new/choose');
-  await about.getByRole('button', { name: 'AI assistant settings' }).click();
-  await expect(page.getByRole('dialog', { name: 'AI assistant' })).toBeVisible();
-  // Settings open on top of About; Escape closes only the top one.
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'AI assistant' })).toHaveCount(0);
-  await expect(about).toBeVisible();
+  // AI set-up has one home: About names it instead of offering a second way in.
+  await expect(about).toContainText('AI > AI assistant settings');
+  await expect(about.getByRole('button', { name: /AI assistant settings/ })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(about).toHaveCount(0);
 

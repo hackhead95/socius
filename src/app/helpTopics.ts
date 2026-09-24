@@ -50,7 +50,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   { anchor: 'retrieve-quotes', title: 'Retrieve quotes', chapter: 'Coding interviews', keywords: ['quotes', 'segments'] },
   { anchor: 'intercoder-reliability-do-two-coders-agree', title: 'Intercoder reliability: do two coders agree?', chapter: 'Coding interviews', keywords: ['kappa', 'agreement', 'krippendorff'] },
   { anchor: 'getting-help-from-ai', title: 'Getting help from AI', chapter: 'Getting help from AI', keywords: ['ai', 'gemini', 'assistant'] },
-  { anchor: 'set-it-up', title: 'Set up AI help', chapter: 'Getting help from AI', keywords: ['ai', 'gemini', 'api key', 'free key', 'on device', 'test connection'] },
+  { anchor: 'set-it-up', title: 'Set up AI', chapter: 'Getting help from AI', keywords: ['ai', 'gemini', 'api key', 'free key', 'on device', 'test connection'] },
   { anchor: 'before-you-send-anything', title: 'Before you send anything to an AI', chapter: 'Getting help from AI', keywords: ['ai', 'privacy', 'anonymise', 'ethics', 'consent'] },
   { anchor: 'where-to-find-ai-in-socius', title: 'Where to find AI in Socius', chapter: 'Getting help from AI', keywords: ['ai', 'ai menu', 'use ai'] },
   { anchor: 'explain-a-result', title: 'Explain a result with AI', chapter: 'Getting help from AI', keywords: ['ai', 'explain', 'interpret'] },

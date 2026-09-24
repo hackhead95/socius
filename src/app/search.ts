@@ -246,7 +246,6 @@ export const SYNONYMS: Record<string, { words: string[]; boost?: number }> = {
   'd-select': { words: ['filter', 'select cases', 'select if', 'subset', 'exclude cases'], boost: 2 },
   'd-filter-off': { words: ['filter', 'all cases', 'remove filter'] },
   'd-sort': { words: ['sort', 'order'] },
-  'd-props': { words: ['variable view', 'labels', 'value labels', 'missing values', 'measurement level'] },
   'd-copy': { words: ['copy labels', 'value labels'] },
   'd-agg': { words: ['aggregate', 'group by', 'collapse', 'summarise by group'] },
   'm-cases': { words: ['merge', 'append', 'add cases', 'combine files', 'stack'] },
@@ -263,7 +262,6 @@ export const SYNONYMS: Record<string, { words: string[]; boost?: number }> = {
   'h-guide': { words: ['manual', 'help', 'documentation', 'guide', 'tutorial'], boost: 1 },
   'h-start': { words: ['help', 'tutorial', 'introduction', 'beginner'] },
   'h-keys': { words: ['shortcuts', 'keys', 'hotkeys', 'keyboard'] },
-  'h-ai': { words: ['ai', 'gemini', 'api key', 'settings', 'llm', 'chatgpt', 'on device model'] },
   'h-feedback': { words: ['bug', 'report', 'issue', 'feedback', 'problem'] },
   'c-view:reliability': { words: ['kappa', 'cohens kappa', 'krippendorff', 'agreement', 'intercoder', 'inter rater', 'interrater'], boost: 6 },
   'c-export-codebook': { words: ['codebook', 'code list'], boost: 1 },
@@ -277,7 +275,13 @@ export const SYNONYMS: Record<string, { words: string[]; boost?: number }> = {
   'ai-codebook': { words: ['codebook', 'themes', 'ai'] },
   'ai-suggest': { words: ['code responses', 'ai', 'open ended'] },
   'ai-summarise': { words: ['summary', 'summarize', 'ai'] },
-  'ai-settings': { words: ['ai', 'gemini', 'api key', 'settings', 'llm', 'on device model'] },
+  // The one home of AI set-up (it used to be in Help and Text coding too): old words still find it.
+  'ai-settings': { words: ['ai', 'ai settings', 'ai assistant settings', 'set up ai', 'gemini', 'gemini key', 'api key', 'settings', 'preferences', 'llm', 'chatgpt', 'openai', 'groq', 'ollama', 'on device model', 'provider'], boost: 2 },
+  // Views: the one home of switching tabs (Data > Define variable properties and Text coding > Open
+  // coding workspace did the same and were removed).
+  'v-vars': { words: ['define variable properties', 'variable properties', 'labels', 'value labels', 'missing values', 'measurement level', 'measure'] },
+  'v-code': { words: ['open coding workspace', 'coding workspace', 'qualitative', 'code text'] },
+  'v-labels': { words: ['show value labels', 'labels instead of codes'] },
 };
 
 export interface CommandEntry extends SearchEntry {

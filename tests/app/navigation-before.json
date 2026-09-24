@@ -1,0 +1,576 @@
+{
+ "_about": "Menu model before the navigation clean-up (2026-09), recorded by tests/app/navigation-audit.test.ts with NAV_SNAPSHOT. Each entry: menu path, label and the recorded effect of choosing it. The audit checks that every one of these actions still has exactly one menu home.",
+ "menus": [
+  {
+   "path": "File > New dataset",
+   "label": "New dataset",
+   "signature": "file.newDataset([])"
+  },
+  {
+   "path": "File > Open data file",
+   "label": "Open data file...",
+   "signature": "file.openDataFile([])",
+   "shortcut": "Ctrl+O"
+  },
+  {
+   "path": "File > Open project",
+   "label": "Open project...",
+   "signature": "file.openProjectFile([])"
+  },
+  {
+   "path": "File > Recent projects",
+   "label": "Recent projects...",
+   "signature": "openDialog([{\"kind\":\"file\",\"id\":\"recent\"}])"
+  },
+  {
+   "path": "File > Load sample survey",
+   "label": "Load sample survey",
+   "signature": "file.loadSample([])"
+  },
+  {
+   "path": "File > Save project",
+   "label": "Save project",
+   "signature": "file.saveProject([])",
+   "shortcut": "Ctrl+S"
+  },
+  {
+   "path": "File > Save data as > SPSS data (.sav)",
+   "label": "SPSS data (.sav)",
+   "signature": "file.exportSavFile([\"sav\"])"
+  },
+  {
+   "path": "File > Save data as > SPSS compressed (.zsav)",
+   "label": "SPSS compressed (.zsav)",
+   "signature": "file.exportSavFile([\"zsav\"])"
+  },
+  {
+   "path": "File > Save data as > CSV with codes",
+   "label": "CSV with codes",
+   "signature": "file.exportCsvFile([\"codes\"])"
+  },
+  {
+   "path": "File > Save data as > CSV with value labels",
+   "label": "CSV with value labels",
+   "signature": "file.exportCsvFile([\"labels\"])"
+  },
+  {
+   "path": "File > Save data as > Excel with codes",
+   "label": "Excel with codes",
+   "signature": "file.exportXlsxFile([\"codes\"])"
+  },
+  {
+   "path": "File > Save data as > Excel with value labels",
+   "label": "Excel with value labels",
+   "signature": "file.exportXlsxFile([\"labels\"])"
+  },
+  {
+   "path": "File > Export codebook > Excel (.xlsx)",
+   "label": "Excel (.xlsx)",
+   "signature": "file.exportCodebook([\"xlsx\"])"
+  },
+  {
+   "path": "File > Export codebook > CSV",
+   "label": "CSV",
+   "signature": "file.exportCodebook([\"csv\"])"
+  },
+  {
+   "path": "File > Close data and start fresh",
+   "label": "Close data and start fresh...",
+   "signature": "confirm(Close everything?)"
+  },
+  {
+   "path": "Edit > Undo",
+   "label": "Undo",
+   "signature": "undo([])",
+   "shortcut": "Ctrl+Z"
+  },
+  {
+   "path": "Edit > Redo",
+   "label": "Redo",
+   "signature": "redo([])",
+   "shortcut": "Ctrl+Y"
+  },
+  {
+   "path": "Edit > Find in data",
+   "label": "Find in data...",
+   "signature": "setTab([\"data\"]) requestFind([])",
+   "shortcut": "Ctrl+F"
+  },
+  {
+   "path": "Edit > Go to case",
+   "label": "Go to case...",
+   "signature": "setTab([\"data\"]) requestGoto([])"
+  },
+  {
+   "path": "Edit > Clear output",
+   "label": "Clear output...",
+   "signature": "confirm(Clear all output?)"
+  },
+  {
+   "path": "View > Data View",
+   "label": "Data View",
+   "signature": "setTab([\"data\"])"
+  },
+  {
+   "path": "View > Variable View",
+   "label": "Variable View",
+   "signature": "setTab([\"variables\"])"
+  },
+  {
+   "path": "View > Output",
+   "label": "Output",
+   "signature": "setTab([\"output\"])"
+  },
+  {
+   "path": "View > Text coding",
+   "label": "Text coding",
+   "signature": "setTab([\"coding\"])"
+  },
+  {
+   "path": "View > Value labels in Data View",
+   "label": "Value labels in Data View",
+   "signature": "setShowValueLabels([false])"
+  },
+  {
+   "path": "View > Variable list",
+   "label": "Variable list",
+   "signature": "setSidebarOpen([false])"
+  },
+  {
+   "path": "View > Theme > Match my system",
+   "label": "Match my system",
+   "signature": "setTheme([\"system\"])"
+  },
+  {
+   "path": "View > Theme > Light",
+   "label": "Light",
+   "signature": "setTheme([\"light\"])"
+  },
+  {
+   "path": "View > Theme > Dark",
+   "label": "Dark",
+   "signature": "setTheme([\"dark\"])"
+  },
+  {
+   "path": "Data > Define variable properties",
+   "label": "Define variable properties",
+   "signature": "setTab([\"variables\"])"
+  },
+  {
+   "path": "Data > Copy variable properties",
+   "label": "Copy variable properties...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"copy-properties\",\"params\":{\"sourceId\":null}}])"
+  },
+  {
+   "path": "Data > Sort cases",
+   "label": "Sort cases...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"sort\"}])"
+  },
+  {
+   "path": "Data > Select cases",
+   "label": "Select cases...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"select\"}])"
+  },
+  {
+   "path": "Data > Weight cases",
+   "label": "Weight cases...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"weight\"}])"
+  },
+  {
+   "path": "Data > Merge files > Add cases",
+   "label": "Add cases...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"merge-cases\"}])"
+  },
+  {
+   "path": "Data > Merge files > Add variables",
+   "label": "Add variables...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"merge-variables\"}])"
+  },
+  {
+   "path": "Data > Aggregate",
+   "label": "Aggregate...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"aggregate\"}])"
+  },
+  {
+   "path": "Data > Turn filter off (use all cases)",
+   "label": "Turn filter off (use all cases)",
+   "signature": "turnFilterOff()"
+  },
+  {
+   "path": "Data > Turn weighting off",
+   "label": "Turn weighting off",
+   "signature": "turnWeightOff()"
+  },
+  {
+   "path": "Transform > Compute variable",
+   "label": "Compute variable...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"compute\"}])"
+  },
+  {
+   "path": "Transform > Count values within cases",
+   "label": "Count values within cases...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"count\"}])"
+  },
+  {
+   "path": "Transform > Recode into same variables",
+   "label": "Recode into same variables...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"recode-same\"}])"
+  },
+  {
+   "path": "Transform > Recode into different variables",
+   "label": "Recode into different variables...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"recode-different\"}])"
+  },
+  {
+   "path": "Transform > Automatic recode",
+   "label": "Automatic recode...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"autorecode\"}])"
+  },
+  {
+   "path": "Transform > Visual binning",
+   "label": "Visual binning...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"binning\"}])"
+  },
+  {
+   "path": "Transform > Reverse-code items",
+   "label": "Reverse-code items...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"reverse\"}])"
+  },
+  {
+   "path": "Transform > Create scale / index",
+   "label": "Create scale / index...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"scale\"}])"
+  },
+  {
+   "path": "Transform > Standardize (z-scores)",
+   "label": "Standardize (z-scores)...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"standardize\"}])"
+  },
+  {
+   "path": "Transform > Rank cases",
+   "label": "Rank cases...",
+   "signature": "openDialog([{\"kind\":\"transform\",\"id\":\"rank\"}])"
+  },
+  {
+   "path": "Analyze > Descriptive Statistics > Frequencies",
+   "label": "Frequencies...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"frequencies\"}])"
+  },
+  {
+   "path": "Analyze > Descriptive Statistics > Descriptives",
+   "label": "Descriptives...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"descriptives\"}])"
+  },
+  {
+   "path": "Analyze > Descriptive Statistics > Explore",
+   "label": "Explore...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"explore\"}])"
+  },
+  {
+   "path": "Analyze > Descriptive Statistics > Crosstabs",
+   "label": "Crosstabs...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"crosstabs\"}])"
+  },
+  {
+   "path": "Analyze > Compare Means > Means",
+   "label": "Means...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"means\"}])"
+  },
+  {
+   "path": "Analyze > Compare Means > One-Sample T Test",
+   "label": "One-Sample T Test...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"ttest-one-sample\"}])"
+  },
+  {
+   "path": "Analyze > Compare Means > Independent-Samples T Test",
+   "label": "Independent-Samples T Test...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"ttest-independent\"}])"
+  },
+  {
+   "path": "Analyze > Compare Means > Paired-Samples T Test",
+   "label": "Paired-Samples T Test...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"ttest-paired\"}])"
+  },
+  {
+   "path": "Analyze > Compare Means > One-Way ANOVA",
+   "label": "One-Way ANOVA...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"oneway-anova\"}])"
+  },
+  {
+   "path": "Analyze > Correlate > Bivariate Correlations",
+   "label": "Bivariate Correlations...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"correlations\"}])"
+  },
+  {
+   "path": "Analyze > Correlate > Partial Correlations",
+   "label": "Partial Correlations...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"partial-correlations\"}])"
+  },
+  {
+   "path": "Analyze > Regression > Linear Regression",
+   "label": "Linear Regression...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"models.linear\"}])"
+  },
+  {
+   "path": "Analyze > Regression > Binary Logistic Regression",
+   "label": "Binary Logistic Regression...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"models.logistic\"}])"
+  },
+  {
+   "path": "Analyze > Regression > Ordinal Regression",
+   "label": "Ordinal Regression...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"models.ordinal\"}])"
+  },
+  {
+   "path": "Analyze > Regression > Multinomial Logistic Regression",
+   "label": "Multinomial Logistic Regression...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"models.multinomial\"}])"
+  },
+  {
+   "path": "Analyze > Nonparametric Tests > Chi-Square (goodness of fit)",
+   "label": "Chi-Square (goodness of fit)...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"chisquare-gof\"}])"
+  },
+  {
+   "path": "Analyze > Nonparametric Tests > Binomial",
+   "label": "Binomial...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"binomial\"}])"
+  },
+  {
+   "path": "Analyze > Nonparametric Tests > Mann-Whitney U (2 independent samples)",
+   "label": "Mann-Whitney U (2 independent samples)...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"mann-whitney\"}])"
+  },
+  {
+   "path": "Analyze > Nonparametric Tests > Kruskal-Wallis H (k independent samples)",
+   "label": "Kruskal-Wallis H (k independent samples)...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"kruskal-wallis\"}])"
+  },
+  {
+   "path": "Analyze > Nonparametric Tests > Wilcoxon Signed-Rank (2 related samples)",
+   "label": "Wilcoxon Signed-Rank (2 related samples)...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"wilcoxon\"}])"
+  },
+  {
+   "path": "Analyze > Nonparametric Tests > Friedman (k related samples)",
+   "label": "Friedman (k related samples)...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"friedman\"}])"
+  },
+  {
+   "path": "Analyze > Scale > Reliability Analysis",
+   "label": "Reliability Analysis...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"models.reliability\"}])"
+  },
+  {
+   "path": "Analyze > Dimension Reduction > Factor Analysis",
+   "label": "Factor Analysis...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"models.factor\"}])"
+  },
+  {
+   "path": "Graphs > Bar Chart",
+   "label": "Bar Chart...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-bar\"}])"
+  },
+  {
+   "path": "Graphs > Histogram",
+   "label": "Histogram...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-histogram\"}])"
+  },
+  {
+   "path": "Graphs > Box Plot",
+   "label": "Box Plot...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-box\"}])"
+  },
+  {
+   "path": "Graphs > Scatter Plot",
+   "label": "Scatter Plot...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-scatter\"}])"
+  },
+  {
+   "path": "Graphs > Line Chart",
+   "label": "Line Chart...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-line\"}])"
+  },
+  {
+   "path": "Graphs > Pie Chart",
+   "label": "Pie Chart...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-pie\"}])"
+  },
+  {
+   "path": "Graphs > Population Pyramid",
+   "label": "Population Pyramid...",
+   "signature": "openDialog([{\"kind\":\"procedure\",\"id\":\"graph-pyramid\"}])"
+  },
+  {
+   "path": "Text coding > Open coding workspace",
+   "label": "Open coding workspace",
+   "signature": "setTab([\"coding\"])"
+  },
+  {
+   "path": "Text coding > Import documents",
+   "label": "Import documents…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"import\"}])"
+  },
+  {
+   "path": "Text coding > Import open-ended answers from dataset",
+   "label": "Import open-ended answers from dataset…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"import-survey\"}])"
+  },
+  {
+   "path": "Text coding > Load sample interviews",
+   "label": "Load sample interviews",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"load-samples\"}])"
+  },
+  {
+   "path": "Text coding > Code open-ended responses",
+   "label": "Code open-ended responses",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:responses\"}])"
+  },
+  {
+   "path": "Text coding > Auto-code with keyword rules",
+   "label": "Auto-code with keyword rules…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"auto-code\"}])"
+  },
+  {
+   "path": "Text coding > Suggest a codebook with AI",
+   "label": "Suggest a codebook with AI…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"ai-codebook\"}])"
+  },
+  {
+   "path": "Text coding > Suggest codes for responses with AI",
+   "label": "Suggest codes for responses with AI…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"ai-suggest\"}])"
+  },
+  {
+   "path": "Text coding > AI assistant settings",
+   "label": "AI assistant settings…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"ai-settings\"}])"
+  },
+  {
+   "path": "Text coding > Retrieve coded segments",
+   "label": "Retrieve coded segments",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:retrieve\"}])"
+  },
+  {
+   "path": "Text coding > Code frequencies",
+   "label": "Code frequencies",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:frequencies\"}])"
+  },
+  {
+   "path": "Text coding > Code co-occurrence",
+   "label": "Code co-occurrence",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:cooccurrence\"}])"
+  },
+  {
+   "path": "Text coding > Codes by attribute",
+   "label": "Codes by attribute",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:attribute\"}])"
+  },
+  {
+   "path": "Text coding > Word frequencies",
+   "label": "Word frequencies",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:words\"}])"
+  },
+  {
+   "path": "Text coding > Keyword in context",
+   "label": "Keyword in context",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:kwic\"}])"
+  },
+  {
+   "path": "Text coding > Intercoder reliability",
+   "label": "Intercoder reliability",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:reliability\"}])"
+  },
+  {
+   "path": "Text coding > Coders",
+   "label": "Coders…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"coders\"}])"
+  },
+  {
+   "path": "Text coding > Memos",
+   "label": "Memos",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"view:memos\"}])"
+  },
+  {
+   "path": "Text coding > Export codes to dataset",
+   "label": "Export codes to dataset…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"export-dataset\"}])"
+  },
+  {
+   "path": "Text coding > Export coded segments",
+   "label": "Export coded segments…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"export\"}])"
+  },
+  {
+   "path": "Text coding > Qualitative report",
+   "label": "Qualitative report…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"export-report\"}])"
+  },
+  {
+   "path": "Text coding > Codebook export and import",
+   "label": "Codebook export and import…",
+   "signature": "setTab([\"coding\"]) openDialog([{\"kind\":\"coding\",\"id\":\"export-codebook\"}])"
+  },
+  {
+   "path": "AI > Ask the Socius assistant",
+   "label": "Ask the Socius assistant...",
+   "signature": "ai(assistant)",
+   "shortcut": "Ctrl+J"
+  },
+  {
+   "path": "AI > Explain a result",
+   "label": "Explain a result...",
+   "signature": "ai(explain)"
+  },
+  {
+   "path": "AI > Suggest a codebook",
+   "label": "Suggest a codebook...",
+   "signature": "ai(codebook)"
+  },
+  {
+   "path": "AI > Suggest codes for open-ended answers",
+   "label": "Suggest codes for open-ended answers...",
+   "signature": "ai(suggest)"
+  },
+  {
+   "path": "AI > Summarise a code",
+   "label": "Summarise a code...",
+   "signature": "ai(summarise)"
+  },
+  {
+   "path": "AI > AI assistant settings",
+   "label": "AI assistant settings...",
+   "signature": "aiSettings()"
+  },
+  {
+   "path": "Help > Getting started",
+   "label": "Getting started",
+   "signature": "openDialog([{\"kind\":\"custom\",\"id\":\"getting-started\"}])"
+  },
+  {
+   "path": "Help > User guide",
+   "label": "User guide",
+   "signature": "url(GUIDE_URL)"
+  },
+  {
+   "path": "Help > Keyboard shortcuts",
+   "label": "Keyboard shortcuts",
+   "signature": "openDialog([{\"kind\":\"custom\",\"id\":\"shortcuts\"}])"
+  },
+  {
+   "path": "Help > AI assistant settings",
+   "label": "AI assistant settings...",
+   "signature": "aiSettings()"
+  },
+  {
+   "path": "Help > Send feedback or report a problem",
+   "label": "Send feedback or report a problem",
+   "signature": "url(FEEDBACK_URL)"
+  },
+  {
+   "path": "Help > About Socius",
+   "label": "About Socius",
+   "signature": "openDialog([{\"kind\":\"custom\",\"id\":\"about\"}])"
+  }
+ ]
+}

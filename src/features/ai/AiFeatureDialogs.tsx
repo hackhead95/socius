@@ -9,6 +9,7 @@ import { useCodingUi } from '../coding/uiStore';
 import { formatItemTime } from '../output/reportHtml';
 import { AI_FEATURES, aiFeature, aiFeatureBlocker, currentAiContext, explainableOutputs, isAiFeatureId, runAiFeature, startExplain, type AiFeatureId, type AiPrereqAction } from './features';
 import { openAiSettings, useAiStatus } from './hooks';
+import { AI_SETTINGS_LABEL, SET_UP_AI } from './AiBits';
 import './ai.css';
 
 const ACTION_LABEL: Record<AiPrereqAction, string> = {
@@ -222,7 +223,7 @@ export function AiChip() {
                 openAiSettings();
               }}
             >
-              {st.ready === 'yes' ? 'AI assistant settings' : 'Set up AI help'}
+              {st.ready === 'yes' ? AI_SETTINGS_LABEL : SET_UP_AI}
             </button>
           </div>
         </div>

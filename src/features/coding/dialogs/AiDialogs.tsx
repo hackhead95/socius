@@ -229,7 +229,7 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
 
   return (
     <Modal
-      title="Suggest codes for responses"
+      title="Suggest codes for open-ended answers"
       subtitle="The AI applies your existing codebook to open-ended responses. You review every suggestion before it is added."
       size="wide"
       onClose={() => { abortRef.current?.abort(); props.onClose(); }}

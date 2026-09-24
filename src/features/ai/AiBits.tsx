@@ -1,14 +1,20 @@
-// Small pieces shown wherever AI help is offered: the set-up button, the "what will be sent where" note,
+// Small pieces shown wherever AI help is offered: the set-up button ("Set up AI", the one wording for
+// every set-up prompt; it opens the same AI assistant settings dialog as AI > AI assistant settings), the "what will be sent where" note,
 // the privacy notice and the on-device download progress.
 import { getAiSettings, providerPrivacy, type AiPrivacy, type AiProviderId, type AiStatus } from '../../platform/ai';
 import { webLlmChoice } from '../../platform/ai-webllm';
 import { openAiSettings, useAiStatus, useWebLlmState } from './hooks';
 import './ai.css';
 
-export function AiSetupButton({ label = 'Set up free AI help' }: { label?: string }) {
+/** The one wording for a contextual set-up prompt (AI not set up yet). */
+export const SET_UP_AI = 'Set up AI';
+/** The menu wording of AI > AI assistant settings, used by contextual shortcuts when AI is set up. */
+export const AI_SETTINGS_LABEL = 'AI assistant settings';
+
+export function AiSetupButton({ intent }: { intent?: string }) {
   return (
-    <button type="button" className="btn btn-sm ai-setup-btn" onClick={openAiSettings}>
-      {label}
+    <button type="button" className="btn btn-sm ai-setup-btn" onClick={() => openAiSettings(intent)}>
+      {SET_UP_AI}
     </button>
   );
 }
@@ -36,7 +42,7 @@ export function AiProviderNote({ what, when, status: given }: { what: string; wh
         </>
       )}
       {firstDownload ? <> The first use downloads the model ({webLlmChoice(getAiSettings().webllm.model).download}).</> : null}{' '}
-      <button type="button" className="linkish" onClick={openAiSettings}>Change</button>
+      <button type="button" className="linkish" onClick={openAiSettings}>{AI_SETTINGS_LABEL}</button>
     </p>
   );
 }

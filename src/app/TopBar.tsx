@@ -40,7 +40,8 @@ export function TopBar() {
   const weightVar = ds?.weightVarId ? ds.variables.find((v) => v.id === ds.weightVarId) : null;
   const filterVar = ds?.filterVarId ? ds.variables.find((v) => v.id === ds.filterVarId) : null;
   const nextTheme: Record<ThemePref, ThemePref> = { system: 'light', light: 'dark', dark: 'system' };
-  const themeLabel: Record<ThemePref, string> = { system: 'Theme: match system', light: 'Theme: light', dark: 'Theme: dark' };
+  // Same wording as View > Theme (this button is a shortcut to it).
+  const themeLabel: Record<ThemePref, string> = { system: 'Theme: Match my system', light: 'Theme: Light', dark: 'Theme: Dark' };
   const modified = ds ? isModified() : false;
 
   return (
@@ -58,7 +59,7 @@ export function TopBar() {
             <Icon name="search" />
           </button>
           <AiChip />
-          <a className="btn btn-sm btn-ghost topbar-feedback" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" title="Send feedback or report a problem (opens GitHub in a new tab)">
+          <a className="btn btn-sm btn-ghost topbar-feedback" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" title="Send feedback or report a problem (opens GitHub in a new tab; also Help > Send feedback or report a problem)">
             Feedback
           </a>
           <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={undo} disabled={!canUndo} aria-label="Undo" title={`Undo (${mod}+Z)`}>

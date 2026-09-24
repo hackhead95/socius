@@ -17,7 +17,7 @@ A step-by-step guide with worked examples on the bundled sample survey is in [do
 
 ### Data management
 
-- **Data menu:** Define variable properties, Copy variable properties, Sort cases, Select cases (condition, random sample, range of cases or filter variable; filter or delete), Weight cases, Merge files (Add cases, Add variables, with key matching and lookup tables), Aggregate.
+- **Data menu:** Copy variable properties, Sort cases, Select cases (condition, random sample, range of cases or filter variable; filter or delete), Weight cases, Merge files (Add cases, Add variables, with key matching and lookup tables), Aggregate.
 - **Transform menu:** Compute variable (SPSS-style formulas with functions such as MEAN, SUM, RND, MISSING, ANY, RANGE, string and date functions), Count values within cases, Recode into same variables, Recode into different variables, Automatic recode, Visual binning, Reverse-code items, Create scale / index (shows Cronbach's alpha as you pick items), Standardize (z-scores), Rank cases.
 - Transformations follow SPSS rules for missing values, and each step is logged in Output with its SPSS syntax.
 
@@ -50,7 +50,7 @@ The **Graphs** menu has Bar Chart (counts, percentages or means with 95% confide
 - **Mixed-methods bridge:** Export codes to dataset turns each code into a 0/1 variable (1 = mentioned, 0 = not mentioned, missing = no answer), so you can run Crosstabs, t-tests or regression on what people wrote.
 - **Intercoder reliability:** several coders can code the same sources independently, then compare with Cohen's kappa, Krippendorff's alpha and percent agreement per code, and review the disagreements in context.
 - Export coded segments (Excel, CSV), a qualitative report (Word, HTML) and the codebook (Word table, CSV, JSON; codebooks can be imported into another project).
-- **AI suggestions (optional, free options):** Suggest a codebook, Suggest codes for responses and Summarise a code. You review and accept every suggestion. Set up under **AI > AI assistant settings** (see [AI help](#ai-help) below).
+- **AI suggestions (optional, free options):** Suggest a codebook, Suggest codes for open-ended answers and Summarise a code, in the **AI** menu (the Text coding toolbar's **AI suggestions** button is a shortcut to them). You review and accept every suggestion. Set up under **AI > AI assistant settings** (see [AI help](#ai-help) below).
 
 ### Finding things
 
@@ -60,18 +60,18 @@ The **Graphs** menu has Bar Chart (counts, percentages or means with 95% confide
 
 - Output appears as numbered tables and figures, in APA 7 style or SPSS style (a toggle at the top of Output), with a "What this means" reading, an APA-style sentence you can copy, and the SPSS syntax that reproduces the result.
 - **Copy** on any output item puts it on the clipboard with formatting, ready to paste into Word or Google Docs.
-- **Export report** saves all output as Word (`.docx`, APA tables and figures), a standalone web page (`.html`), Excel (`.xlsx`, one sheet per table) or plain text.
+- **Export report** (Output tab, or File > Export output report) saves all output as Word (`.docx`, APA tables and figures), a standalone web page (`.html`), Excel (`.xlsx`, one sheet per table) or plain text.
 - **File > Save project** keeps data, output and the text-coding project together in one `.socius.json` file.
 
 ## How to use it
 
 **Live app:** https://hackhead95.github.io/socius/ (free, runs in your browser; nothing is uploaded)
 
-Open the link in a recent version of Chrome, Edge, Firefox or Safari. The first visit shows a welcome screen: **Open data file** (or drag a file onto the window) for your own data, **Open project**, **Load sample survey** to try things on a fictional survey, or **New empty dataset**. After that, your last session is restored when you come back.
+Open the link in a recent version of Chrome, Edge, Firefox or Safari. The first visit shows a welcome screen: **Open data file** (or drag a file onto the window) for your own data, **Open project**, **Load sample survey** to try things on a fictional survey, or **New dataset** (an empty one). After that, your last session is restored when you come back.
 
 ### AI help
 
-AI help is optional. The **AI** menu and the **AI** chip in the top bar list what it can do: ask the Socius assistant, **Explain a result** (an **Explain with AI** button on every Output item: what was tested, what the numbers mean, whether warnings matter, how to report it; only tables, summaries and warnings are sent, never individual answers), and the text-coding helpers. Choose where it runs in **AI > AI assistant settings** (also under Help):
+AI help is optional. The **AI** menu and the **AI** chip in the top bar list what it can do: ask the Socius assistant, **Explain a result** (an **Explain with AI** button on every Output item: what was tested, what the numbers mean, whether warnings matter, how to report it; only tables, summaries and warnings are sent, never individual answers), and the text-coding helpers. Choose where it runs in **AI > AI assistant settings**, the one place for AI set-up (the AI chip and the **Set up AI** buttons next to greyed-out AI features open the same settings):
 
 | Option | Cost | Where your excerpts go | Notes |
 |---|---|---|---|
@@ -166,7 +166,7 @@ A second workflow, `.github/workflows/ci.yml`, runs on every pull request and pu
 | `tests/` | Unit tests (vitest) with committed reference fixtures |
 | `e2e/` | Browser tests (Playwright) |
 | `scripts/` | Python oracle and fixture generators, sample data generator, single-file build step |
-| `docs/` | `ARCHITECTURE.md` (developer notes) and `USER_GUIDE.md` |
+| `docs/` | `ARCHITECTURE.md` (developer notes), `NAVIGATION.md` (where every command lives, and the one-home rule) and `USER_GUIDE.md` |
 
 ### Tests
 

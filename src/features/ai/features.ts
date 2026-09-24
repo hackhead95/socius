@@ -17,7 +17,7 @@ export type AiFeatureId = 'assistant' | 'explain' | 'codebook' | 'suggest' | 'su
 
 export interface AiFeatureInfo {
   id: AiFeatureId;
-  /** Button label ("Explain a result"). */
+  /** Button label ("Explain a result"): the menu label without "...", so shortcuts read like the AI menu. */
   label: string;
   /** Menu label (with "..." when it opens a dialog). */
   menuLabel: string;
@@ -28,7 +28,7 @@ export interface AiFeatureInfo {
 export const AI_FEATURES: AiFeatureInfo[] = [
   {
     id: 'assistant',
-    label: 'Ask the assistant',
+    label: 'Ask the Socius assistant',
     menuLabel: 'Ask the Socius assistant...',
     does: 'answers your questions about methods and your data, for example which test to use, and points you to the menu that runs it.',
   },

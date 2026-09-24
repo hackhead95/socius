@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useStore } from '../../core/store';
 import { useAiStatus, openAiSettings } from '../ai/hooks';
-import { AiSetupButton } from '../ai/AiBits';
+import { AiSetupButton, SET_UP_AI } from '../ai/AiBits';
+import { aiFeature } from '../ai/features';
 import { canUndo, loadWorkedExample, setActiveCoder, undoCoding } from './actions';
 import { canBuildWorkedExample } from '../../lib/coding/example';
 import { plural, toast } from './hooks';
@@ -92,6 +93,8 @@ export function CodingWorkspace() {
             </button>
           ))}
         </div>
+        {/* Toolbar buttons are contextual shortcuts: where they mirror a menu command (Text coding or
+            AI menu), they use the menu's wording (docs/NAVIGATION.md). */}
         <div className="row cw-actions">
           <MenuButton
             label={<span>Coder: <b>{activeCoder}</b></span>}
@@ -100,7 +103,7 @@ export function CodingWorkspace() {
             items={[
               ...coders.map((c) => ({ label: c === activeCoder ? `${c} (coding now)` : `Code as ${c}`, disabled: c === activeCoder, onSelect: () => setActiveCoder(c) })),
               { label: showAllCoders ? 'Show only my segments' : 'Show all coders’ segments', separator: true, onSelect: () => set({ showAllCoders: !showAllCoders }) },
-              { label: 'Manage coders…', onSelect: () => openLocalDialog('coders') },
+              { label: 'Coders...', onSelect: () => openLocalDialog('coders') },
             ]}
           />
           <button className="btn btn-sm" disabled={!undoable} onClick={doUndo} title={undoable ? `Undo: ${undoLabel} (Ctrl+Z)` : 'Nothing to undo'}>
@@ -110,13 +113,13 @@ export function CodingWorkspace() {
             label="Import"
             className="btn-sm"
             items={[
-              { label: 'Documents and files…', onSelect: () => openLocalDialog('import', { tab: 'files' }) },
-              { label: 'Paste text…', onSelect: () => openLocalDialog('import', { tab: 'paste' }) },
-              { label: 'Open-ended answers from the dataset…', disabled: !dataset, onSelect: () => openLocalDialog('import', { tab: 'survey' }) },
-              { label: 'Sample interviews…', onSelect: () => openLocalDialog('import', { tab: 'samples' }) },
+              { label: 'Import documents...', onSelect: () => openLocalDialog('import', { tab: 'files' }) },
+              { label: 'Paste text...', onSelect: () => openLocalDialog('import', { tab: 'paste' }) },
+              { label: 'Import open-ended answers from dataset...', disabled: !dataset, onSelect: () => openLocalDialog('import', { tab: 'survey' }) },
+              { label: 'Sample interviews...', onSelect: () => openLocalDialog('import', { tab: 'samples' }) },
             ]}
           />
-          <button className="btn btn-sm" onClick={() => openLocalDialog('auto-code')} disabled={!coding.codes.length}>
+          <button className="btn btn-sm" onClick={() => openLocalDialog('auto-code')} disabled={!coding.codes.length} title={coding.codes.length ? 'Auto-code with keyword rules' : 'Auto-code with keyword rules: create a code first'}>
             Auto-code
           </button>
           <div className="cw-ai-group" role="group" aria-label="AI help">
@@ -124,26 +127,25 @@ export function CodingWorkspace() {
             label={<><span className="ai-badge" aria-hidden="true">AI</span> AI suggestions</>}
             className="btn-sm"
             disabled={ai.ready === 'no'}
-            title={ai.ready === 'no' ? 'AI help is not set up yet. Click Set up AI next to this button.' : 'Suggest a codebook, suggest codes, summarise a code'}
+            title={ai.ready === 'no' ? `AI help is not set up yet. Click ${SET_UP_AI} next to this button.` : 'The coding features of the AI menu: suggest a codebook, suggest codes, summarise a code'}
             items={[
-              { label: 'Suggest a codebook…', disabled: empty, onSelect: () => openLocalDialog('ai-codebook') },
-              { label: 'Suggest codes for responses…', disabled: !nResponses || !coding.codes.length, onSelect: () => openLocalDialog('ai-suggest') },
-              { label: 'Summarise a code…', disabled: !coding.segments.length, onSelect: () => set({ view: 'retrieve' }) },
-              { label: 'AI assistant settings…', separator: true, onSelect: openAiSettings },
+              { label: aiFeature('codebook').menuLabel, disabled: empty, onSelect: () => openLocalDialog('ai-codebook') },
+              { label: aiFeature('suggest').menuLabel, disabled: !nResponses || !coding.codes.length, onSelect: () => openLocalDialog('ai-suggest') },
+              { label: aiFeature('summarise').menuLabel, disabled: !coding.segments.length, onSelect: () => set({ view: 'retrieve' }) },
             ]}
           />
           {ai.ready === 'no' ? (
-            <button type="button" className="btn btn-sm btn-ghost cw-ai-setup" onClick={() => openAiSettings()}>Set up AI</button>
+            <button type="button" className="btn btn-sm btn-ghost cw-ai-setup" onClick={() => openAiSettings()}>{SET_UP_AI}</button>
           ) : null}
           </div>
           <MenuButton
             label="Export"
             className="btn-sm"
             items={[
-              { label: 'Codes to dataset variables…', disabled: !nResponses || !dataset, onSelect: () => openLocalDialog('export-dataset') },
-              { label: 'Coded segments (Excel, CSV)…', separator: true, disabled: !coding.segments.length, onSelect: () => openLocalDialog('export', { tab: 'segments' }) },
-              { label: 'Qualitative report (Word, HTML)…', disabled: !coding.codes.length, onSelect: () => openLocalDialog('export', { tab: 'report' }) },
-              { label: 'Codebook…', onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
+              { label: 'Export codes to dataset...', disabled: !nResponses || !dataset, onSelect: () => openLocalDialog('export-dataset') },
+              { label: 'Export coded segments...', hint: 'Excel, CSV', separator: true, disabled: !coding.segments.length, onSelect: () => openLocalDialog('export', { tab: 'segments' }) },
+              { label: 'Qualitative report...', hint: 'Word, HTML', disabled: !coding.codes.length, onSelect: () => openLocalDialog('export', { tab: 'report' }) },
+              { label: 'Codebook export and import...', hint: 'Word, CSV, JSON', onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
             ]}
           />
         </div>
@@ -200,7 +202,7 @@ function exploreExample() {
   toast(
     `Example loaded: ${plural(ex.docs.length, 'answer')} to q_challenge and ${plural(nCodes, 'starter code')}. ` +
       `Keyword rules coded ${ex.nCoded.toLocaleString()} answers (${pct}%), so review them. ` +
-      'Then try Analyse > Codes by attribute, or Export > Codes to dataset variables and run a Crosstab by gender. Undo removes the example.',
+      'Then try Analyse > Codes by attribute, or Export > Export codes to dataset and run a Crosstab by gender. Undo removes the example.',
     'success',
   );
 }

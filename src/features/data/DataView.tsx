@@ -240,7 +240,7 @@ function DataViewInner({ ds }: { ds: Dataset }) {
     const varItems: MenuItem[] = [
       { id: 'sort-a', label: 'Sort ascending', disabled: !onVar || !hasCases, onSelect: () => sortBy('asc') },
       { id: 'sort-d', label: 'Sort descending', disabled: !onVar || !hasCases, onSelect: () => sortBy('desc') },
-      { id: 'stats', label: 'Descriptive statistics', disabled: !onVar || !hasCases, onSelect: () => showStats() },
+      { id: 'stats', label: 'Column statistics', disabled: !onVar || !hasCases, onSelect: () => showStats() },
       { id: 'ins-var', label: 'Insert variable', separator: true, onSelect: insertVariable },
       { id: 'del-var', label: nCols > 1 ? `Delete ${nCols} variables` : 'Delete variable', disabled: nCols < 1, onSelect: deleteVariables, danger: true },
       { id: 'props', label: 'Variable properties', disabled: !onVar, onSelect: () => openProps() },
@@ -259,12 +259,12 @@ function DataViewInner({ ds }: { ds: Dataset }) {
   return (
     <div className="dataview">
       <div className="view-toolbar" role="toolbar" aria-label="Data View tools">
-        <button type="button" className={`btn btn-sm ${showLabels ? 'btn-toggle-on' : ''}`} aria-pressed={showLabels} onClick={() => setShowLabels(!showLabels)} title="Show value labels instead of codes">
+        <button type="button" className={`btn btn-sm ${showLabels ? 'btn-toggle-on' : ''}`} aria-pressed={showLabels} onClick={() => setShowLabels(!showLabels)} title="Show value labels instead of codes (View > Value labels in Data View)">
           <Icon name="tag" size={14} /> Value labels
         </button>
         <span className="toolbar-sep" />
         <button type="button" className="btn btn-sm btn-ghost" onClick={insertCase} title="Insert a case above the selected one">
-          <Icon name="insertRow" size={14} /> <span className="hide-narrow">Insert case</span>
+          <Icon name="insertRow" size={14} /> <span className="hide-narrow">Insert case above</span>
         </button>
         <button type="button" className="btn btn-sm btn-ghost" onClick={insertVariable} title="Insert a variable before the selected column">
           <Icon name="insertCol" size={14} /> <span className="hide-narrow">Insert variable</span>
@@ -279,10 +279,10 @@ function DataViewInner({ ds }: { ds: Dataset }) {
         <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => sortBy('desc')} disabled={!onVar || !hasCases} title={curVar ? `Sort cases by ${curVar.name}, descending` : 'Select a column to sort'} aria-label="Sort descending">
           <Icon name="sortDesc" size={15} />
         </button>
-        <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => showStats()} disabled={!onVar || !hasCases} title={curVar ? `Quick statistics for ${curVar.name}` : 'Select a column'} aria-label="Column statistics">
+        <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => showStats()} disabled={!onVar || !hasCases} title={curVar ? `Column statistics for ${curVar.name}` : 'Column statistics: select a column'} aria-label="Column statistics">
           <Icon name="sigma" size={15} />
         </button>
-        <button type="button" className={`btn btn-sm btn-ghost btn-icon ${findOpen ? 'btn-toggle-on' : ''}`} onClick={() => setFindOpen((o) => !o)} title="Find (Ctrl+F)" aria-label="Find" aria-pressed={findOpen}>
+        <button type="button" className={`btn btn-sm btn-ghost btn-icon ${findOpen ? 'btn-toggle-on' : ''}`} onClick={() => setFindOpen((o) => !o)} title="Find in data (Ctrl+F)" aria-label="Find in data" aria-pressed={findOpen}>
           <Icon name="search" size={15} />
         </button>
         <button type="button" className={`btn btn-sm btn-ghost btn-icon ${gotoOpen ? 'btn-toggle-on' : ''}`} onClick={() => setGotoOpen((o) => !o)} title="Go to case" aria-label="Go to case" aria-pressed={gotoOpen} disabled={!hasCases}>

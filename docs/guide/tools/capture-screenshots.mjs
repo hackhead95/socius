@@ -739,6 +739,17 @@ async function codeTab(page, label) {
   await page.waitForTimeout(400);
 }
 
+// The Text coding menu (non-AI coding commands only; the AI helpers live in the AI menu).
+sections.codingmenu = async (page) => {
+  await dismissBanner(page);
+  await hoverMenu(page, 'Text coding');
+  const m = await box(page.locator('[role=menu]').last());
+  const top = await box(page.getByRole('menuitem', { name: 'Text coding', exact: true }));
+  console.log('  text coding menu:', (await page.locator('[role=menu]').last().innerText()).replace(/\n+/g, ' | '));
+  await shot(page, 'coding-menu', pad(union(top, m, { x: m.x, y: m.y, width: m.width + 20, height: m.height }), 14));
+  await page.keyboard.press('Escape');
+};
+
 sections.coding = async (page) => {
   await dismissBanner(page);
   await page.getByRole('tab', { name: /^Text coding/ }).click();
@@ -815,7 +826,7 @@ sections.coding = async (page) => {
   if (await page.locator('.modal').count()) await page.locator('.modal button', { hasText: /Cancel|Close/ }).first().click();
 
   // Export codes to the dataset
-  await menu(page, 'Text coding', 'Export codes to dataset…');
+  await menu(page, 'Text coding', 'Export codes to dataset...');
   await page.waitForTimeout(400);
   const exText = await page.locator('.modal').innerText();
   console.log('  export:', exText.slice(0, 900).replace(/\n+/g, ' | '));
@@ -851,7 +862,7 @@ sections.coding = async (page) => {
 sections.interviews = async (page) => {
   await dismissBanner(page);
   await page.getByRole('tab', { name: /^Text coding/ }).click();
-  await menu(page, 'Text coding', 'Import documents…');
+  await menu(page, 'Text coding', 'Import documents...');
   await page.waitForTimeout(400);
   console.log('  import docs:', (await page.locator('.modal').innerText()).slice(0, 600).replace(/\n+/g, ' | '));
   await shotModal(page, 'import-documents');
@@ -924,7 +935,7 @@ sections.interviews = async (page) => {
   }
   console.log('  coder 1 codes:', JSON.stringify(theirs));
   await page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'Coder:' }).click();
-  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Manage coders' }).click();
+  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Coders...' }).click();
   await page.locator('input[aria-label="New coder name"]').fill('Priya');
   await page.locator('.modal button', { hasText: 'Add coder' }).click();
   await page.waitForTimeout(200);

@@ -173,7 +173,7 @@ class Runner {
           continue;
         }
         if (err?.code === 'rate_limited' && err.daily) {
-          throw Object.assign(new AiUnavailableError('rate_limited', 'Daily quota used up.', 'The free daily allowance for this key is used up. It resets tomorrow (Pacific time); you can also choose another AI option in Help > AI assistant settings.'), { daily: true });
+          throw Object.assign(new AiUnavailableError('rate_limited', 'Daily quota used up.', 'The free daily allowance for this key is used up. It resets tomorrow (Pacific time); you can also choose another AI option in AI > AI assistant settings.'), { daily: true });
         }
         if (err?.code === 'malformed_call' && attempt === 0) continue;
         throw e;

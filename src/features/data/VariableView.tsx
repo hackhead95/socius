@@ -389,7 +389,7 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
   const menuItems: MenuItem[] = [
     { id: 'ins', label: 'Insert variable above', onSelect: () => addVariableAt(Math.min(active.r, n)) },
     { id: 'dup', label: nSel > 1 ? `Duplicate ${nSel} variables` : 'Duplicate', disabled: !nSel, onSelect: duplicate },
-    { id: 'copyp', label: 'Copy properties to other variables...', disabled: !curVar, onSelect: () => setDialog({ kind: 'copy', varId: curVar?.id ?? null }) },
+    { id: 'copyp', label: 'Copy variable properties...', disabled: !curVar, onSelect: () => setDialog({ kind: 'copy', varId: curVar?.id ?? null }) },
     { id: 'up', label: 'Move up', separator: true, disabled: !nSel, onSelect: () => moveSelected(-1) },
     { id: 'down', label: 'Move down', disabled: !nSel, onSelect: () => moveSelected(1) },
     { id: 'goto', label: 'Show in Data View', separator: true, disabled: !curVar, onSelect: () => { if (curVar) { focusGrid({ varId: curVar.id }); setTab('data'); } } },

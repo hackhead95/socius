@@ -1,4 +1,4 @@
-// Picks the right driver for the AI provider the user set up (Help > AI assistant settings).
+// Picks the right driver for the AI provider the user set up (AI > AI assistant settings).
 import { askAI, aiPromptBudget, effectiveProvider, getAiSettings, providerLabel, type AiProviderId } from '../../platform/ai';
 import { askClaudeTools, askGeminiTools, askOpenAiTools, claudeToolsAvailable } from '../../platform/ai-tools';
 import type { Driver, TextDriver } from './agent';

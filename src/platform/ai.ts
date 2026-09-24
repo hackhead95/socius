@@ -462,7 +462,7 @@ export async function testAiConnection(signal?: AbortSignal): Promise<string> {
 
 // ---------- messages ----------
 
-const SETTINGS_HINT = 'Help > AI assistant settings';
+const SETTINGS_HINT = 'AI > AI assistant settings';
 
 /** Plain-language message for an AI error code. */
 export function aiErrorMessage(code: string): string {

@@ -1,7 +1,6 @@
 // Help menu dialogs: Getting started, Keyboard shortcuts, About Socius.
 import { Modal } from '../ui/Modal';
 import { FEEDBACK_URL, GUIDE_URL, SITE_URL } from './links';
-import { openAiSettings } from '../features/ai/hooks';
 import { APP_VERSION } from '../features/project/projectFile';
 import { isMac } from './shortcuts';
 
@@ -22,7 +21,7 @@ export function GettingStartedDialog({ onClose }: { onClose: () => void }) {
           <strong>Run an analysis.</strong> For example, in the sample survey, Analyze &gt; Descriptive Statistics &gt; Crosstabs with gender in the rows and vote in the columns: the row percentages compare how many women and men voted. Results appear in Output with SPSS-style tables, a plain-language summary and an APA sentence.
         </li>
         <li>
-          <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group. Optional AI help can suggest codes for you to review, and explain any result in plain language (see the AI menu).
+          <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group. Optional AI help can suggest codes for you to review, and explain any result in plain language: everything AI does, and its set-up (AI &gt; AI assistant settings), is in the AI menu.
         </li>
         <li>
           <strong>Save and share.</strong> File &gt; Save project keeps data, output and codes together in one .socius.json file. Save data as SPSS .sav to continue in SPSS, and export output to Word from the Output tab.
@@ -45,8 +44,8 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
       title: 'Everywhere',
       rows: [
         [`[${mod}+K] or [/]`, 'Search commands, variables, results and help'],
-        [`[${mod}+J]`, 'Open or close the Socius assistant'],
-        [`[${mod}+Z]`, 'Undo the last data change'],
+        [`[${mod}+J]`, 'Open or close the Socius assistant (AI menu)'],
+        [`[${mod}+Z]`, 'Undo the last data change (Text coding: the last coding change)'],
         [`[${mod}+Y] or [${mod}+Shift+Z]`, 'Redo'],
         [`[${mod}+O]`, 'Open a data file'],
         [`[${mod}+S]`, 'Save the project'],
@@ -78,6 +77,16 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
         ['[Enter] or [F2]', 'Edit the property (opens a dialog for Type, Values, Missing)'],
         ['Click the row number', 'Select a variable; hold [Shift] or [Ctrl] to select several'],
         ['Drag the row number', 'Move a variable'],
+      ],
+    },
+    {
+      title: 'Text coding: Responses view',
+      rows: [
+        ['[j] / [k] or [↑] [↓]', 'Move between responses'],
+        ['[x] or [Space]', 'Select a response'],
+        ['[1] to [9]', 'Apply or remove one of the first nine codes'],
+        ['[/]', 'Find a code for the response (here [/] does not open Search)'],
+        ['[o] or [Enter]', 'Open the response in the reading view'],
       ],
     },
     {
@@ -124,8 +133,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
           <h3 className="eyebrow">Privacy</h3>
           <p>Your data stays in this browser. Files you open are read on this computer and nothing is uploaded. Your working session is kept in this browser's storage so you can pick up where you left off; clear it with File &gt; Close data and start fresh.</p>
           <p>
-            AI help is optional and off until you set it up. It only sends what you choose, when you click, to the provider you choose. With the on-device option nothing leaves your computer.{' '}
-            <button type="button" className="linkish" onClick={openAiSettings}>AI assistant settings</button>
+            AI help is optional and off until you set it up in <b>AI &gt; AI assistant settings</b>. It only sends what you choose, when you click, to the provider you choose. With the on-device option nothing leaves your computer.
           </p>
         </section>
         <section>

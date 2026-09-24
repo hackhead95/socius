@@ -1,9 +1,13 @@
 // Menubar model: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, AI, Help.
 // The search palette (CommandPalette) searches these same items, so every command lives here once.
+// Rule (docs/NAVIGATION.md): each command has exactly one menu home. AI features and AI assistant
+// settings live only in the AI menu; switching views lives only in the View menu. Toolbars, the top
+// bar and set-up prompts may mirror a command where the user is working, with the same wording.
+// tests/app/navigation-audit.test.ts checks this.
 import { useStore } from '../core/store';
 import type { ProcedureMenu } from '../core/procedure';
 import { procedures } from '../procedures';
-import { aiMenuAvailable, codingMenuItems } from '../features/coding/menu';
+import { codingMenuItems } from '../features/coding/menu';
 import type { MenuItem } from '../ui/Menu';
 import { useUi, type ThemePref } from './ui-store';
 import {
@@ -15,6 +19,7 @@ import { modKey } from './shortcuts';
 import { FEEDBACK_URL, GUIDE_URL, openExternal } from './links';
 import { openAiSettings } from '../features/ai/hooks';
 import { AI_FEATURES, runAiFeature } from '../features/ai/features';
+import { REPORT_FORMATS, confirmAndClearOutputs, exportAllOutput } from '../features/output/actions';
 
 export interface TopMenu {
   id: string;
@@ -76,6 +81,13 @@ export function useMenus(): TopMenu[] {
       ],
     }),
     {
+      id: 'export-output',
+      label: 'Export output report',
+      disabled: !nOutputs,
+      title: nOutputs ? 'Save all results in the Output tab as one report' : 'The output is empty. Run an analysis first.',
+      children: REPORT_FORMATS.map((r) => ({ id: `out-${r.f}`, label: r.label, onSelect: () => void exportAllOutput(r.f) })),
+    },
+    {
       id: 'close',
       label: 'Close data and start fresh...',
       separator: true,
@@ -103,10 +115,7 @@ export function useMenus(): TopMenu[] {
       separator: true,
       disabled: !nOutputs,
       title: nOutputs ? undefined : 'The output is empty',
-      onSelect: async () => {
-        const ok = await useUi.getState().confirm({ title: 'Clear all output?', message: `All ${nOutputs} output item${nOutputs === 1 ? '' : 's'} will be removed. This cannot be undone.`, confirmLabel: 'Clear output', danger: true });
-        if (ok) st().clearOutputs();
-      },
+      onSelect: () => void confirmAndClearOutputs(),
     },
   ];
 
@@ -122,7 +131,6 @@ export function useMenus(): TopMenu[] {
   ];
 
   const data: MenuItem[] = [
-    needData({ id: 'd-props', label: 'Define variable properties', onSelect: () => st().setTab('variables') }),
     needData({ id: 'd-copy', label: 'Copy variable properties...', onSelect: openT('copy-properties', { sourceId: currentVarId }) }),
     needData({ id: 'd-sort', label: 'Sort cases...', separator: true, onSelect: openT('sort') }),
     needData({ id: 'd-select', label: 'Select cases...', onSelect: openT('select') }),
@@ -171,13 +179,15 @@ export function useMenus(): TopMenu[] {
     .map((p) => needData({ id: p.id, label: `${p.title}...`, title: hasData ? p.description : NEED_DATA, onSelect: openProc(p.id) }));
   if (!graphs.length) graphs.push({ id: 'g-none', label: 'No charts are available in this build', disabled: true });
 
-  const coding: MenuItem[] = codingMenuItems.filter((c) => !c.ai || aiMenuAvailable()).map((c) => ({
+  // Non-AI coding commands only: the coding AI features and AI assistant settings live in the AI menu,
+  // and View > Text coding switches to the tab.
+  const coding: MenuItem[] = codingMenuItems.map((c) => ({
     id: `c-${c.id}`,
     label: c.label,
     separator: c.separator,
     onSelect: () => {
       st().setTab('coding');
-      if (!c.tabOnly) st().openDialog({ kind: 'coding', id: c.id });
+      st().openDialog({ kind: 'coding', id: c.id });
     },
   }));
 
@@ -198,7 +208,6 @@ export function useMenus(): TopMenu[] {
     { id: 'h-start', label: 'Getting started', onSelect: () => st().openDialog({ kind: 'custom', id: 'getting-started' }) },
     { id: 'h-guide', label: 'User guide', title: 'Opens the full guide in a new tab', onSelect: () => openExternal(GUIDE_URL) },
     { id: 'h-keys', label: 'Keyboard shortcuts', onSelect: () => st().openDialog({ kind: 'custom', id: 'shortcuts' }) },
-    { id: 'h-ai', label: 'AI assistant settings...', separator: true, onSelect: openAiSettings },
     { id: 'h-feedback', label: 'Send feedback or report a problem', separator: true, title: 'Opens a form on GitHub in a new tab', onSelect: () => openExternal(FEEDBACK_URL) },
     { id: 'h-about', label: 'About Socius', separator: true, onSelect: () => st().openDialog({ kind: 'custom', id: 'about' }) },
   ];

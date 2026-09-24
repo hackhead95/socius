@@ -26,7 +26,7 @@ interface AiDialogState {
 export const useAiSettingsDialog = create<AiDialogState>((set) => ({ open: false, intent: null, set: (open) => set(open ? { open } : { open, intent: null }) }));
 
 /**
- * Open AI assistant settings. `intent` names the AI feature the user was trying to use (see
+ * Show the AI assistant settings dialog (AI > AI assistant settings). `intent` names the AI feature the user was trying to use (see
  * features.ts), so the dialog can say what it will do once set up. Safe as an onClick handler (a
  * click event is ignored).
  */

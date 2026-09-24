@@ -37,7 +37,7 @@ export function Welcome() {
           ) : null}
           <button type="button" className="welcome-action" onClick={() => void newDataset()}>
             <Icon name="plus" size={20} />
-            <span><strong>New empty dataset</strong><span className="help">Type or paste data yourself</span></span>
+            <span><strong>New dataset</strong><span className="help">Empty: type or paste data yourself</span></span>
           </button>
         </div>
         {recent.length ? (
@@ -61,7 +61,7 @@ export function Welcome() {
             <li><strong>Code interviews</strong> and open-ended answers with a codebook, then compare codes across groups.</li>
             <li><strong>Export</strong> data back to SPSS (.sav), Excel or CSV, and results to Word.</li>
           </ul>
-          <button type="button" className="linkish" onClick={() => openDialog({ kind: 'custom', id: 'getting-started' })}>Read the six-step guide</button>
+          <button type="button" className="linkish" onClick={() => openDialog({ kind: 'custom', id: 'getting-started' })}>Getting started: six steps</button>
         </div>
         <p className="privacy"><Icon name="info" size={14} /> Your data stays in this browser. Nothing is uploaded.</p>
       </div>

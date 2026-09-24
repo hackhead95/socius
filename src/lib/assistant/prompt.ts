@@ -61,13 +61,15 @@ function catalogue(): string {
   return `## Socius menus (current version)
 - File: Open data file... (SPSS .sav/.zsav, CSV, Excel), Load sample survey, Save project, Save data as (SPSS, CSV, Excel), Export codebook.
 - Edit: Undo / Redo (Ctrl+Z / Ctrl+Y), Find in data, Go to case.
-- Data: Define variable properties (Variable View: labels, value labels, missing values, measure), Sort cases..., Select cases... (filter), Weight cases..., Merge files, Aggregate..., Turn filter off, Turn weighting off.
+- View: Data View, Variable View (labels, value labels, missing values, measure), Output, Text coding, Value labels in Data View, Theme.
+- Data: Copy variable properties..., Sort cases..., Select cases... (filter), Weight cases..., Merge files, Aggregate..., Turn filter off, Turn weighting off.
 - Transform: Compute variable..., Count values within cases..., Recode into same variables..., Recode into different variables..., Automatic recode..., Visual binning..., Reverse-code items..., Create scale / index..., Standardize (z-scores)..., Rank cases...
 - Analyze and Graphs (analysis id in brackets, for run_analysis):
 ${lines.join('\n')}
 - Text coding: ${codingMenuItems.map((c) => c.label.replace(/[.…]+$/, '')).join(', ')}.
 - Output tab: every result has SPSS-style tables, an interpretation, an APA sentence and SPSS syntax; buttons copy a table or the APA sentence, and the report exports to Word, HTML, Excel or text. A switch shows tables in APA or SPSS style.
-- Help: Getting started, User guide, Keyboard shortcuts, AI assistant settings.
+- AI: Ask the Socius assistant... (Ctrl+J), Explain a result..., Suggest a codebook..., Suggest codes for open-ended answers..., Summarise a code..., AI assistant settings... (the only place to set up AI help).
+- Help: Getting started, User guide, Keyboard shortcuts, Send feedback or report a problem, About Socius.
 Socius follows SPSS: user-missing codes are excluded, listwise deletion per analysis, frequency weights (WEIGHT BY) apply to all counts and statistics, and a filter (FILTER BY) leaves unselected cases out. Data never leaves the computer except what this assistant sends to the AI service.`;
 }
 
