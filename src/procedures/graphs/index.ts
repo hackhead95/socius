@@ -8,6 +8,7 @@ import type { ProcedureDef } from '../../core/procedure';
 import { cell, hcell, type Cell, type ChartSpec, type OutputBlock, type OutputItem } from '../../core/output';
 import { formatP } from '../../features/output/format';
 import { binCounts, boxStats, histogramEdges, linearFit, meanCI, tTwoSidedP, wMoments, wPercentile } from './stats';
+import { vprose } from '../core/common';
 
 // ---------- helpers ----------
 
@@ -19,6 +20,12 @@ function name(v: Variable): string {
   return varDisplayName(v, 'label');
 }
 
+/** How a variable is named inside a sentence (short label, else the variable name). */
+const prose = vprose;
+
+/** A data value in prose: whole numbers without decimals, others with two. */
+const fmtVal = (x: number) => (Number.isFinite(x) && Number.isInteger(x) ? fmt(x, 0) : fmt(x, 2));
+
 function caseNote(ds: Dataset, sel: CaseSelection): string {
   const W = sel.weights.reduce((a, b) => a + b, 0);
   const parts = [`N = ${fmtN(Math.round(W * 10) / 10)}`];
@@ -27,9 +34,10 @@ function caseNote(ds: Dataset, sel: CaseSelection): string {
     parts[0] += ` (weighted by ${wv?.name ?? 'weight'}; ${fmtN(sel.rows.length)} cases)`;
   }
   const extra: string[] = [];
-  if (sel.nMissing) extra.push(`${fmtN(sel.nMissing)} excluded (missing)`);
-  if (sel.nFiltered) extra.push(`${fmtN(sel.nFiltered)} ${ds.filterVarId ? 'filtered out or zero weight' : 'with zero or missing weight'}`);
-  return [parts[0], ...extra].join('; ');
+  if (sel.nMissing) extra.push(`${fmtN(sel.nMissing)} excluded for missing values`);
+  const fv = ds.filterVarId ? ds.variables.find((v) => v.id === ds.filterVarId) : undefined;
+  if (sel.nFiltered) extra.push(`${fmtN(sel.nFiltered)} ${fv ? `filtered out by ${fv.name}` : 'with zero or missing weight'}`);
+  return [parts[0], ...extra].join('; ') + '.';
 }
 
 function syntaxPrefix(ds: Dataset): string {
@@ -190,9 +198,9 @@ const barChart: ProcedureDef = {
       cats.forEach((c, ci_) => groups.forEach((g, gidx) => { const m = stats[gidx][ci_].mean; if (Number.isFinite(m)) flat.push({ label: kv ? `${c.label} (${g.label})` : c.label, m }); }));
       flat.sort((a, b) => b.m - a.m);
       interp = flat.length >= 2
-        ? `Mean ${name(mv)} is highest for ${flat[0].label} (M = ${fmt(flat[0].m, 2)}) and lowest for ${flat[flat.length - 1].label} (M = ${fmt(flat[flat.length - 1].m, 2)}).` +
+        ? `Mean ${prose(mv)} is highest for ${flat[0].label} (M = ${fmt(flat[0].m, 2)}) and lowest for ${flat[flat.length - 1].label} (M = ${fmt(flat[flat.length - 1].m, 2)}).` +
           (errors ? ' Error bars are 95% confidence intervals: bars whose intervals do not overlap differ reliably, but overlapping intervals do not prove the groups are equal. Use a t-test or ANOVA to test the difference.' : '')
-        : `Mean ${name(mv)}: ${flat.length ? fmt(flat[0].m, 2) : 'not computable'}.`;
+        : `Mean ${prose(mv)}: ${flat.length ? fmt(flat[0].m, 2) : 'not computable'}.`;
       syntax = `GRAPH\n  /BAR(${kind})=MEAN(${mv.name}) BY ${byClause}${errors ? '\n  /INTERVAL CI(95.0)' : ''}.`;
     } else {
       const pct = stat === 'percent';
@@ -231,7 +239,7 @@ const barChart: ProcedureDef = {
         const order = cats.map((c, i) => ({ c, n: counts[0][i] })).sort((a, b) => b.n - a.n);
         const p0 = total ? (order[0].n / total) * 100 : 0;
         interp = order.length >= 2
-          ? `The most common category of ${name(cv)} is ${order[0].c.label} (${fmt(p0)}% of cases), followed by ${order[1].c.label} (${fmt(total ? (order[1].n / total) * 100 : 0)}%).`
+          ? `The most common category of ${prose(cv)} is ${order[0].c.label} (${fmt(p0)}% of cases), followed by ${order[1].c.label} (${fmt(total ? (order[1].n / total) * 100 : 0)}%).`
           : `All cases fall in ${order[0].c.label}.`;
       } else {
         // Largest gap between groups within a category, on the within-cluster percentages.
@@ -251,7 +259,7 @@ const barChart: ProcedureDef = {
         });
         const ph = grpTotals[best.hi] ? (counts[best.hi][best.c] / grpTotals[best.hi]) * 100 : 0;
         const pl = grpTotals[best.lo] ? (counts[best.lo][best.c] / grpTotals[best.lo]) * 100 : 0;
-        interp = `The biggest difference between groups of ${name(kv)} is in "${cats[best.c].label}": ${fmt(ph)}% of ${groups[best.hi].label} compared with ${fmt(pl)}% of ${groups[best.lo].label}. Run Crosstabs with a chi-square test to check whether the difference is statistically significant.`;
+        interp = `The biggest difference between groups of ${prose(kv)} is in "${cats[best.c].label}": ${fmt(ph)}% of the "${groups[best.hi].label}" group compared with ${fmt(pl)}% of the "${groups[best.lo].label}" group. Run Crosstabs with a chi-square test to check whether the difference is statistically significant.`;
       }
       syntax = `GRAPH\n  /BAR(${kind})=${pct ? 'PCT' : 'COUNT'} BY ${byClause}.`;
     }
@@ -272,7 +280,7 @@ function skewWords(s: number): string {
   if (!Number.isFinite(s)) return '';
   const a = Math.abs(s);
   if (a < 0.5) return 'roughly symmetric';
-  const dir = s > 0 ? 'right-skewed (a long tail of high values)' : 'left-skewed (a long tail of low values)';
+  const dir = s > 0 ? 'right-skewed, with a long tail of high values' : 'left-skewed, with a long tail of low values';
   return a < 1 ? `moderately ${dir}` : `strongly ${dir}`;
 }
 
@@ -327,7 +335,7 @@ const histogram: ProcedureDef = {
       ],
     };
     const shape = skewWords(m.skew);
-    const interp = `${name(v)} ranges from ${fmt(lo, 2)} to ${fmt(hi, 2)}; the middle half of cases lies between ${fmt(q1, 2)} and ${fmt(q3, 2)}.` +
+    const interp = `${prose(v)} ranges from ${fmtVal(lo)} to ${fmtVal(hi)}; the middle half of cases lies between ${fmtVal(q1)} and ${fmtVal(q3)}.` +
       (shape ? ` The distribution is ${shape}${Number.isFinite(m.skew) ? ` (skewness = ${fmt(m.skew, 2)})` : ''}.` : '') +
       (Number.isFinite(m.skew) && Math.abs(m.skew) >= 1 ? ' Report the median rather than the mean, or consider a transformation.' : '');
     const blocks: OutputBlock[] = [
@@ -397,7 +405,15 @@ const boxPlot: ProcedureDef = {
         blocks.push({ kind: 'chart', chart: { type: 'box', title: `${name(v)} by ${name(gv)}`, xLabel: name(gv), yLabel: name(v), groups } });
         groups.forEach((g, i) => summaryRows.push([...(vs.length > 1 && i === 0 ? [hcell(name(v), { rowSpan: groups.length })] : []), hcell(g.name), ...summaryCells(g)]));
         const sorted = [...groups].filter((g) => Number.isFinite(g.median)).sort((a, b) => b.median - a.median);
-        if (sorted.length >= 2) interps.push(`The median ${name(v)} is highest for ${sorted[0].name} (${fmt(sorted[0].median, 2)}) and lowest for ${sorted[sorted.length - 1].name} (${fmt(sorted[sorted.length - 1].median, 2)}).`);
+        if (sorted.length >= 2) {
+          const hiMed = sorted[0].median;
+          const loMed = sorted[sorted.length - 1].median;
+          interps.push(
+            hiMed === loMed
+              ? `The median ${prose(v)} is the same (${fmtVal(hiMed)}) in every group of ${prose(gv)}; compare the heights of the boxes (the middle half of cases) to see differences in spread.`
+              : `The median ${prose(v)} is highest for ${sorted[0].name} (${fmtVal(hiMed)}) and lowest for ${sorted[sorted.length - 1].name} (${fmtVal(loMed)}).`,
+          );
+        }
       }
     } else {
       const groups = vs.map((v) => {
@@ -411,7 +427,7 @@ const boxPlot: ProcedureDef = {
       groups.forEach((g) => summaryRows.push([hcell(g.name), ...summaryCells(g)]));
       const g0 = groups[0];
       interps.push(vs.length === 1
-        ? `The median ${name(vs[0])} is ${fmt(g0.median, 2)}; the middle half of cases lies between ${fmt(g0.q1, 2)} and ${fmt(g0.q3, 2)}.`
+        ? `The median ${prose(vs[0])} is ${fmtVal(g0.median)}; the middle half of cases lies between ${fmtVal(g0.q1)} and ${fmtVal(g0.q3)}.`
         : `The chart compares the medians and spread of ${vs.length} variables; compare them only if they are measured on the same scale.`);
     }
     const nOut = summaryRows.reduce((a, r) => a + (Number((r[r.length - 2] as Cell).v) || 0) + (Number((r[r.length - 1] as Cell).v) || 0), 0);
@@ -518,11 +534,13 @@ const scatter: ProcedureDef = {
       blocks.push({
         kind: 'text',
         style: 'interpretation',
-        text: `There is ${strength(fitRes.r)} ${fitRes.r >= 0 ? 'positive' : 'negative'} linear relationship between ${name(xv)} and ${name(yv)} (r = ${dropZero(fmt(fitRes.r, 2))}).` +
-          (Math.abs(fitRes.r) >= 0.1 ? ` Cases with higher ${name(xv)} tend to have ${dir} ${name(yv)}; ${name(xv)} accounts for ${fmt(fitRes.r2 * 100)}% of the variation in ${name(yv)}.` : ''),
+        text: `There is ${strength(fitRes.r)} ${fitRes.r >= 0 ? 'positive' : 'negative'} linear relationship between ${prose(xv)} and ${prose(yv)} (r = ${dropZero(fmt(fitRes.r, 2))}).` +
+          (Math.abs(fitRes.r) >= 0.1 ? ` Cases with higher ${prose(xv)} tend to have ${dir} ${prose(yv)}; ${prose(xv)} accounts for ${fmt(fitRes.r2 * 100)}% of the variation in ${prose(yv)}.` : ''),
       });
       const pText = formatP(p, 'apa');
-      blocks.push({ kind: 'text', style: 'apa', text: `${name(xv)} and ${name(yv)} were ${Math.abs(fitRes.r) < 0.1 ? 'not meaningfully' : fitRes.r > 0 ? 'positively' : 'negatively'} correlated, r(${fmtN(Math.round(df))}) = ${dropZero(fitRes.r.toFixed(2))}, p ${pText.startsWith('<') ? pText : '= ' + pText}.` });
+      // The APA wording follows the significance test (a tiny but significant r is still "significantly correlated").
+      const apaDir = !(p < 0.05) ? 'not significantly' : `${Math.abs(fitRes.r) < 0.1 ? 'very weakly ' : ''}${fitRes.r > 0 ? 'positively' : 'negatively'}`;
+      blocks.push({ kind: 'text', style: 'apa', text: `${prose(xv)} and ${prose(yv)} were ${apaDir} correlated, r(${fmtN(Math.round(df))}) = ${dropZero(fitRes.r.toFixed(2))}, p ${/^[<>]/.test(pText) ? pText : '= ' + pText}.` });
       blocks.push({
         kind: 'table',
         table: {
@@ -532,6 +550,14 @@ const scatter: ProcedureDef = {
           stubColumns: 0,
           footnotes: [`Fit line: ${yv.name} = ${fmt(fitRes.a, 3)} ${fitRes.b < 0 ? '-' : '+'} ${fmt(Math.abs(fitRes.b), 3)} × ${xv.name}.`],
         },
+      });
+    } else {
+      blocks.push({
+        kind: 'text',
+        style: 'note',
+        text: fitRes.n < 3
+          ? 'Too few cases to fit a line or compute a correlation.'
+          : `${prose(xv)} or ${prose(yv)} has the same value for every case plotted, so no fit line or correlation can be computed.`,
       });
     }
     for (const nt of notes) blocks.push({ kind: 'text', style: 'note', text: nt });
@@ -609,10 +635,25 @@ const lineChart: ProcedureDef = {
       if (pts.length < 2) return '';
       const first = pts[0];
       const last = pts[pts.length - 1];
-      const d = stat === 'percent' ? 1 : 2;
+      const d = stat === 'percent' ? 1 : stat === 'count' ? 0 : 2;
+      const unit = stat === 'percent' ? '%' : '';
+      const show = (p: { v: number; i: number }) => `${fmt(p.v, d)}${unit} (${cats[p.i].label})`;
       const change = last.v - first.v;
+      // Only call the line rising/falling when it moves in one direction; otherwise name its peak and low.
+      let up = false;
+      let down = false;
+      for (let k = 1; k < pts.length; k++) {
+        if (pts[k].v > pts[k - 1].v + 1e-9) up = true;
+        if (pts[k].v < pts[k - 1].v - 1e-9) down = true;
+      }
+      if (up && down) {
+        const hi = pts.reduce((a, b) => (b.v > a.v ? b : a));
+        const lo = pts.reduce((a, b) => (b.v < a.v ? b : a));
+        const at = (p: { v: number; i: number }) => `${cats[p.i].label} (${fmt(p.v, d)}${unit})`;
+        return `${label}is highest for ${at(hi)} and lowest for ${at(lo)}; it does not change steadily across the categories.`;
+      }
       const word = Math.abs(change) < 1e-9 ? 'stays level' : change > 0 ? 'rises' : 'falls';
-      return `${label}${word} from ${fmt(first.v, d)}${stat === 'percent' ? '%' : ''} (${cats[first.i].label}) to ${fmt(last.v, d)}${stat === 'percent' ? '%' : ''} (${cats[last.i].label}).`;
+      return `${label}${word} from ${show(first)} to ${show(last)}.`;
     };
     const interp = gv
       ? groups.map((g, i) => describe(values[i], `For ${g.label}, the ${stat === 'mean' ? 'mean' : stat === 'percent' ? 'percentage' : 'count'} `)).filter(Boolean).join(' ')

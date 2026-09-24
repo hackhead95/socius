@@ -133,7 +133,7 @@ export function LineChart({ spec, width, setTip }: { spec: LineSpec; width: numb
       )}
       {spec.xLabel ? (
         <text x={(left + width - right) / 2} y={height - 8} fontSize={FS_AXIS} textAnchor="middle" fill="var(--text-2)">
-          {spec.xLabel}
+          {fit(spec.xLabel, Math.max(40, width - 16), FS_AXIS)}
         </text>
       ) : null}
       {spec.categories.map((cat, c) => (

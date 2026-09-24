@@ -108,7 +108,7 @@ function runReliability(ds: Dataset, vars: SlotValues, opts: OptionValues) {
       }),
     );
     const negLoad = items.filter((_, i) => omega!.loadings[i] < 0).map((v) => v.name);
-    if (negLoad.length) warnings.push(`Omega assumes all items measure the construct in the same direction, but ${listText(negLoad)} ${negLoad.length === 1 ? 'loads' : 'load'} negatively on the common factor. Recode reverse-worded items first; until then omega is not meaningful.`);
+    if (negLoad.length) warnings.push(`Omega assumes all items measure the construct in the same direction, but ${listText(negLoad)} ${negLoad.length === 1 ? 'loads' : 'load'} negatively on the common factor. Reverse-code such items first (Transform > Reverse-code items); until then omega is not meaningful.`);
     if (omega.heywood) notes.push('In the one-factor model behind omega, at least one item has a uniqueness at the lower bound (a Heywood case). Omega may be overestimated.');
     if (!omega.converged) notes.push('The one-factor model behind omega did not fully converge; treat omega as approximate.');
   } else if (optBool(opts, 'omega', true)) notes.push("McDonald's omega needs at least three items, so it is not shown.");
@@ -174,7 +174,7 @@ function runReliability(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const negative = items.filter((_, i) => r.itemTotal[i].correctedItemTotal < 0);
   for (const v of negative) {
     const i = items.indexOf(v);
-    warnings.push(`${v.name} correlates negatively with the rest of the scale (corrected item-total r = ${noLead(r.itemTotal[i].correctedItemTotal, 2)}). It may be reverse-worded and need reverse coding (for example, recode 1→5, 2→4, ... with Transform > Recode) before it is combined with the other items.`);
+    warnings.push(`${v.name} correlates negatively with the rest of the scale (corrected item-total r = ${noLead(r.itemTotal[i].correctedItemTotal, 2)}). It may be reverse-worded and need reverse coding (1→5, 2→4, ...) with Transform > Reverse-code items before it is combined with the other items; then run the analysis again with the reversed item.`);
   }
   if (r.alpha < 0.6) warnings.push(`Cronbach's alpha is ${noLead(r.alpha, 2)}, below .60: these items are not consistent enough to be combined into one reliable scale as they stand.`);
   if (r.alpha < 0) warnings.push('A negative alpha means the items on average correlate negatively, almost always because some items are reverse-worded and not yet recoded.');

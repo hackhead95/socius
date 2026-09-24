@@ -275,7 +275,7 @@ describe('case selection follows SPSS rules', () => {
     const one: Dataset = build();
     const sexCol = one.columns[byName(one, 'sex')[0]] as Float64Array;
     sexCol.fill(1);
-    expect(() => kw.run(one, { variables: byName(one, 'income'), group: byName(one, 'sex') }, defaultOptions(kw))).toThrow(/only 1 group/);
+    expect(() => kw.run(one, { variables: byName(one, 'income'), group: byName(one, 'sex') }, defaultOptions(kw))).toThrow(/only one group/);
     const constant = build();
     (constant.columns[byName(constant, 'sat1')[0]] as Float64Array).fill(3);
     (constant.columns[byName(constant, 'sat2')[0]] as Float64Array).fill(3);

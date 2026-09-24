@@ -30,7 +30,7 @@ export function measureText(text: string, fontSize: number, weight = 400): numbe
   return measureCtx.measureText(text).width;
 }
 
-export const fit = (text: string, maxWidth: number, fs: number) => truncateLabel(text, maxWidth, fs, (t, f) => measureText(t, f));
+export const fit = (text: string, maxWidth: number, fs: number, weight = 400) => truncateLabel(text, maxWidth, fs, (t, f) => measureText(t, f, weight));
 
 /** Width of the container, tracked with ResizeObserver. `fixed` overrides (used for exports). */
 export function useChartWidth(fixed?: number): [React.RefObject<HTMLDivElement | null>, number] {
@@ -70,7 +70,9 @@ export type SetTip = (t: Tip | null) => void;
 /** Top-of-chart header layout: title + wrapped legend. Returns the y where the plot may start. */
 export function headerLayout(title: string, legend: LegendItem[], width: number) {
   const pad = 4;
-  const titleText = fit(title, width - pad * 2, FS_TITLE);
+  // The title is drawn semi-bold, and the page font may differ slightly from the measuring font:
+  // measure at weight 600 and keep a small safety margin so long titles never run off the edge.
+  const titleText = fit(title, (width - pad * 2) * 0.96, FS_TITLE, 600);
   let y = pad + FS_TITLE + 2;
   const titleY = y;
   const lay = legend.length >= 2 ? legendLayout(legend.map((l) => l.label), width - pad * 2, FS_LEGEND, 12, 16, (t, f) => measureText(t, f)) : { items: [], rows: 0 };
@@ -198,7 +200,7 @@ export function YAxis(props: { ticks: number[]; scale: (v: number) => number; x0
           textAnchor="middle"
           fill="var(--text-2)"
         >
-          {props.title}
+          {fit(props.title, Math.max(40, props.plotBottom - props.plotTop), FS_AXIS)}
         </text>
       ) : null}
     </g>
@@ -223,7 +225,7 @@ export function XAxisNumeric(props: { ticks: number[]; scale: (v: number) => num
       })}
       {props.title ? (
         <text x={(props.plotLeft + props.plotRight) / 2} y={props.titleY ?? y1 + 34} fontSize={FS_AXIS} textAnchor="middle" fill="var(--text-2)">
-          {props.title}
+          {fit(props.title, Math.max(40, props.plotRight - props.plotLeft), FS_AXIS)}
         </text>
       ) : null}
     </g>

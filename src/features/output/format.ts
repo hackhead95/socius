@@ -77,7 +77,8 @@ export function formatNumber(v: number, fmt: CellFormat | undefined, ctx: Format
 export function formatP(p: number, style: TableStyle = 'apa'): string {
   if (Number.isNaN(p)) return '.';
   if (p < 0.001) return style === 'apa' ? '< .001' : '<.001';
-  if (p >= 0.9995) return '1.000';
+  // APA 7: p values that round to 1 are reported as "> .999"; SPSS tables print 1.000.
+  if (p >= 0.9995) return style === 'apa' ? '> .999' : '1.000';
   return dropLeadingZero(p.toFixed(3));
 }
 

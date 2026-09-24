@@ -159,7 +159,7 @@ export function BoxChart({ spec, width, setTip }: { spec: BoxSpec; width: number
       })}
       {spec.xLabel ? (
         <text x={(left + width - right) / 2} y={height - 6} fontSize={FS_AXIS} textAnchor="middle" fill="var(--text-2)">
-          {spec.xLabel}
+          {fit(spec.xLabel, Math.max(40, width - 16), FS_AXIS)}
         </text>
       ) : null}
     </ChartSvg>

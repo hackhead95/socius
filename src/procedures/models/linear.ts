@@ -232,6 +232,13 @@ function runLinear(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     );
   }
 
+  if (fits.every((f) => f.included.length === 0)) {
+    const names = listText([...new Set(cols.map((c) => c.term.variable.name))]);
+    throw new Error(
+      `No predictor could be used: ${names} ${cols.length === 1 ? 'has' : 'have'} the same value for every case used, or ${cols.length === 1 ? 'is' : 'are'} an exact combination of other predictors. A regression needs at least one predictor that varies.`,
+    );
+  }
+
   const nModels = specs.length;
   const final = fits[nModels - 1];
   const finalCols = inModel[nModels - 1];

@@ -96,6 +96,20 @@ export function bestSlotFor(def: ProcedureDef, slots: SlotValues, v: Variable): 
   );
 }
 
+/**
+ * Options that do not apply given another option's value, e.g. the two group values when the groups
+ * are defined by a cut point. Hidden options are not shown and not validated.
+ */
+export function optionInactive(o: OptionDef, options: OptionValues): boolean {
+  if (o.type === 'groupPair' && options.defineBy === 'cut') return true;
+  if (o.key === 'cutPoint') {
+    if ('defineBy' in options) return options.defineBy !== 'cut';
+    if ('dichotomy' in options) return options.dichotomy !== 'cut';
+  }
+  if (o.key === 'expectedValues' && 'expected' in options) return options.expected !== 'values';
+  return false;
+}
+
 /** Problems that block running. */
 export function validate(def: ProcedureDef, ds: Dataset, slots: SlotValues, options: OptionValues): string[] {
   const out: string[] = [];
@@ -114,6 +128,7 @@ export function validate(def: ProcedureDef, ds: Dataset, slots: SlotValues, opti
   }
   for (const o of def.options) {
     const val = options[o.key];
+    if (optionInactive(o, options)) continue;
     if (o.type === 'number') {
       if (typeof val !== 'number' || !Number.isFinite(val)) out.push(`Enter a number for "${o.label}".`);
       else if ((o.min !== undefined && val < o.min) || (o.max !== undefined && val > o.max))

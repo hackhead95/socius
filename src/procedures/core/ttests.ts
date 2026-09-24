@@ -163,7 +163,7 @@ function runIndependent(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const wb = Float64Array.from(g.b.weights);
     const na = wa.reduce((s, x) => s + x, 0);
     const nb = wb.reduce((s, x) => s + x, 0);
-    if (na < 1 || nb < 1) throw new Error(`${v.name}: one of the groups (${na < 1 ? g.labelA : g.labelB}) has no valid cases.`);
+    if (na < 1 || nb < 1) throw new Error(`${v.name}: the group "${na < 1 ? g.labelA : g.labelB}" of ${gv.name} has no valid cases. Check the two values chosen under "Groups".`);
     if (na + nb < 3) throw new Error(`${v.name}: at least three valid cases are needed.`);
     const r = independentT(numericValues(ds, v, g.a.rows), wa, numericValues(ds, v, g.b.rows), wb, conf);
     if (!(r.equal.seDiff > 0)) throw new Error(`${v.name} does not vary within the two groups, so the t test cannot be computed.`);
@@ -246,7 +246,7 @@ function runIndependent(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const lo = r.g1.mean >= r.g2.mean ? g.labelB : g.labelA;
     let s = `Levene's test ${unequal ? `indicates unequal variances (${apaP(r.levene.p)}), so read the ${rowName} row (Welch's t test)` : `does not indicate unequal variances (${apaP(r.levene.p)}), so read the ${rowName} row`}. `;
     s += t.p < 0.05
-      ? `${hi} scored significantly higher on ${vprose(v)} than ${lo} (M = ${apaNum(Math.max(r.g1.mean, r.g2.mean))} vs ${apaNum(Math.min(r.g1.mean, r.g2.mean))}; difference ${apaNum(Math.abs(t.meanDiff))}, ${pc}% CI ${apaNum(Math.min(Math.abs(t.ciLower), Math.abs(t.ciUpper)))} to ${apaNum(Math.max(Math.abs(t.ciLower), Math.abs(t.ciUpper)))}). The difference is ${labelD(d)} (Cohen's d = ${apaNum(Math.abs(d))}).`
+      ? `The "${hi}" group scored significantly higher on ${vprose(v)} than the "${lo}" group (M = ${apaNum(Math.max(r.g1.mean, r.g2.mean))} vs ${apaNum(Math.min(r.g1.mean, r.g2.mean))}; difference ${apaNum(Math.abs(t.meanDiff))}, ${pc}% CI ${apaNum(Math.min(Math.abs(t.ciLower), Math.abs(t.ciUpper)))} to ${apaNum(Math.max(Math.abs(t.ciLower), Math.abs(t.ciUpper)))}). The difference is ${labelD(d)} (Cohen's d = ${apaNum(Math.abs(d))}).`
       : `The groups did not differ significantly on ${vprose(v)} (${g.labelA}: M = ${apaNum(r.g1.mean)}; ${g.labelB}: M = ${apaNum(r.g2.mean)}; ${apaP(t.p)}). Cohen's d = ${apaNum(Math.abs(d))} (${labelD(d)}).`;
     interp.push(s);
     apa.push(`${unequal ? "Welch's" : 'An independent-samples'} t test showed that ${vprose(v)} ${t.p < 0.05 ? 'differed significantly' : 'did not differ significantly'} between ${g.labelA} (M = ${apaNum(r.g1.mean)}, SD = ${apaNum(r.g1.sd)}) and ${g.labelB} (M = ${apaNum(r.g2.mean)}, SD = ${apaNum(r.g2.sd)}), t(${fmtDf(t.df)}) = ${apaNum(t.t)}, ${apaP(t.p)}, d = ${apaNum(d)}.`);
@@ -260,7 +260,8 @@ function runIndependent(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const syntax = `T-TEST GROUPS=${gv.name}${groupsDef}\n  /MISSING=${listwise ? 'LISTWISE' : 'ANALYSIS'}\n  /VARIABLES=${deps.map((d) => d.name).join(' ')}\n  /ES DISPLAY(${optBool(opts, 'effectSizes', true) ? 'TRUE' : 'FALSE'})\n  /CRITERIA=CI(${conf.toFixed(3).replace(/0+$/, '')}).`;
   const r0 = results[0];
   const Nused = r0.r.g1.N + r0.r.g2.N;
-  const outside = selN(r0.sel) - Nused;
+  // Rounded so that floating-point residue from non-integer weights never shows as "0 in other groups".
+  const outside = Math.round((selN(r0.sel) - Nused) * 10) / 10;
   return item('ttest-independent', 'Independent-Samples T Test', ds, blocks, syntax, caseNote(ds, Nused, r0.sel.nMissing, outside > 0 ? `${fmtN(outside)} in other groups of ${gv.name}` : undefined));
 }
 

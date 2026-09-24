@@ -276,7 +276,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const ip: string[] = [];
   ip.push(
     pModel < 0.05
-      ? `The model with predictors fits significantly better than a model with thresholds only (${fmtP(pModel)}); Nagelkerke R² = ${noLead(pr.nagelkerke)}.`
+      ? `The model with predictors fits significantly better than a model with thresholds only (${fmtP(pModel)}); Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`
       : `The model with predictors does not fit significantly better than a model with thresholds only (${fmtP(pModel)}).`,
   );
   const sig: string[] = [];
@@ -303,7 +303,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   const apa: string[] = [
     `An ordinal logistic regression (proportional odds, logit link) was conducted to predict ${depText} from ${listText(terms.map((t) => t.variable.name))}. ` +
-      `The final model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the thresholds-only model, χ²(${q}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke R² = ${noLead(pr.nagelkerke)}.`,
+      `The final model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the thresholds-only model, χ²(${q}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`,
   ];
   if (Number.isFinite(parallelP)) apa.push(`The assumption of proportional odds was ${parallelP < 0.05 ? 'not ' : ''}supported by the test of parallel lines, ${fmtP(parallelP)}.`);
   const sigApa = cols

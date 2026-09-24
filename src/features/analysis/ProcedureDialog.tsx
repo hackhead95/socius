@@ -10,7 +10,7 @@ import { Modal } from '../../ui/Modal';
 import { copyText } from '../output/actions';
 import { IconArrowLeft, IconArrowRight, IconCopy, IconDown, IconSearch, IconUp, IconWarn, IconX } from '../output/icons';
 import {
-  MEASURE_LABEL, addToSlot, bestSlotFor, measureWarning, moveWithinSlot, parseValue, recall, remember, removeFromSlot, slotCountHint, slotSuitHint, typeFits, validate,
+  MEASURE_LABEL, addToSlot, optionInactive, bestSlotFor, measureWarning, moveWithinSlot, parseValue, recall, remember, removeFromSlot, slotCountHint, slotSuitHint, typeFits, validate,
 } from './varUtils';
 import './dialog.css';
 
@@ -619,7 +619,7 @@ function DialogBody({ def, ds, onClose }: { def: ProcedureDef; ds: Dataset; onCl
             )}
             {groups.map((g, i) => (
               <div key={g.name} role={groups.length > 1 ? 'tabpanel' : undefined} id={`pdp-${i}`} aria-labelledby={groups.length > 1 ? `pdt-${i}` : undefined} hidden={groups.length > 1 && tab !== i} className="pd-option-grid">
-                {g.options.map((o) => (
+                {g.options.filter((o) => !optionInactive(o, options)).map((o) => (
                   <OptionField key={o.key} def={o} value={options[o.key]} onChange={(v) => { setOptions((p) => ({ ...p, [o.key]: v })); setError(null); }} ds={ds} slots={slots} byId={byId} />
                 ))}
               </div>

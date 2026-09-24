@@ -131,7 +131,7 @@
 .ot thead th.stub { text-align: left; }
 .ot tbody th { font-weight: 400; }
 .ot .nw { white-space: nowrap; }
-.ot tbody th.stub { min-width: 7em; }
+.ot tbody th.stub { min-width: 10em; }
 .ot .b { font-weight: 700; }
 .ot .i { font-style: italic; }
 .ot sup { font-size: 0.72em; line-height: 0; margin-left: 1px; }

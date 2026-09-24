@@ -77,3 +77,21 @@ describe('session memory', () => {
     expect(r.options.pair).toBeNull();
   });
 });
+
+describe('options that do not apply', () => {
+  it('a cut-point t test does not ask for two group values (and vice versa)', async () => {
+    const { getProcedure } = await import('../../src/procedures');
+    const { defaultOptions } = await import('../../src/core/procedure');
+    const { optionInactive } = await import('../../src/features/analysis/varUtils');
+    const tt = getProcedure('ttest-independent')!;
+    const slots = { variables: ['age'], group: ['age'] };
+    const cut = { ...defaultOptions(tt), defineBy: 'cut', cutPoint: 40, groups: null };
+    expect(validate(tt, ds, slots, cut)).toEqual([]);
+    expect(tt.options.filter((o) => optionInactive(o, cut)).map((o) => o.key)).toEqual(['groups']);
+    const byValues = { ...defaultOptions(tt), groups: null };
+    expect(validate(tt, ds, slots, byValues)).toContain('Choose the two groups for "Groups".');
+    expect(tt.options.filter((o) => optionInactive(o, byValues)).map((o) => o.key)).toEqual(['cutPoint']);
+    const bin = getProcedure('binomial')!;
+    expect(bin.options.filter((o) => optionInactive(o, defaultOptions(bin))).map((o) => o.key)).toEqual(['cutPoint']);
+  });
+});

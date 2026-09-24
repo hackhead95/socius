@@ -301,7 +301,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const ip: string[] = [];
   ip.push(
     pModel < 0.05
-      ? `The predictors together improve the prediction of ${depText} significantly compared with a model with no predictors (${fmtP(pModel)}); Nagelkerke R² = ${noLead(pr.nagelkerke)}.`
+      ? `The predictors together improve the prediction of ${depText} significantly compared with a model with no predictors (${fmtP(pModel)}); Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`
       : `The predictors together do not significantly improve the prediction of ${depText} compared with a model with no predictors (${fmtP(pModel)}).`,
   );
   const sigT = usedTerms.filter((t) => (lrByTerm.get(t)?.p ?? 1) < 0.05).map((t) => t.variable.name);
@@ -327,7 +327,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   const apa: string[] = [
     `A multinomial logistic regression was conducted to predict ${depText} (reference category: ${refLab}) from ${listText(terms.map((t) => t.variable.name))}. ` +
-      `The model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the intercept-only model, χ²(${dfModel}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke R² = ${noLead(pr.nagelkerke)}.`,
+      `The model ${pModel < 0.05 ? 'fit significantly better' : 'did not fit significantly better'} than the intercept-only model, χ²(${dfModel}, N = ${dfText(W)}) = ${num(chi, 2)}, ${fmtP(pModel)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}.`,
   ];
   const lrApa = usedTerms.map((t) => {
     const r = lrByTerm.get(t)!;

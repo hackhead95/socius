@@ -59,7 +59,8 @@ export function OutputTableView({ table, style, number }: { table: OutputTable; 
                   ].filter(Boolean).join(' ');
                   const st = { textAlign: c.align, paddingLeft: c.indent ? `calc(var(--ot-pad) + ${c.indent * 14}px)` : undefined };
                   const Tag = isStub ? 'th' : 'td';
-                  const short = isStub && f.text.length <= 24;
+                  // Keep short stubs and single-token values (e.g. "6.215E-6", "<.001") on one line.
+                  const short = isStub ? f.text.length <= 24 : !/\s/.test(f.text);
                   return (
                     <Tag
                       key={i}

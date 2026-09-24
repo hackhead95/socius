@@ -362,7 +362,7 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const ip: string[] = [];
   ip.push(
     modelP < 0.05
-      ? `The predictors together improve the prediction of ${depText} significantly compared with a model with no predictors (${fmtP(modelP)}). Nagelkerke R² = ${noLead(pr.nagelkerke)}, a rough indication that the model accounts for about ${Math.round(pr.nagelkerke * 100)}% of the variation.`
+      ? `The predictors together improve the prediction of ${depText} significantly compared with a model with no predictors (${fmtP(modelP)}). Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}; unlike R² in linear regression this is not a share of variance explained, only a rough guide to how much better the model fits than one without predictors (values between .2 and .4 are common for survey data).`
       : `The predictors together do not significantly improve the prediction of ${depText} compared with a model with no predictors (${fmtP(modelP)}).`,
   );
   ip.push(`The model classifies ${pctCorrect.toFixed(1)}% of cases correctly, compared with ${(baseRate * 100).toFixed(1)}% by always predicting the most common outcome.`);
@@ -385,7 +385,7 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const apa: string[] = [];
   apa.push(
     `A binary logistic regression was performed to assess the effects of ${listText(terms.map((t) => t.variable.name))} on the likelihood of ${depText} being "${eventLabel}". ` +
-      `The model was ${modelP < 0.05 ? '' : 'not '}statistically significant, χ²(${p}, N = ${dfText(W)}) = ${num(modelChi, 2)}, ${fmtP(modelP)}, explained ${(pr.nagelkerke * 100).toFixed(1)}% (Nagelkerke R²) of the variance, and correctly classified ${pctCorrect.toFixed(1)}% of cases.`,
+      `The model was ${modelP < 0.05 ? '' : 'not '}statistically significant, χ²(${p}, N = ${dfText(W)}) = ${num(modelChi, 2)}, ${fmtP(modelP)}, Nagelkerke pseudo R² = ${noLead(pr.nagelkerke)}, and correctly classified ${pctCorrect.toFixed(1)}% of cases.`,
   );
   const sigApa = cols
     .map((c, j) => ({ c, j }))

@@ -196,7 +196,7 @@ export function BarChart({ spec, width, setTip }: { spec: BarSpec; width: number
         )}
         {spec.xLabel ? (
           <text x={(left + width - right) / 2} y={height - 8} fontSize={FS_AXIS} textAnchor="middle" fill="var(--text-2)">
-            {spec.xLabel}
+            {fit(spec.xLabel, Math.max(40, width - 16), FS_AXIS)}
           </text>
         ) : null}
         {spec.categories.map((cat, c) => (
@@ -308,7 +308,7 @@ export function BarChart({ spec, width, setTip }: { spec: BarSpec; width: number
       ))}
       {spec.xLabel ? (
         <text transform={`translate(12,${top + plotH / 2}) rotate(-90)`} fontSize={FS_AXIS} textAnchor="middle" fill="var(--text-2)">
-          {spec.xLabel}
+          {fit(spec.xLabel, Math.max(40, plotH), FS_AXIS)}
         </text>
       ) : null}
       {spec.categories.map((cat, c) => (

@@ -166,6 +166,9 @@ function runMeans(ds: Dataset, slots: SlotValues, opts: OptionValues) {
             apa.push(`A one-way analysis of variance showed that ${vprose(dep)} ${a.p < 0.05 ? 'differed significantly' : 'did not differ significantly'} by ${vprose(f1)}, F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}, ${apaP(a.p)}, η² = ${apaNum(a.effects.etaSq, 2, true)}.`);
           }
           interp.push(s);
+        } else {
+          const what = nonEmpty.length === 0 ? `${vprose(dep)} has no valid values among the selected cases` : `Only one group of ${vprose(f1)} (${g1.labels[nonEmpty[0].i]}) has valid values of ${vprose(dep)}`;
+          blocks.push(text('warning', `${what}, so there are no groups to compare${optBool(opts, 'anova', false) ? ' and no ANOVA was computed' : ''}.`));
         }
       }
   if (optBool(opts, 'anova', false) && l2.length) blocks.push(text('note', 'The ANOVA table and eta are computed for the first-layer variable only, without a second layer (as in SPSS).'));
@@ -198,6 +201,9 @@ export const means: ProcedureDef = {
 // One-way ANOVA
 // ---------------------------------------------------------------------------------------------
 
+/** More groups than this is almost always a scale variable dropped into the Factor box by mistake. */
+const MAX_GROUPS = 50;
+
 const POST_HOC: Array<{ key: PostHocMethod; label: string; syntax: string }> = [
   { key: 'tukey', label: 'Tukey', syntax: 'TUKEY' },
   { key: 'bonferroni', label: 'Bonferroni', syntax: 'BONFERRONI' },
@@ -222,7 +228,8 @@ function runOneway(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     if (!note) note = caseNote(ds, selN(sel), sel.nMissing);
     const g = groupBy(ds, dep, factor, sel.rows, sel.weights);
     const keep = g.groups.map((gr, i) => ({ gr, i })).filter(({ gr }) => gr.x.length > 0);
-    if (keep.length < 2) throw new Error(`${dep.name}: the factor ${factor.name} has only ${keep.length} group with valid cases; at least two are needed.`);
+    if (keep.length < 2) throw new Error(keep.length === 0 ? `${dep.name} has no valid values in any group of ${factor.name} among the selected cases.` : `${dep.name}: the factor ${factor.name} has only one group with valid cases; at least two are needed.`);
+    if (keep.length > MAX_GROUPS) throw new Error(`${factor.name} has ${keep.length} groups. One-way ANOVA compares a handful of categories; recode ${factor.name} into ${MAX_GROUPS} or fewer groups first (Transform > Recode), or use Correlations or Regression for a scale variable.`);
     const labels = keep.map(({ i }) => g.labels[i]);
     const a: AnovaResult = oneWayAnova(keep.map(({ gr }) => ({ x: gr.x, w: gr.w })), conf);
     if (!(a.dfW > 0)) throw new Error(`${dep.name}: there are no degrees of freedom within groups (each group has a single case).`);
@@ -393,7 +400,7 @@ function runOneway(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     let s = `Mean ${vprose(dep)} was highest for ${labels[hi.i]} (M = ${apaNum(hi.gr.mean)}) and lowest for ${labels[lo.i]} (M = ${apaNum(lo.gr.mean)}). `;
     if (unequalVar) s += `Levene's test indicates unequal variances (${apaP(a.leveneMean.p)}), so the Welch test is the more trustworthy test of equal means${methods.some((m) => m.key === 'gamesHowell') ? ' and Games-Howell the more trustworthy post hoc test' : '; consider Games-Howell for post hoc comparisons'}. `;
     s += mainP < 0.05
-      ? `The group means differ significantly (${unequalVar ? `Welch F(${fmtDf(a.welch.df1)}, ${fmtDf(a.welch.df2)}) = ${apaNum(a.welch.F)}` : `F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}`}, ${apaP(mainP)}). ${vprose(factor)} accounts for ${(100 * a.effects.etaSq).toFixed(1)}% of the variance (η² = ${apaNum(a.effects.etaSq, 2, true)}, ω² = ${apaNum(a.effects.omegaSqFixed, 2, true)}), a ${labelEta2(a.effects.omegaSqFixed)} effect.`
+      ? `The group means differ significantly (${unequalVar ? `Welch F(${fmtDf(a.welch.df1)}, ${fmtDf(a.welch.df2)}) = ${apaNum(a.welch.F)}` : `F(${fmtDf(a.dfB)}, ${fmtDf(a.dfW)}) = ${apaNum(a.F)}`}, ${apaP(mainP)}). ${vprose(factor)} accounts for ${(100 * a.effects.etaSq).toFixed(1)}% of the variance (η² = ${apaNum(a.effects.etaSq, 2, true)}, ω² = ${apaNum(a.effects.omegaSqFixed, 2, true)}), a ${labelEta2(a.effects.omegaSqFixed)} effect judged by ω² (which corrects the upward bias of η²).`
       : `The differences between groups are not statistically significant (${apaP(mainP)}; η² = ${apaNum(a.effects.etaSq, 2, true)}).`;
     if (methods.length) s += sigPairs.length ? ` ${methods[0].label} post hoc tests show significant differences between ${listProse(sigPairs)}.` : ` ${methods[0].label} post hoc tests find no pair of groups that differs significantly.`;
     interp.push(s);

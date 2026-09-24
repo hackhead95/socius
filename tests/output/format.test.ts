@@ -28,7 +28,9 @@ describe('formatNumber', () => {
     expect(formatP(0)).toBe('< .001');
     expect(formatP(0.00099)).toBe('< .001');
     expect(formatP(0.001)).toBe('.001');
-    expect(formatP(0.9999)).toBe('1.000');
+    expect(formatP(0.9999)).toBe('> .999');
+    expect(formatP(0.9999, 'spss')).toBe('1.000');
+    expect(formatP(1)).toBe('> .999');
     expect(formatP(0.5)).toBe('.500');
     expect(formatNumber(0.0000001, 'p', { style: 'apa' })).not.toMatch(/0\.000|\.000/);
   });

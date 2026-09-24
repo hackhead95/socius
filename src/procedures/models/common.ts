@@ -30,10 +30,11 @@ export function slot(vars: SlotValues, key: string): string[] {
 
 /** "p < .001" or "p = .032". */
 export function fmtP(p: number): string {
-  if (!Number.isFinite(p)) return 'p = .';
+  if (!Number.isFinite(p)) return 'p = n/a';
   if (p < 0.001) return 'p < .001';
-  const s = p.toFixed(3);
-  return `p = ${s === '1.000' ? '1.000' : s.replace(/^0/, '')}`;
+  // APA 7: values that round to 1 are reported as "p > .999".
+  if (p >= 0.9995) return 'p > .999';
+  return `p = ${p.toFixed(3).replace(/^0/, '')}`;
 }
 
 /** Fixed decimals with thousands separators. */
@@ -77,7 +78,8 @@ export function pCell(p: number): Cell {
 /** How a variable is referred to in running text: its label when short, otherwise its name. */
 export function textName(v: Variable): string {
   const l = v.label.trim();
-  return l && l.length <= 40 ? l : v.name;
+  // Question-style labels ("Did you vote ...?") read badly inside a sentence.
+  return l && l.length <= 40 && !l.includes('?') ? l : v.name;
 }
 
 /** How a variable is referred to in table footnotes (SPSS shows labels). */
@@ -112,8 +114,12 @@ export function caseNote(ds: Dataset, sel: CaseSelection, extra = ''): string {
     parts.push(`N = ${n.toLocaleString('en-US')} cases (weighted N = ${num(W, Number.isInteger(W) ? 0 : 1)}, weighted by ${wv?.name ?? 'weight'})`);
   } else parts.push(`N = ${n.toLocaleString('en-US')}`);
   if (sel.nMissing > 0) parts.push(`${sel.nMissing.toLocaleString('en-US')} excluded for missing values (listwise)`);
-  if (sel.nFiltered > 0) parts.push(`${sel.nFiltered.toLocaleString('en-US')} not selected (filter or zero weight)`);
-  return parts.join('; ') + (extra ? `; ${extra}` : '');
+  if (sel.nFiltered > 0) {
+    // Same wording as the other procedures: name the filter variable when a filter is on.
+    const fv = ds.filterVarId ? ds.variables.find((v) => v.id === ds.filterVarId) : undefined;
+    parts.push(`${sel.nFiltered.toLocaleString('en-US')} ${fv ? `filtered out by ${fv.name}` : 'with zero or missing weight'}`);
+  }
+  return parts.join('; ') + (extra ? `; ${extra}` : '') + '.';
 }
 
 /** FILTER / WEIGHT lines so the syntax reproduces the same case base in SPSS. */

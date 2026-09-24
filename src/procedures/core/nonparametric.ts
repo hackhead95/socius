@@ -63,7 +63,7 @@ function runGof(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const sel = selectCases(ds, [v.id]);
     if (!note) note = caseNote(ds, selN(sel), sel.nMissing);
     const cats = categoriesOf(ds, v, sel.rows);
-    if (cats.length < 2) throw new Error(`${v.name} has ${cats.length} category among the valid cases; the chi-square test needs at least two.`);
+    if (cats.length < 2) throw new Error(cats.length === 0 ? `${v.name} has no valid values among the selected cases.` : `${v.name} has only one category (${valueText(v, cats[0])}) among the valid cases; the chi-square test needs at least two.`);
     const col = ds.columns[v.id];
     const obs = cats.map(() => 0);
     sel.rows.forEach((r, k) => {
@@ -161,7 +161,7 @@ function runBinomial(ds: Dataset, slots: SlotValues, opts: OptionValues) {
       lab2 = `> ${cut}`;
     } else {
       const cats = categoriesOf(ds, v, sel.rows);
-      if (cats.length !== 2) throw new Error(`${v.name} has ${cats.length} distinct values among valid cases. The binomial test needs exactly two; use a cut point to split a variable with more values.`);
+      if (cats.length !== 2) throw new Error(cats.length === 0 ? `${v.name} has no valid values among the selected cases.` : `${v.name} has ${cats.length} distinct value${cats.length === 1 ? '' : 's'} among valid cases. The binomial test needs exactly two${cats.length > 2 ? '; use a cut point to split a variable with more values' : ''}.`);
       // SPSS: the first value encountered in the data defines group 1.
       const firstVal = col[sel.rows[0]];
       const g1 = cats.find((c) => sameValue(c, firstVal))!;
@@ -238,7 +238,7 @@ function runMannWhitney(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const g = twoGroups(ds, gv, sel, opts.groups, null);
     const wa = Float64Array.from(g.a.weights);
     const wb = Float64Array.from(g.b.weights);
-    if (!g.a.rows.length || !g.b.rows.length) throw new Error(`${v.name}: one of the groups (${!g.a.rows.length ? g.labelA : g.labelB}) has no valid cases.`);
+    if (!g.a.rows.length || !g.b.rows.length) throw new Error(`${v.name}: the group "${!g.a.rows.length ? g.labelA : g.labelB}" of ${gv.name} has no valid cases. Check the two values chosen under "Groups".`);
     const r = mannWhitney(numericValues(ds, v, g.a.rows), wa, numericValues(ds, v, g.b.rows), wb);
     if (!Number.isFinite(r.z)) throw new Error(`${v.name} has the same value for every case in the two groups, so the test cannot be computed.`);
     return { v, g, sel, r };
@@ -278,7 +278,7 @@ function runMannWhitney(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     const lo = r.meanRank1 > r.meanRank2 ? g.labelB : g.labelA;
     interp.push(
       p < 0.05
-        ? `${hi} tended to score higher on ${vprose(v)} than ${lo} (mean ranks ${apaNum(Math.max(r.meanRank1, r.meanRank2))} vs ${apaNum(Math.min(r.meanRank1, r.meanRank2))}; U = ${apaNum(r.U)}, ${apaP(p)}). The effect is ${labelR(r.r)} (r = ${apaNum(r.r, 2, true)}).`
+        ? `The "${hi}" group tended to score higher on ${vprose(v)} than the "${lo}" group (mean ranks ${apaNum(Math.max(r.meanRank1, r.meanRank2))} vs ${apaNum(Math.min(r.meanRank1, r.meanRank2))}; U = ${apaNum(r.U)}, ${apaP(p)}). The effect is ${labelR(r.r)} (r = ${apaNum(r.r, 2, true)}).`
         : `The distributions of ${vprose(v)} do not differ significantly between ${g.labelA} and ${g.labelB} (U = ${apaNum(r.U)}, ${apaP(p)}, r = ${apaNum(r.r, 2, true)}).`,
     );
     apa.push(`A Mann-Whitney U test indicated that ${vprose(v)} ${p < 0.05 ? 'was significantly higher' : 'did not differ significantly'} ${p < 0.05 ? `for ${hi} (mean rank = ${apaNum(Math.max(r.meanRank1, r.meanRank2))}) than for ${lo} (mean rank = ${apaNum(Math.min(r.meanRank1, r.meanRank2))})` : `between ${g.labelA} and ${g.labelB}`}, U = ${apaNum(r.U)}, z = ${apaNum(r.z)}, ${apaP(p)}, r = ${apaNum(r.r, 2, true)}.`);
@@ -400,7 +400,7 @@ function runKruskal(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   const results = vs.map((v) => {
     const sel = selectCases(ds, [v.id, gv.id]);
     const cats = categoriesOf(ds, gv, sel.rows);
-    if (cats.length < 2) throw new Error(`Grouping variable ${gv.name} has only ${cats.length} group among valid cases; at least two are needed.`);
+    if (cats.length < 2) throw new Error(cats.length === 0 ? `${v.name} has no valid values in any group of ${gv.name} among the selected cases.` : `Grouping variable ${gv.name} has only one group (${valueText(gv, cats[0])}) among valid cases; at least two are needed.`);
     const gcol = ds.columns[gv.id];
     const groups = cats.map((c) => {
       const idx: number[] = [];

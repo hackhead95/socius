@@ -11,6 +11,8 @@ import {
   apaP,
   blank,
   caseNote,
+  caseNoteRange,
+  listProse,
   categoriesOf,
   cell,
   decFmt,
@@ -58,7 +60,7 @@ function runDescriptives(ds: Dataset, slots: SlotValues, opts: OptionValues) {
   if (want('min', true)) cols.push({ label: 'Minimum', get: (s) => s.min, raw: true });
   if (want('max', true)) cols.push({ label: 'Maximum', get: (s) => s.max, raw: true });
   if (want('sum')) cols.push({ label: 'Sum', get: (s) => s.sum, raw: true });
-  cols.push({ label: 'Mean', get: (s) => s.mean });
+  if (want('mean', true)) cols.push({ label: 'Mean', get: (s) => s.mean });
   if (want('seMean')) cols.push({ label: 'Mean', se: true, get: (s) => s.seMean });
   if (want('sd', true)) cols.push({ label: 'Std. Deviation', get: (s) => s.sd });
   if (want('variance')) cols.push({ label: 'Variance', get: (s) => s.variance });
@@ -81,13 +83,14 @@ function runDescriptives(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     h2.push(hcell('Statistic'));
     if (hasSe) h2.push(hcell('Std. Error'));
   }
-  const rows: Cell[][] = stats.map(({ v, s }) => [hcell(vlabel(v)), ...cols.map((c) => (s ? cell(c.get(s), c.fmt ?? decFmt(v, c.raw ? 0 : 2)) : cell(NaN)))]);
+  const rows: Cell[][] = stats.map(({ v, s }) => [hcell(vlabel(v)), ...cols.map((c, k) => (s ? cell(c.get(s), c.fmt ?? decFmt(v, c.raw ? 0 : 2)) : k === 0 ? cell(0, 'int') : cell(NaN)))]);
   rows.push([hcell('Valid N (listwise)'), cell(selN(listwise), 'int'), ...cols.slice(1).map(() => blank())]);
   const table: OutputTable = { title: 'Descriptive Statistics', header: [h1, h2], rows, ruleBefore: [rows.length - 1] };
   const blocks: OutputBlock[] = [tableBlock(table)];
   const valid = stats.filter((x) => x.s && x.s.N > 0);
   if (valid.length) {
-    const sentences = valid.map(({ v, s }) => `${vprose(v)} averaged ${apaNum(s!.mean)} (SD = ${apaNum(s!.sd)}, range ${apaNum(s!.min)} to ${apaNum(s!.max)}, N = ${fmtN(Math.round(s!.N))})`);
+    const val = (x: number) => apaNum(x, Number.isInteger(x) ? 0 : 2);
+    const sentences = valid.map(({ v, s }) => `${vprose(v)} averaged ${apaNum(s!.mean)} (SD = ${apaNum(s!.sd)}, range ${val(s!.min)} to ${val(s!.max)}, N = ${fmtN(Math.round(s!.N))})`);
     let interp = sentences.join('; ') + '.';
     const skewed = valid.filter(({ s }) => Number.isFinite(s!.skewness) && Math.abs(s!.skewness) > 1);
     if (want('skewness') && skewed.length) interp += ` ${skewed.map(({ v }) => vprose(v)).join(', ')} ${skewed.length === 1 ? 'is' : 'are'} strongly skewed (|skewness| > 1); the mean may not describe a typical case well.`;
@@ -95,13 +98,14 @@ function runDescriptives(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     blocks.push(text('interpretation', interp));
     blocks.push(text('apa', valid.map(({ v, s }) => `${vprose(v)}: M = ${apaNum(s!.mean)}, SD = ${apaNum(s!.sd)}`).join('; ') + '.'));
   }
+  const empty = stats.filter((x) => !x.s || !(x.s.N > 0));
+  if (empty.length) blocks.push(text('warning', `${listProse(empty.map(({ v }) => v.name))} ${empty.length === 1 ? 'has' : 'have'} no valid values among the selected cases (every case is missing or filtered out), so no statistics can be computed.`));
   const small = valid.filter(({ s }) => s!.N < 3);
   if (small.length) blocks.push(text('warning', `${small.map(({ v }) => v.name).join(', ')}: fewer than three valid cases, so the standard deviation and shape statistics are unreliable or not computable.`));
   const statList = [want('mean', true) ? 'MEAN' : '', want('sum') ? 'SUM' : '', want('sd', true) ? 'STDDEV' : '', want('variance') ? 'VARIANCE' : '', want('range') ? 'RANGE' : '', want('min', true) ? 'MIN' : '', want('max', true) ? 'MAX' : '', want('seMean') ? 'SEMEAN' : '', want('kurtosis') ? 'KURTOSIS' : '', want('skewness') ? 'SKEWNESS' : ''].filter(Boolean);
   const syntax = `DESCRIPTIVES VARIABLES=${vs.map((v) => v.name).join(' ')}\n  /STATISTICS=${statList.join(' ')}${order !== 'variables' ? `\n  /SORT=MEAN (${order === 'ascendingMeans' ? 'A' : 'D'})` : ''}.`;
-  const totalN = Math.max(0, ...stats.map((x) => selN(x.sel)));
-  const maxMissing = Math.max(0, ...stats.map((x) => x.sel.nMissing));
-  return item('descriptives', 'Descriptives', ds, blocks, syntax, caseNote(ds, totalN, maxMissing, vs.length > 1 ? 'each variable uses its own valid cases' : undefined));
+  const note = vs.length > 1 ? caseNoteRange(ds, stats.map((x) => selN(x.sel)), selN(listwise)) : caseNote(ds, selN(stats[0].sel), stats[0].sel.nMissing);
+  return item('descriptives', 'Descriptives', ds, blocks, syntax, note);
 }
 
 export const descriptives: ProcedureDef = {

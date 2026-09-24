@@ -497,7 +497,7 @@ function cmhBlocks(p: Pair): OutputBlock[] {
 }
 
 function describeAssociation(p: Pair, L: Layer, s: LayerStats, groupsAreRows: boolean): { text: string; apa: string | null } {
-  if (s.degenerate || !s.chi) return { text: `${L.label ? `In ${L.label}, ` : ''}there are too few categories with cases to test an association.`, apa: null };
+  if (s.degenerate || !s.chi) return { text: `${L.label ? `In ${L.label}, there` : 'There'} are too few categories with cases to test an association (each variable needs at least two categories with cases).`, apa: null };
   const t = L.table;
   const m = margins(t);
   const G = groupsAreRows ? p.row : p.col;
@@ -546,7 +546,12 @@ function describeAssociation(p: Pair, L: Layer, s: LayerStats, groupsAreRows: bo
     const cells: Array<{ i: number; j: number; z: number }> = [];
     cs.adjusted.forEach((row, i) => row.forEach((z, j) => Number.isFinite(z) && Math.abs(z) > 1.96 && cells.push({ i, j, z })));
     cells.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
-    const top = cells.slice(0, 3).map((q) => `${q.z > 0 ? 'more' : 'fewer'} "${valueText(p.row, p.rowCats[q.i])}" respondents answering "${valueText(p.col, p.colCats[q.j])}" than expected (adjusted residual ${q.z > 0 ? '+' : ''}${q.z.toFixed(1)})`);
+    // Phrase each cell from the group's point of view: more "Woman" respondents answering "Agree".
+    const top = cells.slice(0, 3).map((q) => {
+      const grp = groupsAreRows ? valueText(p.row, p.rowCats[q.i]) : valueText(p.col, p.colCats[q.j]);
+      const ans = groupsAreRows ? valueText(p.col, p.colCats[q.j]) : valueText(p.row, p.rowCats[q.i]);
+      return `${q.z > 0 ? 'more' : 'fewer'} "${grp}" respondents answering "${ans}" than expected (adjusted residual ${q.z > 0 ? '+' : ''}${q.z.toFixed(1)})`;
+    });
     if (top.length) s3 = ` The cells that differ most from independence are: ${top.join('; ')}.`;
   }
   const apa = `A chi-square test of independence ${pMain < 0.05 ? 'showed a significant' : 'did not show a significant'} association between ${vprose(p.row)} and ${vprose(p.col)}${L.label ? ` among ${vprose(p.layer!)} = ${L.label}` : ''}, χ²(${c.df}, N = ${fmtN(Math.round(c.N))}) = ${apaNum(c.pearson.value)}, ${apaP(c.pearson.p)}, Cramér's V = ${apaNum(V, 2, true)}${useFisher ? ` (Fisher's exact ${apaP(c.fisher!.p2)})` : ''}.`;
@@ -593,7 +598,10 @@ function run(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     stdRes: optBool(opts, 'stdRes'),
     adjRes: optBool(opts, 'adjRes'),
   };
-  const groupsAreRows = !(co.colPct && !co.rowPct);
+  // Percentages run within the groups being compared. Sociological tables usually put the independent
+  // variable in the columns and ask for column percentages, so column percentages (when requested)
+  // decide the wording; with row percentages only, the rows are the groups.
+  const groupsAreRows = !co.colPct;
   const blocks: OutputBlock[] = [];
   const pairs: Pair[] = [];
   for (const r of rowsV) for (const c of colsV) {
@@ -669,10 +677,10 @@ function run(ds: Dataset, slots: SlotValues, opts: OptionValues) {
     for (const s of statsAll) {
       if (!s.chi) continue;
       const share = (100 * s.chi.cellsBelow5) / s.chi.cellsTotal;
-      const where = p.layer ? ` (${s.label ?? 'all layers'})` : '';
+      const where = p.layer ? `${s.label ?? 'All layers'}: ` : '';
       if (share > 20 || s.chi.minExpected < 1) {
         const exactHint = s.r === 2 && s.c === 2 ? "Use Fisher's exact test (shown in the table)" : 'Choose the exact test option or combine sparse categories';
-        blocks.push(text('warning', `${fmtN(s.chi.cellsBelow5)} of ${s.chi.cellsTotal} cells${where} (${share.toFixed(1)}%) have expected counts below 5${s.chi.minExpected < 1 ? ', and at least one is below 1' : ''}. The chi-square approximation may be unreliable. ${exactHint}.`));
+        blocks.push(text('warning', `${where}${fmtN(s.chi.cellsBelow5)} of ${s.chi.cellsTotal} cells (${share.toFixed(1)}%) have expected counts below 5${s.chi.minExpected < 1 ? ', and at least one is below 1' : ''}. The chi-square approximation may be unreliable. ${exactHint}.`));
       }
     }
     if (weightMode === 'none' && layersAll.some((L) => L.table.some((r) => r.some((v) => !Number.isInteger(v))))) blocks.push(text('note', 'Cell counts are not whole numbers (non-integer weights, no adjustment). Exact tests are not available for such tables.'));

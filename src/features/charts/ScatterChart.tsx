@@ -203,7 +203,9 @@ export function ScatterChart({ spec, width, setTip }: { spec: ScatterSpec; width
             <line {...fitLine} stroke="var(--surface)" strokeWidth={4} strokeLinecap="round" />
             <line {...fitLine} stroke="var(--text)" strokeWidth={1.75} strokeLinecap="round" />
             {fitLabel ? (
-              <text x={Math.min(fitLine.x2, width - right) - 2} y={fitLine.y2 + (fitLine.y2 < top + 20 ? 16 : -8)} fontSize={FS_TICK} textAnchor="end" fill="var(--text)" paintOrder="stroke" stroke="var(--surface)" strokeWidth={3}>
+              // Put R² in the plot corner the line does not reach (bottom right for a rising line, top
+              // right for a falling one) so the label never sits on the line itself.
+              <text x={width - right - 4} y={fitLine.y2 < fitLine.y1 ? top + plotH - 6 : top + 12} fontSize={FS_TICK} textAnchor="end" fill="var(--text)" paintOrder="stroke" stroke="var(--surface)" strokeWidth={3}>
                 {fitLabel}
               </text>
             ) : null}

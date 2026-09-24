@@ -257,7 +257,8 @@ function interpret(f: VarFreq): string {
     else if (Math.abs(sk) > 0.5) shape = ` The distribution is moderately skewed (skewness = ${apaNum(sk)}).`;
     else shape = ' The distribution is roughly symmetric.';
   }
-  return `${name} ranged from ${apaNum(m.min)} to ${apaNum(m.max)}, with a mean of ${apaNum(m.mean)} (SD = ${apaNum(m.sd)}) and a median of ${apaNum(med)} (N = ${fmtN(m.W)}).${shape}${missingPart}`;
+  const val = (x: number) => apaNum(x, Number.isInteger(x) ? 0 : 2);
+  return `${name} ranged from ${val(m.min)} to ${val(m.max)}, with a mean of ${apaNum(m.mean)} (SD = ${apaNum(m.sd)}) and a median of ${val(med)} (N = ${fmtN(m.W)}).${shape}${missingPart}`;
 }
 
 function apaFor(f: VarFreq): string | null {

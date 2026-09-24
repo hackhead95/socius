@@ -68,9 +68,13 @@ export function vlabel(v: Variable): string {
   return varDisplayName(v, 'label');
 }
 
-/** Short name for prose: the label if it is short, else the name. */
+/**
+ * Short name for prose: the label if it is short, else the name. Labels phrased as survey questions
+ * ("How many years have you lived here?") read badly inside a sentence, so those use the name too.
+ */
 export function vprose(v: Variable): string {
-  return v.label && v.label.length <= 60 ? v.label : v.name;
+  const l = (v.label ?? '').trim();
+  return l && l.length <= 60 && !l.includes('?') ? l : v.name;
 }
 
 export function requireNumeric(v: Variable, role: string): void {
@@ -98,7 +102,9 @@ export function coerceValue(v: Variable, x: unknown): number | string | null {
 }
 
 export function valueText(v: Variable, x: number | string): string {
-  return categoryLabel(v, typeof x === 'string' ? x.trimEnd() : x);
+  const t = categoryLabel(v, typeof x === 'string' ? x.trimEnd() : x);
+  // An empty string answer is a valid (non-missing) value in SPSS; show it visibly.
+  return typeof x === 'string' && t === '' ? '(blank)' : t;
 }
 
 /** Sorted distinct valid values of a variable among `rows`. */
@@ -163,10 +169,28 @@ export function filterCounts(ds: Dataset): { filtered: number; zeroWeight: numbe
 
 /** "N = 1,204 (weighted by wt); 12 excluded for missing values; 30 filtered out." */
 export function caseNote(ds: Dataset, N: number, nMissing: number, extra?: string): string {
-  const parts: string[] = [];
   const wv = weightVar(ds);
-  parts.push(`N = ${fmtCount(N)}${wv ? ` (weighted by ${wv.name})` : ''}`);
+  const parts: string[] = [`N = ${fmtCount(N)}${wv ? ` (weighted by ${wv.name})` : ''}`];
   if (nMissing > 0) parts.push(`${fmtCount(nMissing)} case${nMissing === 1 ? '' : 's'} excluded for missing values`);
+  return caseNoteTail(ds, parts, extra);
+}
+
+/**
+ * Case note for procedures where each variable uses its own valid cases (Descriptives, Frequencies):
+ * "N = 607 to 630 valid cases per variable; each variable uses its own valid cases (580 are valid on
+ * all 3); 30 filtered out by city."
+ */
+export function caseNoteRange(ds: Dataset, Ns: number[], listwiseN: number): string {
+  const wv = weightVar(ds);
+  const lo = Math.min(...Ns);
+  const hi = Math.max(...Ns);
+  const w = wv ? ` (weighted by ${wv.name})` : '';
+  const head = lo === hi ? `N = ${fmtCount(hi)}${w} for every variable` : `N = ${fmtCount(lo)} to ${fmtCount(hi)} valid cases per variable${w}`;
+  const parts = [head, `each variable uses its own valid cases (${fmtCount(listwiseN)} are valid on all ${Ns.length})`];
+  return caseNoteTail(ds, parts);
+}
+
+function caseNoteTail(ds: Dataset, parts: string[], extra?: string): string {
   const fc = filterCounts(ds);
   const fv = filterVar(ds);
   if (fc.filtered > 0) parts.push(`${fmtCount(fc.filtered)} filtered out${fv ? ` by ${fv.name}` : ''}`);
@@ -240,7 +264,7 @@ export function apaNum(x: number, decimals = 2, bounded = false): string {
 export function apaP(p: number): string {
   if (!Number.isFinite(p)) return 'p = n/a';
   if (p < 0.001) return 'p < .001';
-  if (p >= 0.9995) return 'p = 1.000';
+  if (p >= 0.9995) return 'p > .999';
   return `p = ${p.toFixed(3).replace(/^0\./, '.')}`;
 }
 
