@@ -100,7 +100,7 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   // at hackhead95.github.io could read. "Remember this key on this computer" keeps it in localStorage.
   const remember = dlg.getByRole('checkbox', { name: 'Remember this key on this computer' });
   await expect(remember).not.toBeChecked();
-  await expect(dlg.locator('.ai-remember')).toContainText('other sites hosted on hackhead95.github.io');
+  await expect(dlg.locator('.ai-remember')).toContainText(`other sites hosted on ${new URL(page.url()).host}`);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}'))).toMatchObject({ provider: 'gemini', gemini: { apiKey: '', model: '' } });
   expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('socius.ai.keys') ?? '{}').gemini)).toBe('AIza-e2e-key');
   await remember.check();

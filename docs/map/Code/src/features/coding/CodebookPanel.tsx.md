@@ -7,7 +7,7 @@ area: features/coding
 
 # src/features/coding/CodebookPanel.tsx
 
-*Module* · area [[features - coding|features/coding]] · 286 lines
+*Module* · area [[features - coding|features/coding]] · 289 lines
 
 > Codebook panel: hierarchical codes with counts, drag to reparent/reorder, quick actions.
 
@@ -25,8 +25,12 @@ area: features/coding
 - [[tree.ts]] · value
 - [[Modal.tsx]] · value
 
+## Tested by
+- [[ui-fixes.test.tsx]] · import
+
 ## Imported by
 - [[CodingWorkspace.tsx]] · value
+- [[ui-fixes.test.tsx]] · value
 
 ## Symbols
 
@@ -39,4 +43,4 @@ area: features/coding
 - Writes: [[collapsed|useCodingUi.collapsed]], [[pending|useCodingUi.pending]], [[selectedCodeId|useCodingUi.selectedCodeId]], [[useCodingUi/view|useCodingUi.view]]
 - Store actions: [[useCodingUi/set()|useCodingUi.set()]]
 - Opens: [[ai-codebook|coding: ai-codebook]], [[auto-code|coding: auto-code]], [[code-edit|coding: code-edit]], [[export|coding: export]], [[merge-code|coding: merge-code]]
-- Rendered by: [[CodingWorkspace|<CodingWorkspace>]]
+- Rendered by: [[CodingWorkspace|<CodingWorkspace>]], [[ui-fixes.test.tsx]]

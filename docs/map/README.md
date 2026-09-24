@@ -8,7 +8,7 @@ tools, error codes, prompts), browser storage keys, the output model (block kind
 exporters) and the tests that cover each of these.
 
 **Do not edit files in this folder by hand.** They are regenerated from the code. Current size:
-3011 nodes, 15650 edges, 267 bug leads.
+3012 nodes, 15656 edges, 267 bug leads.
 
 | File | What it is |
 |---|---|
@@ -62,7 +62,7 @@ The Graphify CLI (`pip install graphifyy`) can query this file too; these comman
 
 ### Node types
 
-`ai-error` (40) · `ai-feature` (5) · `ai-prompt` (10) · `ai-provider` (4) · `ai-tool` (14) · `area` (23) · `asset` (34) · `chart-type` (8) · `class` (27) · `command` (115) · `component` (221) · `config` (2) · `const` (204) · `dialog` (80) · `dialog-kind` (5) · `e2e-spec` (20) · `function` (1340) · `hook` (31) · `menu` (10) · `module` (239) · `output-kind` (4) · `output-source` (1) · `package` (18) · `palette-source` (6) · `procedure` (30) · `shortcut` (177) · `storage-key` (17) · `store` (11) · `store-action` (60) · `store-key` (73) · `submenu` (12) · `syntax` (40) · `test` (90) · `test-helper` (22) · `transform` (18)
+`ai-error` (40) · `ai-feature` (5) · `ai-prompt` (10) · `ai-provider` (4) · `ai-tool` (14) · `area` (23) · `asset` (34) · `chart-type` (8) · `class` (27) · `command` (115) · `component` (221) · `config` (2) · `const` (204) · `dialog` (80) · `dialog-kind` (5) · `e2e-spec` (20) · `function` (1340) · `hook` (31) · `menu` (10) · `module` (239) · `output-kind` (4) · `output-source` (1) · `package` (18) · `palette-source` (6) · `procedure` (30) · `shortcut` (177) · `storage-key` (17) · `store` (11) · `store-action` (60) · `store-key` (73) · `submenu` (12) · `syntax` (40) · `test` (91) · `test-helper` (22) · `transform` (18)
 
 ### Relations (edge types)
 
@@ -85,8 +85,8 @@ The Graphify CLI (`pip install graphifyy`) can query this file too; these comman
 | `has-variant` | Variants / Variant of | 8 |
 | `implemented-by` | Implemented by / Implements | 54 |
 | `implemented-in` | Implemented in / Implements provider | 15 |
-| `imports` | Imports / Imported by | 2037 |
-| `in-area` | Area / Modules | 371 |
+| `imports` | Imports / Imported by | 2040 |
+| `in-area` | Area / Modules | 372 |
 | `listens` | Listens to changes of / Change listeners | 1 |
 | `lists` | Lists / Listed by | 17 |
 | `logged-by` | Logged to Output by / Logs | 18 |
@@ -96,11 +96,11 @@ The Graphify CLI (`pip install graphifyy`) can query this file too; these comman
 | `references` | References / Referenced by (build config) | 2 |
 | `removes` | Removes / Removed by | 2 |
 | `rendered-by` | Rendered by / Renders | 85 |
-| `renders` | Renders / Rendered by | 449 |
+| `renders` | Renders / Rendered by | 450 |
 | `routes` | Routes dialog kind / Routed by | 5 |
 | `started-by` | Started by / Starts | 5 |
 | `suggests` | Suggests / Suggested by | 6 |
-| `tested-by` | Tested by / Tests | 857 |
+| `tested-by` | Tested by / Tests | 858 |
 | `throws` | Produces error code / Produced by | 96 |
 | `uses` | Uses / Used by | 2032 |
 | `writes` | Writes / Written by | 313 |

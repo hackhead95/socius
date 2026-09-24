@@ -1,8 +1,8 @@
 // Captures the screenshots for the beginner's guide from a running Socius build.
 //
 //   npx vite build --outDir /tmp/guide-agent/dist --emptyOutDir
-//   npx vite preview --outDir /tmp/guide-agent/dist --port 4251 --strictPort &
-//   node docs/guide/tools/capture-screenshots.mjs [--base http://localhost:4251/] [--out /tmp/guide-agent/raw] [section ...]
+//   npx vite preview --outDir /tmp/guide-agent/dist --port 4561 --strictPort &
+//   node docs/guide/tools/capture-screenshots.mjs [--base http://localhost:4561/] [--out /tmp/guide-agent/raw] [section ...]
 //
 // Writes full-resolution PNGs (1440x900 viewport, device scale factor 2, light theme) to --out.
 // Then run docs/guide/tools/process-images.py to crop/compress them into public/guide/img/.
@@ -19,7 +19,7 @@ const opt = (k, d) => {
   args.splice(i, 2);
   return v;
 };
-const BASE = opt('--base', 'http://localhost:4251/');
+const BASE = opt('--base', 'http://localhost:4561/');
 const OUT = opt('--out', '/tmp/guide-agent/raw');
 const EXE = opt('--chromium', process.env.PW_CHROMIUM || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined));
 const only = new Set(args);
@@ -33,7 +33,7 @@ const ORANGE = '#d9480f';
 let BROWSER = null;
 
 async function newPage(browser) {
-  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, colorScheme: 'light', acceptDownloads: true });
+  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, colorScheme: 'light', locale: 'en-GB', acceptDownloads: true });
   // Web fonts come from locally installed copies (see README); do not wait for Google Fonts.
   await context.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   await mockGemini(context);
@@ -54,7 +54,8 @@ async function launch() {
 // No request ever reaches Google: the Gemini API is answered here (see e2e/ai-features.spec.ts and
 // e2e/assistant.spec.ts). The AI text is written by hand from the sample survey's real results, and
 // the assistant's tool calls run on the live data in the page. The guide marks these answers as examples.
-const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash-lite'; // Socius picks the newest Flash-Lite model by default
+const GEMINI_MODEL_FLASH = 'gemini-3.6-flash';
 
 const EXPLAIN_TEXT = [
   '## What was tested\nWhether men, women and people of other genders differ in how safe they feel walking alone in their neighbourhood after dark. The chi-square test asks whether the answers could be independent of gender.\n\n',
@@ -113,21 +114,91 @@ function assistantParts(body) {
   ];
 }
 
+// Socius talks to Gemini through the Interactions API (POST /v1beta/interactions, see e2e/gemini-mock.ts).
+// Replies are written as generateContent-style parts and turned into Interactions steps here.
+
+/** An Interactions request in generateContent terms (contents with user/model turns), for assistantParts. */
+function legacyBody(body) {
+  const contents = [];
+  const push = (role, part) => {
+    const last = contents[contents.length - 1];
+    if (last?.role === role) last.parts.push(part);
+    else contents.push({ role, parts: [part] });
+  };
+  const steps = typeof body?.input === 'string' ? [{ type: 'user_input', content: [{ type: 'text', text: body.input }] }] : Array.isArray(body?.input) ? body.input : [];
+  for (const s of steps) {
+    if (s.type === 'user_input') push('user', { text: (s.content ?? []).map((c) => c.text ?? '').join('') });
+    else if (s.type === 'model_output') for (const c of s.content ?? []) push('model', { text: c.text });
+    else if (s.type === 'function_call') push('model', { functionCall: { name: s.name, args: s.arguments ?? {} } });
+    else if (s.type === 'function_result') push('user', { functionResponse: { name: s.name, response: { result: s.result } } });
+  }
+  return { contents, tools: body?.tools, stream: !!body?.stream };
+}
+
+let SEQ = 0;
+function partsToSteps(parts) {
+  const steps = [];
+  for (const p of parts) {
+    if (typeof p.text === 'string') {
+      const last = steps[steps.length - 1];
+      if (last?.type === 'model_output') last.content.push({ type: 'text', text: p.text });
+      else steps.push({ type: 'model_output', content: [{ type: 'text', text: p.text }] });
+    } else if (p.functionCall) steps.push({ type: 'function_call', id: `fc_${++SEQ}`, name: p.functionCall.name, arguments: p.functionCall.args ?? {} });
+  }
+  return steps;
+}
+
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+
+/** Reply with these parts: JSON, or the SSE event stream when the request streams (textChunks: one delta each). */
+function interactionReply(parts, stream, textChunks) {
+  const steps = partsToSteps(parts);
+  const status = steps.some((s) => s.type === 'function_call') ? 'requires_action' : 'completed';
+  if (!stream) return { status: 200, headers: CORS, contentType: 'application/json', body: JSON.stringify({ id: `int_${++SEQ}`, status, steps }) };
+  const ev = (o) => `data: ${JSON.stringify(o)}\n\n`;
+  let out = ev({ event_type: 'interaction.created', interaction: { id: `int_${++SEQ}`, status: 'in_progress' } });
+  steps.forEach((s, index) => {
+    if (s.type === 'model_output') {
+      out += ev({ event_type: 'step.start', index, step: { type: 'model_output', content: [] } });
+      const texts = textChunks ?? s.content.map((c) => c.text);
+      for (const t of texts) out += ev({ event_type: 'step.delta', index, delta: { type: 'text', text: t } });
+    } else {
+      out += ev({ event_type: 'step.start', index, step: { type: 'function_call', id: s.id, name: s.name, arguments: {} } });
+      out += ev({ event_type: 'step.delta', index, delta: { type: 'arguments_delta', arguments: JSON.stringify(s.arguments) } });
+    }
+    out += ev({ event_type: 'step.stop', index });
+  });
+  out += ev({ event_type: 'interaction.completed', interaction: { id: `int_${SEQ}`, status } });
+  out += 'data: [DONE]\n\n';
+  return { status: 200, headers: { ...CORS, 'Content-Type': 'text/event-stream' }, body: out };
+}
+
+/** While true, Google "refuses" the key (for the picture of a failed Test connection). */
+let GEMINI_REFUSE_KEY = false;
+/** While true, Google answers every request with a server error (for the error log pictures). */
+let GEMINI_SERVER_ERROR = false;
+
 async function mockGemini(context) {
   await context.route('https://generativelanguage.googleapis.com/**', async (route) => {
     const req = route.request();
-    const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
-    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
+    if (GEMINI_SERVER_ERROR && req.method() === 'POST')
+      return route.fulfill({ status: 500, headers: CORS, contentType: 'application/json', body: JSON.stringify({ error: { code: 500, message: 'Internal error encountered.', status: 'INTERNAL' } }) });
+    if (GEMINI_REFUSE_KEY)
+      return route.fulfill({
+        status: 400,
+        headers: CORS,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 400, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID', domain: 'googleapis.com', metadata: { service: 'generativelanguage.googleapis.com' } }] } }),
+      });
     if (req.method() === 'GET')
-      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ models: [{ name: `models/${GEMINI_MODEL}`, supportedGenerationMethods: ['generateContent'] }] }) });
-    const reply = (parts) => ({ candidates: [{ content: { role: 'model', parts }, finishReason: 'STOP' }] });
-    if (!req.url().includes('streamGenerateContent'))
-      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(reply([{ text: 'OK' }])) });
+      return route.fulfill({ status: 200, headers: CORS, contentType: 'application/json', body: JSON.stringify({ models: [GEMINI_MODEL, GEMINI_MODEL_FLASH].map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) }) });
     const body = req.postDataJSON();
+    const stream = !!body?.stream;
+    if (!body?.tools && !stream) return route.fulfill(interactionReply([{ text: 'OK' }], false)).catch(() => undefined);
     await new Promise((r) => setTimeout(r, 300));
-    const events = body.tools ? [assistantParts(body)] : EXPLAIN_TEXT.map((t) => [{ text: t }]);
-    const sse = events.map((parts) => `data: ${JSON.stringify(reply(parts))}\r\n\r\n`).join('');
-    return route.fulfill({ status: 200, headers: { ...cors, 'Content-Type': 'text/event-stream' }, body: sse }).catch(() => undefined);
+    if (body?.tools) return route.fulfill(interactionReply(assistantParts(legacyBody(body)), stream)).catch(() => undefined);
+    return route.fulfill(interactionReply([{ text: EXPLAIN_TEXT.join('') }], true, EXPLAIN_TEXT)).catch(() => undefined);
   });
 }
 
@@ -275,10 +346,10 @@ async function unmark(page) {
 }
 
 const manifest = {};
-async function shot(page, name, clip, note = '', { fab = !clip } = {}) {
+async function shot(page, name, clip, note = '', { fab = true } = {}) {
   const path = `${OUT}/${name}.png`;
-  // Toasts are transient; keep them out of the pictures. The floating Assistant button shows only in
-  // full-screen pictures (it would cover the corner of a cropped dialog or result).
+  // Toasts are transient; keep them out of the pictures. The Assistant button is docked at the right
+  // end of the view tabs, so it stays in the pictures unless a shot asks to hide it.
   await page.evaluate((fab) => {
     document.querySelectorAll('.toast').forEach((t) => (t.style.visibility = 'hidden'));
     document.querySelectorAll('.as-fab').forEach((b) => (b.style.visibility = fab ? '' : 'hidden'));
@@ -292,7 +363,8 @@ async function shot(page, name, clip, note = '', { fab = !clip } = {}) {
 /** Photograph the open dialog (the .modal element), optionally with callouts already drawn. */
 async function shotModal(page, name, p = 0) {
   const b = await box(page.locator('.modal'));
-  await shot(page, name, pad(b, p));
+  const vh = page.viewportSize()?.height ?? H;
+  await shot(page, name, pad(b, p, W, vh));
 }
 
 /** Make the window tall so a long output item is fully rendered, run fn, then restore. */
@@ -328,13 +400,24 @@ async function shotOutput(page, name, { from, to, height = 2400, p = 14 } = {}) 
 }
 
 // ---------------------------------------------------------------- sections
+// The live website's address, served from the local build (so addresses in the pictures are the real ones).
+const SITE = 'https://hackhead95.github.io';
+async function serveAsSite(context) {
+  const base = new URL(BASE);
+  await context.route(`${SITE}/socius/**`, async (route) => {
+    const url = route.request().url().replace(`${SITE}/socius/`, base.href);
+    await route.fulfill({ response: await route.fetch({ url }) });
+  });
+}
+
 const sections = {};
 
 sections.tour = async (page) => {
   await dismissBanner(page);
   await page.getByRole('tab', { name: 'Data View' }).click();
   await page.waitForTimeout(300);
-  const menubar = union(await box(page.getByRole('menuitem', { name: 'File', exact: true })), await box(page.getByRole('menuitem', { name: 'Help', exact: true })));
+  // Item 1 covers the Socius logo (the Home button) and the menus.
+  const menubar = union(await box(page.locator('.topbar .mark')), await box(page.getByRole('menuitem', { name: 'Help', exact: true })));
   const search = await box(page.locator('.topbar-search'));
   const dsbar = await box(page.locator('.datasetbar'));
   const tabs = union(await box(page.getByRole('tab', { name: 'Data View' })), await box(page.getByRole('tab', { name: /Text coding/ })));
@@ -356,6 +439,24 @@ sections.tour = async (page) => {
   ]);
   await shot(page, 'tour', null);
   await unmark(page);
+};
+
+// The Socius logo is the Home button: the start screen over the open data, with "Back to your data".
+sections.home = async (page) => {
+  await dismissBanner(page);
+  await page.locator('.topbar .mark').click();
+  await page.locator('.welcome-back').waitFor();
+  await page.waitForTimeout(300);
+  await mark(page, [
+    { n: 1, loc: page.locator('.topbar .mark'), at: 'r', dx: -4 },
+    { n: 2, loc: page.locator('.welcome-back button'), at: 'l' },
+  ]);
+  const act = await box(page.locator('.welcome-actions'));
+  await shot(page, 'home', { x: 0, y: 0, width: W, height: Math.min(H, act.y + act.height + 24) });
+  await unmark(page);
+  await page.locator('.welcome-back button').click();
+  await page.locator('.grid-scroll').waitFor();
+  await page.waitForTimeout(300);
 };
 
 sections.open = async (page) => {
@@ -438,6 +539,46 @@ sections.variables = async (page) => {
   await page.getByRole('tab', { name: 'Data View' }).click();
 };
 
+
+// Data > Define variable properties...: scan the trust items and hh_income (photographed, then cancelled).
+sections.define = async (page) => {
+  await dismissBanner(page);
+  await menu(page, 'Data', 'Define variable properties...');
+  const dlg = page.getByRole('dialog', { name: 'Define variable properties' });
+  await dlg.waitFor();
+  const search = dlg.getByLabel('Search Variables to scan');
+  for (const n of ['trust1', 'trust2', 'trust3', 'trust4', 'trust5', 'hh_income']) {
+    await search.fill(n);
+    await dlg.locator('.varpicker-item', { has: page.locator('.varpicker-name', { hasText: new RegExp(`^${n}$`) }) }).click();
+  }
+  await search.fill('');
+  await page.waitForTimeout(300);
+  await shotModal(page, 'dvp-choose');
+  await dlg.getByRole('button', { name: 'Scan 6 variables' }).click();
+  await page.waitForTimeout(500);
+  // A code that is not in the data yet: 7 = Not applicable (flagged as a likely missing code).
+  await dlg.getByLabel('New value', { exact: true }).fill('7');
+  await dlg.getByLabel('Label for the new value').fill('Not applicable');
+  await dlg.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.waitForTimeout(300);
+  console.log('  dvp:', (await dlg.innerText()).replace(/\n+/g, ' | ').slice(0, 1200));
+  await tall(page, 1500, async () => {
+    const row = (v) => dlg.locator(`.dvp-row[data-value="${v}"]`);
+    await mark(page, [
+      { n: 1, loc: dlg.getByRole('navigation', { name: 'Scanned variables' }), at: 'tl', ring: false },
+      { n: 2, loc: dlg.getByTestId('measure-suggestion'), at: 'tl', ring: true },
+      { n: 3, loc: row('8').locator('[data-flag]').first(), at: 'r' },
+      { n: 4, loc: row('7').locator('[data-flag]').first(), at: 'r' },
+      { n: 5, loc: dlg.getByRole('button', { name: /^Apply/ }).last(), at: 't' },
+    ]);
+    await shotModal(page, 'define-properties');
+    await unmark(page);
+  });
+  await dlg.getByRole('button', { name: 'Cancel', exact: true }).click();
+  const discard = page.getByRole('button', { name: 'Discard changes' });
+  if (await discard.count()) await discard.click();
+  await page.waitForTimeout(300);
+};
 
 const opt_ = (page, listbox, n) => page.locator('.modal').getByRole('listbox', { name: listbox, exact: true }).getByRole('option', { name: new RegExp(`^${n}\\b`) }).first();
 const check = (page, label) => page.locator('.modal label.check', { hasText: label }).first().locator('input');
@@ -684,14 +825,94 @@ sections.search = async (page) => {
   await page.waitForTimeout(200);
 };
 
-sections.help = async (page) => {
-  await dismissBanner(page);
-  await hoverMenu(page, 'Help');
-  const m = await box(page.locator('[role=menu]').last());
-  const help = await box(page.getByRole('menuitem', { name: 'Help', exact: true }));
-  console.log('  help menu:', (await page.locator('[role=menu]').last().innerText()).replace(/\n+/g, ' | '));
-  await shot(page, 'help-menu', pad(union(help, m, { x: m.x, y: m.y, width: m.width + 20, height: m.height }), 14));
-  await page.keyboard.press('Escape');
+// Help: the error log, the Help menu with its blue dot, the feedback dialog and About (storage). Runs in
+// a fresh browser context so its problems do not show up elsewhere.
+sections.help = async () => {
+  const { context, page } = await newPage(BROWSER);
+  try {
+    await serveAsSite(context);
+    await page.goto(`${SITE}/socius/`);
+    await page.getByRole('button', { name: /Load sample survey/ }).click();
+    await page.locator('.grid-scroll').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(800);
+    await dismissBanner(page);
+    // A downloaded on-device model, as the browser stores it (small dummy files), for Storage used.
+    await page.evaluate(async () => {
+      const base = 'https://huggingface.co/mlc-ai/Qwen2.5-1.5B-Instruct-q4f16_1-MLC/resolve/main/';
+      const c = await caches.open('webllm/model');
+      await c.put(base + 'tensor-cache.json', new Response(JSON.stringify({ records: [{ dataPath: 'params_shard_0.bin' }, { dataPath: 'params_shard_1.bin' }] })));
+      await c.put(base + 'params_shard_0.bin', new Response(new Uint8Array(6e6)));
+      await c.put(base + 'params_shard_1.bin', new Response(new Uint8Array(6e6)));
+    });
+    // 1. A file that is not really an SPSS file (a warning in the log).
+    const bad = `${OUT}/not-really-spss.sav`;
+    writeFileSync(bad, 'This is a text file with the wrong ending.\n'.repeat(20));
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.keyboard.press('Control+o')]);
+    await fc.setFiles(bad);
+    await page.waitForTimeout(1200);
+    // 2. An AI request that fails on Google's side (an error: the blue dot on Help).
+    GEMINI_SERVER_ERROR = true;
+    await menu(page, 'AI', 'AI assistant settings...');
+    const ai = page.getByRole('dialog', { name: 'AI assistant' });
+    await ai.getByRole('radio', { name: /Google Gemini/ }).check();
+    await page.locator('#ai-gemini-key').fill('AQ.Ab8RN6-example-key-for-the-guide-xxxxxxxxxxxxxxxxxxxxxxxx');
+    await ai.getByRole('button', { name: 'Test connection' }).click();
+    await page.locator('.ai-check-error').waitFor({ timeout: 20000 });
+    GEMINI_SERVER_ERROR = false;
+    await ai.getByRole('button', { name: 'Forget key' }).click().catch(() => {});
+    await ai.getByRole('button', { name: 'Done' }).click();
+    await page.waitForTimeout(1500);
+
+    await hoverMenu(page, 'Help');
+    const m = await box(page.locator('[role=menu]').last());
+    const help = await box(page.getByRole('menuitem', { name: 'Help', exact: true }));
+    console.log('  help menu:', (await page.locator('[role=menu]').last().innerText()).replace(/\n+/g, ' | '));
+    await shot(page, 'help-menu', pad(union(help, m, { x: m.x, y: m.y, width: m.width + 20, height: m.height }), 14));
+    await item(page, 'Error log...').click();
+    const log = page.getByRole('dialog', { name: 'Error log' });
+    await log.waitFor();
+    const fileItem = log.locator('.errlog-item', { has: page.locator('.errlog-area', { hasText: 'Opening files' }) }).first();
+    await fileItem.locator('summary').click().catch(() => {});
+    await page.waitForTimeout(300);
+    console.log('  error log:', (await log.innerText()).replace(/\n+/g, ' | ').slice(0, 1200));
+    await mark(page, [
+      { n: 1, loc: log.getByLabel('Filter by area'), at: 'r' },
+      { n: 2, loc: fileItem.locator('summary'), at: 'l', ring: false, dx: 2 },
+      { n: 3, loc: log.getByRole('button', { name: 'Copy report' }), at: 't' },
+      { n: 4, loc: log.getByRole('button', { name: /^Report a problem/ }), at: 't' },
+    ]);
+    await shotModal(page, 'error-log', 34);
+    await unmark(page);
+    await log.getByRole('button', { name: /^Report a problem/ }).click();
+    const fb = page.getByRole('dialog', { name: 'Send feedback or report a problem' });
+    await fb.waitFor();
+    await page.waitForTimeout(300);
+    console.log('  feedback:', (await fb.innerText()).replace(/\n+/g, ' | ').slice(0, 900));
+    await shotModal(page, 'feedback-dialog');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await closeMenus(page);
+    while (await page.locator('.modal').count()) {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(200);
+    }
+
+    // Help > About Socius: what is stored in this browser, and how much room it takes.
+    await menu(page, 'Help', 'About Socius');
+    const about = page.getByRole('dialog', { name: 'About Socius' });
+    await about.waitFor();
+    await tall(page, 1800, async (vh) => {
+      await page.waitForTimeout(800);
+      const a = await box(about.locator('.about-storage'));
+      const b = await box(about.locator('.about-storage-use'));
+      const mb = await box(page.locator('.modal'));
+      console.log('  about storage:', (await about.locator('.about-storage-use').innerText()).replace(/\n+/g, ' | '));
+      await shot(page, 'about-storage', { x: mb.x + 1, y: a.y - 14, width: mb.width - 2, height: b.y + b.height - a.y + 20 });
+    });
+    await page.keyboard.press('Escape');
+  } finally {
+    await context.close();
+  }
 };
 
 
@@ -870,7 +1091,9 @@ sections.interviews = async (page) => {
   await page.waitForTimeout(300);
   if (await page.locator('.modal').count()) await page.locator('.modal button', { hasText: /Cancel|Close/ }).first().click();
 
-  await menu(page, 'Text coding', 'Load sample interviews');
+  // Text coding > Load sample interviews... opens the Sample interviews tab of Import sources.
+  await menu(page, 'Text coding', 'Load sample interviews...');
+  await page.locator('.modal button', { hasText: /^\s*Load \d+ interviews?\s*$/ }).click();
   await page.waitForTimeout(800);
   await page.evaluate(() => document.querySelectorAll('.toast').forEach((t) => (t.style.display = 'none')));
   await codeTab(page, 'Documents');
@@ -984,30 +1207,53 @@ sections.ai = async () => {
     const dlg = page.getByRole('dialog', { name: 'AI assistant' });
     await dlg.waitFor();
     await dlg.getByRole('radio', { name: /Google Gemini/ }).check();
-    await page.locator('#ai-gemini-key').fill('AIzaSyD-example-key-for-the-guide-0000');
+    // An obviously fake key in the new "AQ." format (the field hides it anyway).
+    await page.locator('#ai-gemini-key').fill('AQ.Ab8RN6-example-key-for-the-guide-xxxxxxxxxxxxxxxxxxxxxxxx');
     await page.waitForTimeout(400);
     await tall(page, 1500, async (vh) => {
       await mark(page, [
         { n: 1, loc: dlg.locator('label.ai-choice', { hasText: 'Google Gemini' }), at: 'li', ring: true, dx: -40 },
         { n: 2, loc: dlg.getByRole('link', { name: 'Google AI Studio' }), at: 'r', dx: 262 },
         { n: 3, loc: page.locator('#ai-gemini-key'), at: 'tr' },
-        { n: 4, loc: page.locator('#ai-gemini-model'), at: 'tr' },
-        { n: 5, loc: dlg.getByRole('button', { name: 'Test connection' }), at: 'r' },
+        { n: 4, loc: page.locator('#ai-gemini-remember'), at: 'r', dx: 214 },
+        { n: 5, loc: page.locator('#ai-gemini-choice'), at: 'tr' },
+        { n: 6, loc: dlg.getByRole('button', { name: 'Test connection' }), at: 'r' },
       ]);
       await shot(page, 'ai-gemini', pad(await box(page.locator('.modal')), 0, W, vh));
       await unmark(page);
     });
+    // A refused key: the step-by-step check stops at "Key accepted".
+    GEMINI_REFUSE_KEY = true;
+    await dlg.getByRole('button', { name: 'Test connection' }).click();
+    await page.locator('.ai-check-error').waitFor({ timeout: 15000 });
+    await page.waitForTimeout(300);
+    console.log('  failed check:', (await page.locator('.ai-check').innerText()).replace(/\n+/g, ' | '));
+    await tall(page, 1500, async (vh) => {
+      await page.locator('.ai-check').scrollIntoViewIfNeeded();
+      const mb = await box(page.locator('.modal'));
+      const rb = union(await box(page.locator('.ai-test')), await box(page.locator('.ai-check')));
+      await mark(page, [
+        { n: 1, loc: page.locator('.ai-check-step[data-step="key"]'), at: 'li', ring: false, dx: 230 },
+        { n: 2, loc: page.locator('.ai-check-error'), at: 'tr', ring: false, dx: -30, dy: 12 },
+        { n: 3, loc: dlg.getByRole('button', { name: 'Copy details' }), at: 'l' },
+      ]);
+      await shot(page, 'ai-check-failed', { x: mb.x + 1, y: rb.y - 14, width: mb.width - 2, height: rb.height + 26 });
+      await unmark(page);
+    });
+    GEMINI_REFUSE_KEY = false;
     await dlg.getByRole('button', { name: 'Test connection' }).click();
     await page.locator('.ai-ready').waitFor({ timeout: 15000 });
     await page.waitForTimeout(300);
     console.log('  test:', (await page.locator('.ai-test').innerText()).replace(/\n+/g, ' | '));
+    console.log('  check:', (await page.locator('.ai-check').innerText()).replace(/\n+/g, ' | '));
     await tall(page, 1500, async (vh) => {
       await page.locator('.ai-ready').scrollIntoViewIfNeeded();
       const mb = await box(page.locator('.modal'));
       const rb = union(await box(page.locator('.ai-test')), await box(page.locator('.ai-ready')));
       await mark(page, [
         { n: 1, loc: page.locator('.ai-ok'), at: 'r' },
-        { n: 2, loc: page.locator('.ai-ready'), at: 'tr', ring: false, dx: -30, dy: 12 },
+        { n: 2, loc: page.locator('.ai-check-steps'), at: 'li', ring: false, dx: 420 },
+        { n: 3, loc: page.locator('.ai-ready'), at: 'tr', ring: false, dx: -30, dy: 12 },
       ]);
       await shot(page, 'ai-ready', { x: mb.x + 1, y: rb.y - 14, width: mb.width - 2, height: rb.height + 28 });
       await unmark(page);
@@ -1173,6 +1419,67 @@ sections.ai = async () => {
     await page.keyboard.press('Escape');
   } finally {
     await context.close();
+  }
+};
+
+// Ollama on this computer, seen from the real website address: the app is served as
+// https://hackhead95.github.io/socius/ through a route, and a stand-in for Ollama
+// (scripts/diagnostics/fake-ollama.mjs, with Ollama's real CORS rules) listens on port 11434. Ollama
+// refuses the website until OLLAMA_ORIGINS lists it, so the check stops at step 2 with the fix.
+sections.local = async () => {
+  const { startFakeOllama } = await import('../../../scripts/diagnostics/fake-ollama.mjs');
+  let fake;
+  try {
+    fake = await startFakeOllama({ port: 11434, models: ['llama3.2:latest'], cors: 'ollama', origins: [] });
+  } catch (e) {
+    console.log('  [skip] port 11434 is in use:', e.message);
+    return;
+  }
+  const { context, page } = await newPage(BROWSER);
+  try {
+    await serveAsSite(context);
+    // Chrome's "Apps on device" / "Local network access" permission: allowed, as after clicking Allow.
+    try {
+      const info = await (await context.newCDPSession(page)).send('Target.getTargetInfo');
+      const cdp = await BROWSER.newBrowserCDPSession();
+      await cdp.send('Browser.setPermission', { permission: { name: 'local-network-access' }, setting: 'granted', origin: SITE, browserContextId: info.targetInfo.browserContextId });
+    } catch {
+      /* this Chromium has no such permission */
+    }
+    await page.addInitScript(() => localStorage.setItem('socius.ai', JSON.stringify({ provider: 'openai', openai: { preset: 'ollama', baseUrl: 'http://localhost:11434/v1', apiKey: '', model: 'llama3.2' } })));
+    await page.goto(`${SITE}/socius/`);
+    await page.getByRole('button', { name: /Load sample survey/ }).click();
+    await page.locator('.grid-scroll').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(600);
+    await dismissBanner(page);
+    await menu(page, 'AI', 'AI assistant settings...');
+    const dlg = page.getByRole('dialog', { name: 'AI assistant' });
+    const region = dlg.getByRole('region', { name: 'Program on this computer' });
+    await region.waitFor();
+    await region.getByRole('button', { name: 'Test connection' }).click();
+    const allowed = dlg.locator('.ai-check-step[data-step="allowed"]');
+    await allowed.locator('.ai-origins').waitFor({ timeout: 20000 });
+    await allowed.getByRole('button', { name: /^Windows/ }).click();
+    await page.waitForTimeout(300);
+    console.log('  local check:', (await region.innerText()).replace(/\n+/g, ' | ').slice(0, 1500));
+    await tall(page, 2000, async (vh) => {
+      await region.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      const mb = await box(page.locator('.modal'));
+      const rb = await box(region);
+      await mark(page, [
+        { n: 1, loc: region.locator('.ai-local-steps summary'), at: 'li', ring: false, dx: 150 },
+        { n: 2, loc: region.getByRole('button', { name: 'Test connection' }), at: 'r' },
+        { n: 3, loc: dlg.locator('.ai-check-step[data-step="running"]'), at: 'tr', ring: false, dx: -40, dy: 14 },
+        { n: 4, loc: allowed, at: 'tr', ring: false, dx: -40, dy: 14 },
+        { n: 5, loc: allowed.locator('.ai-os'), at: 'li', ring: false, dx: 480 },
+      ]);
+      await shot(page, 'ai-ollama', { x: mb.x + 1, y: rb.y - 10, width: mb.width - 2, height: rb.height + 20 });
+      await unmark(page);
+    });
+  } finally {
+    await context.close();
+    await fake.close();
   }
 };
 

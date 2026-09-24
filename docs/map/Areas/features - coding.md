@@ -6,7 +6,7 @@ area: features/coding
 
 # Area: features/coding
 
-22 files, 5586 lines.
+22 files, 5589 lines.
 
 ## Depends on (module imports)
 - [[lib - coding|lib/coding]]: 45

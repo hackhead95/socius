@@ -14,6 +14,7 @@ type: package
 - [[data.spec.ts]] · value
 - [[quant.spec.ts]] · value
 - [[subpath.spec.ts]] · value
+- [[guideLinks.test.ts]] · value
 - [[helpTopics.test.ts]] · value
 - [[navigation-audit.test.tsx]] · value
 - [[ui-overlays.test.tsx]] · value

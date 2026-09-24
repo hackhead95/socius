@@ -239,7 +239,7 @@ function RememberKey({ which, id }: { which: 'gemini' | 'openai'; id: string }) 
       </label>
       <span className="help">
         {s.remember[which] ? 'Kept in this browser until you click Forget key. ' : 'Off: the key is forgotten when you close this tab. '}
-        Anyone using this browser profile, and other sites hosted on hackhead95.github.io, could read a remembered key. Leave it off on shared computers.
+        Anyone using this browser profile, and other sites hosted on {window.location.host}, could read a remembered key. Leave it off on shared computers.
       </span>
     </div>
   );

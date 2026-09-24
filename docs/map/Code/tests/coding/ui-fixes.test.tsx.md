@@ -7,7 +7,7 @@ area: tests
 
 # tests/coding/ui-fixes.test.tsx
 
-*Test file* · area [[tests]] · 251 lines
+*Test file* · area [[tests]] · 270 lines
 
 > @vitest-environment jsdom Regression tests for the Text coding bugs from the QA crawl (docs/qa/UI-BUGS.md): UI-002, UI-008, UI-015, UI-016, UI-018, UI-019, UI-023, UI-029 and UI-030.
 
@@ -29,6 +29,8 @@ area: tests
   - the Reliability tab says it needs two coders while there is one
 - **UI-019: Code frequencies shows theme totals**
   - shows a theme with the total of its sub-codes, not 0 / 0.0%
+- **Codebook panel counts match Code frequencies**
+  - shows a theme with its sub-codes included, not 0 · 0
 - **UI-018 / UI-029: the worked example is short in the toast and matches the app**
   - names real menu items, and counts codes the way the codebook does
   - loads with a short toast; the next steps are in the note, which stays
@@ -48,6 +50,7 @@ area: tests
 - [[core/types.ts]] · type-only
 - [[coding/actions.ts]] · value
 - [[AnalyseView.tsx]] · dynamic, value
+- [[CodebookPanel.tsx]] · value
 - [[CodingDialog.tsx]] · value
 - [[CodingWorkspace.tsx]] · value
 - [[exampleGuide.ts]] · value
@@ -76,6 +79,7 @@ area: tests
 
 ## Renders
 - [[AnalyseView|<AnalyseView>]]
+- [[CodebookPanel|<CodebookPanel>]]
 - [[CodingDialog|<CodingDialog>]]
 - [[CodingWorkspace|<CodingWorkspace>]]
 - [[MemosView|<MemosView>]]
@@ -119,6 +123,7 @@ area: tests
 - [[core/types.ts]] · import
 - [[coding/actions.ts]] · import
 - [[AnalyseView.tsx]] · import
+- [[CodebookPanel.tsx]] · import
 - [[CodingDialog.tsx]] · import
 - [[CodingWorkspace.tsx]] · import
 - [[exampleGuide.ts]] · import
@@ -132,4 +137,4 @@ area: tests
 - [[Import documents|Text coding > Import documents...]] · menu label
 
 ## Private helpers
-SAV (line 26) · sample (line 27) · responses() (line 48)
+SAV (line 27) · sample (line 28) · responses() (line 49)

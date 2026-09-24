@@ -12,6 +12,7 @@ type: package
 - [[features.test.ts]] · value
 - [[about-storage.test.tsx]] · value
 - [[error-boundary.test.tsx]] · value
+- [[guideLinks.test.ts]] · value
 - [[helpTopics.test.ts]] · value
 - [[menu-knowledge.test.ts]] · value
 - [[navigation-audit.test.tsx]] · value

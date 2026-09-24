@@ -14,6 +14,7 @@ import { addCoder, addDocs, createCode, setWholeResponseCode } from '../../src/f
 import { useCodingUi } from '../../src/features/coding/uiStore';
 import { CodingWorkspace } from '../../src/features/coding/CodingWorkspace';
 import { AnalyseView } from '../../src/features/coding/AnalyseView';
+import { CodebookPanel } from '../../src/features/coding/CodebookPanel';
 import { MemosView } from '../../src/features/coding/MemosView';
 import { MenuButton, placeMenu } from '../../src/features/coding/ui';
 import { CodingDialog } from '../../src/features/coding/CodingDialog';
@@ -176,6 +177,24 @@ describe('UI-019: Code frequencies shows theme totals', () => {
     const nums = Array.from(row.querySelectorAll('td.num')).map((td) => td.textContent);
     expect(nums).toEqual(['4', '3', '75.0%']); // 4 segments; 3 of 4 responses (r1 counts once)
     expect(screen.queryByText('Incl. sub-codes')).toBeNull();
+  });
+});
+
+describe('Codebook panel counts match Code frequencies', () => {
+  it('shows a theme with its sub-codes included, not 0 · 0', () => {
+    addDocs(responses(4));
+    const theme = createCode('Infrastructure and services');
+    const water = createCode('Water supply', theme.id);
+    const roads = createCode('Roads', theme.id);
+    setWholeResponseCode(['r0', 'r1'], water.id);
+    setWholeResponseCode(['r1', 'r2'], roads.id);
+    render(<CodebookPanel />);
+    const row = screen.getByText('Infrastructure and services').closest('[role="treeitem"]')!;
+    const count = row.querySelector('.cw-codecount')!;
+    expect(count.textContent).toBe('4 · 3');
+    expect(count.getAttribute('title')).toMatch(/including sub-codes \(0 coded to this theme itself\)/);
+    const leaf = screen.getByText('Water supply').closest('[role="treeitem"]')!.querySelector('.cw-codecount')!;
+    expect(leaf.textContent).toBe('2 · 2');
   });
 });
 

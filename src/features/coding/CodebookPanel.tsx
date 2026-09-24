@@ -137,8 +137,11 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
         {visible.map((n) => {
           const c = n.code;
           const kids = childCount.get(c.id) ?? 0;
-          const segN = counts.seg.get(c.id) ?? 0;
-          const docN = counts.docs.get(c.id)?.size ?? 0;
+          const ownN = counts.seg.get(c.id) ?? 0;
+          // A theme shows its total including sub-codes, matching Code frequencies.
+          const ids = kids ? [c.id, ...descendantIds(codes, c.id)] : [c.id];
+          const segN = kids ? ids.reduce((t, id) => t + (counts.seg.get(id) ?? 0), 0) : ownN;
+          const docN = kids ? new Set(ids.flatMap((id) => [...(counts.docs.get(id) ?? [])])).size : (counts.docs.get(c.id)?.size ?? 0);
           const isOver = drag?.over === c.id;
           return (
             <div
@@ -191,7 +194,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
                 <span className="cw-codename-text">{c.name}</span>
               </button>
               {props.quickKeys && quickIndex.has(c.id) ? <span className="kbd cw-qk">{quickIndex.get(c.id)}</span> : null}
-              <span className="cw-codecount num" title={`${segN} segments in ${docN} sources`}>
+              <span className="cw-codecount num" title={kids ? `${segN} segments in ${docN} sources, including sub-codes (${ownN} coded to this theme itself)` : `${segN} segments in ${docN} sources`}>
                 {segN}
                 <span className="faint"> · {docN}</span>
               </span>
@@ -234,7 +237,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
           </div>
         ) : null}
       </div>
-      <div className="cw-panel-foot help">Counts: segments · sources. Drag a code onto another to make it a sub-code.</div>
+      <div className="cw-panel-foot help">Counts: segments · sources (themes include their sub-codes). Drag a code onto another to make it a sub-code.</div>
 
       {colorFor ? (
         <Floating anchor={colorFor.anchor} onClose={() => setColorFor(null)} label="Code colour" width={196}>

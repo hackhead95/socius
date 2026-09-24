@@ -34,7 +34,7 @@ Nothing. Socius is free to use. There is no account, no sign-up and no trial per
 
 ## Your data stays on your computer
 
-Socius runs entirely inside your browser. When you open a file, it is read on your computer and is never uploaded anywhere. Socius keeps a copy of your current work in the browser so it is there when you come back, but that copy lives only in this browser on this computer. To keep your work safe, save a project file (see [Saving and sharing your work](#saving-and-sharing-your-work)).
+Socius runs entirely inside your browser. When you open a file, it is read on your computer and is never uploaded anywhere. Socius keeps a copy of your current work in the browser so it is there when you come back, but that copy lives only in this browser on this computer. To keep your work safe, save a project file (see [Saving and sharing your work](#saving-and-sharing-your-work)). **Help > About Socius** lists everything Socius keeps in the browser (see [What Socius keeps in your browser](#what-socius-keeps-in-your-browser)).
 
 The one exception is the optional AI help. It is off until you set it up, and it never sends anything until you click a button or ask a question. Each AI feature tells you what it will send, and to whom, before it does (see [Getting help from AI](#getting-help-from-ai)).
 
@@ -62,19 +62,33 @@ Click **Load sample survey** now. The practice data opens, and you see the main 
 
 The numbers in the picture show the parts of the screen:
 
-1. **Menu bar.** Everything Socius can do is in these menus: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, AI and Help.
+1. **Home button and menu bar.** The **Socius** logo at the far left is the Home button: it takes you back to the start screen (see below). Everything Socius can do is in the menus next to it: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, AI and Help. Click a menu to open it; while it is open, point at another menu to open that one instead.
 2. **Search.** Type what you are looking for, such as "chi square" or a variable name, and Socius finds the menu item, variable, result or help page (see [Finding anything with Search](#finding-anything-with-search)).
-3. **AI, Feedback, Undo, Redo and theme.** The **AI** chip shows whether AI help is set up ("not set up" until you choose an option). **Feedback** opens a form to tell us about a problem. Undo and Redo reverse your last changes. The last button switches between light and dark colours.
+3. **AI, Feedback, Undo, Redo and theme.** The **AI** chip shows whether AI help is set up ("not set up" until you choose an option). **Feedback** opens a short dialog for reporting a problem or suggesting an idea (see [Giving feedback](#giving-feedback)). Undo and Redo reverse your last change in the tab you are in. The last button switches between light and dark colours.
 4. **Dataset bar.** The name of the open dataset, how many cases (rows) and variables (columns) it has, and small labels that tell you when a weight or a filter is switched on.
 5. **Main tabs.** **Data View** shows the data, one row per respondent. **Variable View** describes the variables. **Output** collects your results. **Text coding** is where you code interviews and open-ended answers.
-6. **Variable list.** All your variables with their labels. Type in the search box to find one quickly. **View > Variable list** hides and shows it.
+6. **Variable list.** All your variables with their labels. Type in the search box to find one quickly. **View > Variable list** hides and shows it. In a narrow window (below about 900 pixels wide, such as a tablet), the list is hidden to give the data more room, and **View > Variable list** opens it as a drawer over the page.
 7. **Toolbar.** Buttons for the current tab. In Data View you can switch between codes and value labels, add cases or variables, sort, and search.
 8. **Data grid.** The data itself. Each row is a case (usually a respondent) and each column is a variable (usually a question).
-9. **Assistant button.** Opens the Socius assistant, which answers questions about your data and methods once AI help is set up (see [The Socius assistant](#the-socius-assistant)).
+9. **Assistant button.** At the right end of the row of tabs. It opens the Socius assistant, which answers questions about your data and methods once AI help is set up (see [The Socius assistant](#the-socius-assistant)). On a phone it shows only its icon.
 
 :::spss For SPSS users
 Data View, Variable View and the Output tab work like their SPSS counterparts. The main difference is that output lives in a tab of the same window instead of a separate viewer window.
 :::
+
+## Coming back to the start screen
+
+Click the **Socius** logo (1) at any time to see the start screen again. From there you can open another data file or project, load the sample survey, or pick a recent project. While something is open, a bar at the top says what it is, for example "Open now: Urban trust survey (sample)". Click **Back to your data** (2), or any tab, to return to your work. (When only output or coding is open, the button says **Back to Output** or **Back to Text coding**.)
+
+![The start screen, opened with the Socius logo (1). Back to your data (2) returns to your work.](img/home.png){width=100 .big}
+
+Opening a file from the start screen replaces the open data, just like **File > Open data file**. If you have unsaved changes, Socius asks first.
+
+## Small messages and dialogs
+
+After many actions, a small message appears at the bottom of the screen for a few seconds, for example "Created agegrp by recoding age." Some messages have a button: **Undo** takes the action back, and **Show** takes you to the variable you just made. If the same message appears twice, the new one replaces the old one instead of piling up. Messages never cover the buttons of an open dialog.
+
+A dialog with boxes to fill in or tick stays open if you click the dimmed area around it by mistake, so you do not lose your choices; its edge briefly lights up to show it is still waiting. To close it, click **Cancel** or press [[Esc]]. Dialogs that only show information close with a click outside.
 
 ## The sample survey
 
@@ -122,7 +136,9 @@ Start typing. Use the arrow keys to move through the results, [[Enter]] to open 
 | a word from your interviews, such as water | Once you have texts in Text coding: **Search in texts for "water"** lists every passage that contains it (Keyword in context). |
 | any question | **Ask the assistant: ...** (always the last line) sends your question to the Socius assistant. |
 
-With an empty box, Search shows **Recent** (what you opened from Search lately) and **Suggestions**. Commands that cannot run yet are greyed out and say why, for example "Open or create a dataset first".
+With an empty box, Search shows **Recent** (what you opened from Search lately) and **Suggestions**. Commands that cannot run yet are greyed out and say why, for example "Open or create a dataset first". If you choose one anyway, Search explains what is missing. When a command needs data, it offers two buttons: **Open data file...** and **Load sample survey**.
+
+Greyed-out items in the menus work the same way: point at one to see why it is not available yet.
 
 # Opening your data
 
@@ -167,6 +183,28 @@ The most important columns are:
 4. **Missing.** Codes that mean "no real answer", such as 8 = Don't know or 9 = Refused.
 5. **Measure.** The measurement level: nominal, ordinal or scale.
 
+## Rename a variable
+
+Short, clear names make your output easier to read. To rename a variable:
+
+1. In Variable View, double-click its cell in the **Name** column (or click the cell and press [[Enter]] or [[F2]], or just start typing).
+2. Type the new name. You can click inside the box to fix a typo.
+3. Press [[Enter]] or [[Tab]], or click somewhere else.
+
+In Data View, double-clicking a column heading takes you to Variable View with that variable's name ready to change.
+
+The rules come from SPSS, so your file still opens there:
+
+- Start with a letter. Letters from any alphabet work, so a Bengali name such as বয়স is fine.
+- Use only letters, digits and `_ . @ # $`. No spaces: write `age_group`, not `age group`.
+- Do not end with `.` or `_`.
+- Every name must be different. Capitals do not count, so `age` and `AGE` are the same name. Changing only the capitals (`age` to `Age`) is fine.
+- At most 64 bytes: 64 English letters, or about 21 Bengali letters.
+
+If a name breaks a rule, a message under the cell says why and suggests a fix, for example "Names cannot contain spaces. Try age_group." Correct it and press [[Enter]] again, or press [[Esc]] to cancel. If you click elsewhere, the old name stays and a short message says why.
+
+Renaming never breaks anything: weights, filters, exported codes and earlier results follow the variable, not its old name. **Edit > Undo** shows "Undo rename of" and the old name.
+
 ## Value labels
 
 Click a cell in the **Values** column and then the small **...** button (or press [[Enter]]) to see or edit the value labels.
@@ -186,7 +224,29 @@ Click a cell in the **Missing** column and then its **...** button.
 You can choose **No missing values**, **Discrete missing values** (up to three codes, such as 8 and 9), or **Range plus one optional discrete value** (for example 90 to 99).
 
 :::tip Declare it once, use it everywhere
-If many variables share the same coding, such as all items of a Likert scale, set the labels and missing values on one of them. Then use **Data > Copy variable properties** to copy them to the others.
+If many variables share the same coding, such as all items of a Likert scale, set the labels and missing values on one of them. Then use **Data > Copy variable properties** to copy them to the others. The next section shows a faster way to check many variables at once.
+:::
+
+## Check many variables at once: Define variable properties
+
+Files from CSV or Excel often arrive without labels, and survey files often hide codes like 8 = Don't know or 99 = Refused among the real answers. **Data > Define variable properties** reads the values each variable really has and helps you label them, mark missing codes and set the measurement level, all in one place. It works like the SPSS command of the same name. You also find it on the Variable View toolbar and in the Variable View right-click menu.
+
+**Step 1: choose the variables.** Tick the variables you want to check, for example `trust1` to `trust5` and `hh_income`, and click **Scan 6 variables** (the button counts them). Good first choices are questions from a CSV or Excel file and the items of a Likert scale. By default Socius scans all cases and shows at most 200 different values per variable; you can change both.
+
+**Step 2: check each variable.** The list on the left (1) shows every scanned variable with its state, such as **Labels complete**, **3 values unlabelled** or **Suspected missing code**. Click a variable to see its values on the right.
+
+![Checking trust1. The scanned variables (1), Socius's suggestion for the measurement level (2), codes already marked missing (3), a code that looks like a missing code (4) and Apply (5).](img/define-properties.png){width=100 .big}
+
+- **Measurement level.** Socius suggests a level and says why (2), for example "Ordinal suggested: 5 ordered codes with labels like Strongly disagree ... Strongly agree." If the suggestion differs from the current level, a button such as **Use Ordinal** switches it.
+- **The value grid.** Every value in the data, with its **Label**, a **Missing** box and a **Count**. Type a label straight into the grid. To label a code that does not occur in the data (yet), type it in the last row, **Label for a value not in the data**, and click **Add**.
+- **Notes.** **missing code** (green, 3) means the code is already marked missing. **looks like a missing code** (amber, 4) flags a code such as 7, 8 or 9 on a 1 to 5 scale, 98, 99, 999, negative codes like -1, or a label such as "Don't know" or "Refused". Tick **Missing** if it is not a real answer. **unlabelled** marks a value with no label.
+- **Suggest labels** offers ready-made labels that fit the values, such as an agreement scale from 1 to 5, yes/no, or labels for the missing codes 8 and 9. You see a preview before anything changes. Always check them against your questionnaire.
+- **Copy properties from another variable...** and **Apply these properties to other variables...** copy the labels, missing values and level between variables. For a battery such as `trust1` to `trust5`, one click selects the other items.
+
+Nothing changes until you click **Apply** (5). All your edits then become one change: **Edit > Undo** in Data View or Variable View takes all of them back at once. The SPSS syntax is written to Output. If you click **Cancel** after editing, Socius asks whether to discard your changes.
+
+:::note SPSS limits, explained on the spot
+SPSS allows at most three single missing values per variable (or a range plus one value), and limits labels to 120 bytes. If you go over a limit, Socius says so next to the value, and **Apply** waits until you fix it.
 :::
 
 ## Measurement level: nominal, ordinal or scale
@@ -201,7 +261,7 @@ Small icons next to each variable show its level: a cluster of circles for nomin
 
 # Preparing your data
 
-Real data rarely arrives ready to analyse. The **Transform** and **Data** menus help you reshape it. Each example here uses the sample survey. Every change is written to the Output tab together with the SPSS command that does the same thing, and **Edit > Undo** ([[Ctrl+Z]]) reverses it.
+Real data rarely arrives ready to analyse. The **Transform** and **Data** menus help you reshape it. Each example here uses the sample survey. Every change is written to the Output tab together with the SPSS command that does the same thing, and **Edit > Undo** ([[Ctrl+Z]]) in Data View or Variable View reverses it. When a command creates a new variable, the message that appears offers **Show**, which selects the new column in Data View.
 
 ## Recode age into groups
 
@@ -221,7 +281,7 @@ Goal: a new variable `agegrp` with four age groups, keeping the original `age`.
 
 ![Recoding age into four groups. The rules are checked from top to bottom, and the first rule that fits is used.](img/recode.png)
 
-The new variable appears at the end of your data. Values without a rule become missing, so check that your rules cover every age.
+The new variable appears at the end of your data. Values without a rule become missing in the new variable, so check that your rules cover every age. If no rule says what to do with **All other values**, the dialog warns you in an orange box. When you want to keep every other value as it is, click **Keep them: add "All other values → Copy old value"** in that box, and Socius adds the rule for you. In this example the rules already cover every age (and missing ages stay missing), so you can leave the warning as it is.
 
 ## Reverse-code a question
 
@@ -291,6 +351,10 @@ All analyses live in the **Analyze** menu, and they all work the same way:
 4. Click **Run**. The result appears in the **Output** tab.
 
 Every analysis dialog has a **When to use this** link at the top that explains in plain words what the analysis is for.
+
+:::note Large datasets
+Most analyses finish in a moment. A large one (roughly 50,000 cells or more, for example 5,000 cases and 10 variables) runs in the background, so Socius stays usable. The dialog then shows a moving bar with "Running in the background" and the seconds so far, and **Cancel** becomes **Stop**. Click **Stop** if you want to change something first.
+:::
 
 Every result comes with two extra boxes. **What this means** explains the result in plain language, to help you read it. **APA-style report** gives you a draft sentence for your results section, written in the style of the American Psychological Association (APA 7), which most sociology journals and departments accept.
 
@@ -470,7 +534,7 @@ Once you are comfortable with the analyses above, these are the natural next ste
 
 # Charts
 
-All charts are in the **Graphs** menu. They appear in Output with a title and the numbers behind them.
+All charts are in the **Graphs** menu. They appear in Output with a title and the numbers behind them. In APA style (the standard setting), each chart gets a number in bold, such as **Figure 3**, with its title in italics above it, just as tables are numbered Table 1, Table 2 and so on. Numbers count up through the whole Output tab, so charts that other analyses draw (such as the residual plots of a regression) count too.
 
 ## A bar chart
 
@@ -482,7 +546,7 @@ All charts are in the **Graphs** menu. They appear in Output with a title and th
 4. Click **Run**.
 
 
-![Voting by city. In every city, fewer than half of respondents voted.](img/bar-result.png)
+![Voting by city, numbered Figure 3 in APA style. In every city, fewer than half of respondents voted.](img/bar-result.png)
 
 For a single variable, leave **Cluster by** empty. To compare an average, such as mean trust by city, set **Bars show** to **Mean of a variable** and put the scale variable in **Variable for means**.
 
@@ -502,7 +566,7 @@ Under every chart you find three buttons:
 - **PNG** saves a picture you can insert in Word or PowerPoint.
 - **SVG** saves a sharp vector version that stays crisp at any size, useful for publications.
 
-Charts are also included when you export the whole report to Word (see the next chapter).
+A PNG or SVG file keeps the chart's title inside the picture, so it still makes sense on its own. Charts are also included when you export the whole report to Word or as a web page (see the next chapter); in APA style they keep their "Figure" number and italic title there, ready for your thesis.
 
 # Getting results into your report
 
@@ -518,7 +582,7 @@ Every analysis you run is added to the **Output** tab, newest at the bottom. The
 
 ## APA style or SPSS style
 
-**APA tables** have horizontal lines only, a numbered title and an italic heading. This is what most journals and theses expect. **SPSS tables** look like the SPSS viewer, which helps when you compare your results with SPSS or with a colleague who uses it.
+**APA tables** have horizontal lines only, a numbered title and an italic heading. Charts get a matching "Figure" number. This is what most journals and theses expect. **SPSS tables** look like the SPSS viewer, which helps when you compare your results with SPSS or with a colleague who uses it; in SPSS style a chart keeps its title inside the chart instead of a Figure number.
 
 ![The same frequency table in APA style.](img/apa-style.png)
 
@@ -549,7 +613,7 @@ Click **Export report** in the Output tab, or choose **File > Export output repo
 - **Excel workbook (.xlsx):** one sheet per table.
 - **Plain text (.txt):** tables as aligned text.
 
-To tidy up before exporting, use the small arrows on each result to move it up or down, and the bin icon to delete it. **Clear output** removes everything.
+To tidy up before exporting, use the small arrows on each result to move it up or down, and the bin icon to delete it. After a delete, a message appears with an **Undo** button that brings the result back; **Edit > Undo** ([[Ctrl+Z]]) in the Output tab does the same. **Clear output** removes everything.
 
 # Coding open-ended answers
 
@@ -564,7 +628,7 @@ Everything for coding is in the **Text coding** menu and the **Text coding** tab
 The quickest way to learn is the worked example. Click the **Text coding** tab. With the sample survey open, the start screen of Text coding shows a card called **Explore a worked example**.
 
 
-Click it. Socius brings in the 630 answers to `q_challenge`, adds a starter codebook of 15 codes grouped into 4 themes, and codes most answers automatically with keyword rules, so you have something to review. One click on **Undo** in the Text coding toolbar removes the whole example again.
+Click it. Socius brings in the 630 answers to `q_challenge`, adds a starter codebook of 15 codes grouped into 4 themes, and codes most answers automatically with keyword rules, so you have something to review. A note above the answers explains what happened and lists the next steps, with buttons such as **Review coded answers**, **Show answers not coded** and **Codes by attribute**; **Hide note** puts it away. Straight after loading, one click on **Undo coding** in the Text coding toolbar removes the whole example again.
 
 ## Import answers from a survey question
 
@@ -584,7 +648,7 @@ The answers appear in the **Responses** view of the Text coding tab.
 
 ![The Responses view with the worked example loaded.](img/responses.png){width=100 .big}
 
-1. **Views.** Switch between Documents, Responses, Retrieve, Analyse, Reliability and Memos.
+1. **Views.** Switch between Documents, Responses, Retrieve, Analyse, Reliability and Memos. Reliability says "needs 2 coders" until a second coder has coded. On a phone this row scrolls sideways; a fade and an arrow at the edge show that there is more.
 2. **Search and filters.** Find answers with a word, show only answers not yet coded, or only one group (for example only women).
 3. **Number keys.** The first nine codes get the keys 1 to 9.
 4. **An answer** with its attributes and its codes. Click **+ code** to add a code with the mouse, or the small cross on a code to remove it.
@@ -616,6 +680,8 @@ Coding by keyboard is fast. Click in the list of answers, then:
 
 An answer can have several codes. The counter at the top right shows how many answers you have coded so far.
 
+Made a mistake? **Undo coding** in the toolbar takes back your last coding change. In the Text coding tab, **Edit > Undo** ([[Ctrl+Z]]) does the same, and **Edit > Redo** ([[Ctrl+Y]]) brings the change back. The Edit menu says what it will undo, for example "Undo code passage". Undo in Text coding only touches coding (codes, coded passages, memos and sources), never your data.
+
 ## Auto-code with keyword rules
 
 For clear-cut themes, rules save time. Choose **Text coding > Auto-code with keyword rules** (or the **Auto-code** button).
@@ -641,13 +707,15 @@ This is where qualitative and quantitative work meet. Each code can become a 0/1
 
 ![Exporting codes as variables. The last column shows how many answers mention each code.](img/export-codes.png){width=75}
 
+The new variables are a change to your data, so you take them back from Data View with **Edit > Undo**, not from Text coding.
+
 Now run **Analyze > Descriptive Statistics > Crosstabs** with `gender` in **Row(s)** and `c_safety_at_night` in **Column(s)**:
 
 ![Women mention safety at night far more often than men.](img/code-crosstab.png){width=100 .big}
 
 17.2% of women mention safety at night as the biggest challenge, against 4.0% of men, χ²(2, N = 630) = 28.86, p < .001. The answer to an open question has become a testable finding.
 
-To compare codes between groups without leaving Text coding, open the **Analyse** view and choose **Codes by attribute**:
+To see how often each code was used, choose **Text coding > Code frequencies**. A theme shows the total of its sub-codes, marked "theme total". To compare codes between groups without leaving Text coding, open the **Analyse** view and choose **Codes by attribute**:
 
 ![Codes by attribute: how often each code appears among men, women and people of other genders.](img/codes-by-attribute.png){width=100 .big}
 
@@ -662,7 +730,7 @@ Choose **Text coding > Import documents**. Drop your files on the dialog, or cli
 
 - **Word (.docx)** and **plain text (.txt, .md)** files: one document per file.
 - **Paste text** lets you paste a transcript directly.
-- To practise, choose **Text coding > Load sample interviews**. It adds three fictional interviews from Kolkata, Bengaluru and Delhi.
+- To practise, choose **Text coding > Load sample interviews** and click **Load 3 interviews**. It adds three fictional interviews from Kolkata, Bengaluru and Delhi. The same command is under **Import** in the Text coding toolbar.
 
 ## Highlight and code a passage
 
@@ -729,7 +797,7 @@ AI help is optional and free. It is switched off until you set it up, and everyt
 ## Set it up
 
 1. Choose **AI > AI assistant settings**. This is the one place where AI help is set up. The **AI** chip at the top right and every **Set up AI** button (next to an AI feature that is greyed out) open the same settings.
-2. Under **Where should the AI run?**, choose one of the two free options below.
+2. Under **Where should the AI run?**, choose one of the free options below.
 3. Follow the steps for that option, then click **Test connection**.
 
 ![The AI menu. Every AI feature starts here, and the last item opens the settings.](img/ai-menu.png){width=35}
@@ -741,37 +809,78 @@ Google Gemini is fast and gives good answers. You need a free "API key" from Goo
 1. In the settings, choose **Google Gemini** (1).
 2. Click the link **Google AI Studio** (2), or go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Sign in with your Google account.
 3. Click **Create API key**. Accept the terms if Google asks.
-4. Copy the key. It starts with "AIza".
-5. Back in Socius, paste it into **API key** (3).
-6. Leave **Model** (4) empty. Socius then picks the newest free Gemini model your key can use, and keeps doing so when Google retires old models.
-7. Click **Test connection** (5).
+4. Copy the key with the copy button next to it in AI Studio. New keys start with "AQ." and are long, for example `AQ.Ab8R...` followed by about 50 more characters. (Older keys start with "AIza". Google is retiring those, so if one stops working, create a new key.)
+5. Back in Socius, paste it into **API key** (3). Socius removes stray spaces, line breaks and quotes for you. If the key looks too short or has an unusual start, an orange note under the box says so; you can still test it.
+6. Decide whether Socius should **Remember this key on this computer** (4). See the box below.
+7. Leave **Model** (5) on **Automatic: Flash-Lite (fastest, most free requests)**. Socius then picks the newest Flash-Lite model your key can use, and moves on to another one if Google retires it.
+8. Click **Test connection** (6).
 
-![Setting up Google Gemini: choose it (1), get a key from Google AI Studio (2), paste it (3), leave Model empty (4) and click Test connection (5).](img/ai-gemini.png){width=100 .big}
+![Setting up Google Gemini: choose it (1), get a key from Google AI Studio (2), paste it (3), decide whether to remember it (4), leave Model on Automatic (5) and click Test connection (6).](img/ai-gemini.png){width=100 .big}
 
-The key is stored in this browser only. It never goes into project files or exports. On a shared computer, click **Forget key** when you are done.
+:::note Where your key is kept
+The key never goes into project files or exports. By default, **Remember this key on this computer** is off: Socius forgets the key when you close the tab, and you paste it again next time. Tick the box to keep it in this browser until you click **Forget key**. Anyone who uses the same browser profile, and other websites published on the same github.io address as Socius, could read a remembered key, so leave the box off on shared or public computers.
+:::
+
+**Which model?** **Automatic: Flash-Lite** answers fastest and allows the most free requests per day, so it is the best choice for almost everyone. **Automatic: Flash** writes somewhat better answers but starts more slowly, and Google's free tier allows only about 5 requests a minute with it. The assistant's working steps and the coding suggestions always use Flash-Lite. **A model I type...** is for people who need one particular model.
+
+### Test connection, step by step
+
+**Test connection** sends a one-word test message and checks the connection one step at a time: **1. Internet connection**, **2. Reached Google**, **3. Key accepted**, **4. Model chosen** and **5. Got an answer**. Each step gets a tick when it passes. While the test runs, the line next to the button says what it is waiting for and for how long. **Stop** cancels it.
+
+If a step fails, it gets a cross (1), the steps after it are marked "Not checked", and a red box (2) explains what went wrong and what to do.
+
+![A refused key: steps 1 and 2 passed, step 3 failed (1). The red box (2) says what to do; Copy details (3) copies a report for a help request.](img/ai-check-failed.png){width=100 .big}
+
+**Copy details** (3) copies a report of what was checked and what Google answered, to paste into a help request (see [Giving feedback](#giving-feedback)). The report never contains your key. **Show details** shows the same report on screen. The most common problems and their fixes are listed in [Troubleshooting and FAQ](#troubleshooting-and-faq) under "Test connection fails".
 
 ### Option 2: On this computer (private)
 
 A small AI model runs inside your browser, on your computer's graphics chip. Nothing leaves your computer, and after a one-time download of 1 to 2 GB it even works offline. This is the right choice for confidential interviews.
 
 1. In the settings, choose **On this computer**.
-2. Socius checks whether your browser can run the model. It needs a recent **Chrome or Edge** on a desktop or laptop.
-3. Pick a model and click **Download model**. You can also skip this: the first AI request downloads it.
-4. Click **Test connection**.
+2. Socius checks whether your browser can run the model and says so at the top. It needs a recent **Chrome or Edge** on a desktop or laptop, with graphics acceleration turned on. If something is missing, the message says what.
+3. Pick a model: **Small and fast** (a download of about 1 GB) or **Better quality** (about 1.8 GB). On a computer with little memory, Socius recommends Small and fast.
+4. Click **Download model**. A bar shows the progress. If the download fails, **Try the download again** keeps the parts that already arrived.
+5. Click **Test connection**.
+
+Before a download starts, Socius checks that the browser has room for the model and still has space left for autosave. If not, an orange box says **Not enough browser storage for this model** and suggests what to do instead: delete a model you downloaded earlier, choose Small and fast, use Google Gemini or Ollama, or free disk space. **Browser storage (downloaded models)**, at the bottom of this section, shows how much room each downloaded model takes, with a **Delete** button for each (see [What Socius keeps in your browser](#what-socius-keeps-in-your-browser)).
 
 The on-device model is slower and less accurate than Gemini. It is fine for explaining a result or suggesting codes, but it is noticeably weaker as the Socius assistant.
 
-:::note Other options
-**Other service** connects Socius to Groq, OpenRouter or a model on your own computer (Ollama, LM Studio). These are for experienced users. If you open Socius inside Claude, a **Claude** option may also appear, which needs no set-up.
+### Option 3: Ollama or LM Studio on your computer (for experienced users)
+
+If you already use [Ollama](https://ollama.com) or LM Studio, programs that run AI models on your own computer, Socius can use them. Nothing leaves your computer. This takes a few more steps than the other options, but Socius guides you through them.
+
+1. In the settings, choose **Other service**.
+2. Under **Service**, choose **Ollama on this computer** or **LM Studio on this computer**. Socius fills in the address (for Ollama `http://localhost:11434/v1`) and a model.
+3. Follow the steps in **Set up Ollama** (1) (or **Set up LM Studio**): install the program, download a model once (for Ollama, the box shows the command, such as `ollama pull llama3.2`, with a **Copy** button), and let the program accept this website.
+4. Click **Test connection** (2).
+
+The test checks five things: **Is the program running?** (3), **Does it allow this website?** (4), **Browser permission for this computer**, **Is the model installed?** and **Did it answer?**. When a step fails, it shows the fix for your computer.
+
+![Ollama is running (3) but does not accept the Socius website yet (4). The buttons (5) show the exact steps for Windows, macOS or Linux.](img/ai-ollama.png){width=100 .big}
+
+**Letting Ollama accept Socius.** Ollama only answers pages on your own computer, so at first it refuses the Socius website. The fix is a setting called `OLLAMA_ORIGINS` that lists the website's address: the start of the address in your browser's address bar, without the rest of the path and without spaces. For the Socius website that is `https://hackhead95.github.io`. Click **Windows**, **macOS** or **Linux** (5): Socius shows the steps with the right address filled in, and each command has a **Copy** button. In short:
+
+- **Windows:** quit Ollama (right-click its icon near the clock and choose **Quit Ollama**), run the `setx OLLAMA_ORIGINS ...` command in Command Prompt, then start Ollama again from the Start menu. Instead of the command, you can add the setting under **Edit environment variables for your account**.
+- **macOS:** run the `launchctl setenv OLLAMA_ORIGINS ...` command in Terminal, then quit and reopen Ollama. This setting is lost when the Mac restarts, so run the command again after a restart.
+- **Linux:** add the `OLLAMA_ORIGINS` line to the Ollama service with `sudo systemctl edit ollama.service`, then restart the service.
+
+Only list websites you trust: any website in that list can use your Ollama. For **LM Studio**, open its Developer tab, start the server and turn on **Enable CORS** in its settings instead.
+
+**The browser's permission.** Chrome and Edge ask before a website may connect to programs on your computer. When the question appears, click **Allow**. If you clicked Block by mistake, click the icon at the left of the address bar, choose **Site settings**, and set **Apps on device** (called **Local network access** in some versions) to **Allow**, then reload the page. Safari does not let websites reach programs on your computer at all: use Chrome, Edge or Firefox for Ollama and LM Studio.
+
+:::note Other services
+Under **Other service** you can also connect Groq or OpenRouter with their own keys. If you open Socius inside Claude, a **Claude** option may also appear, which needs no set-up.
 :::
 
 ### "AI is ready. Try it"
 
-When the test works, the settings say "Connected" and a green panel appears.
+When the test works, the settings say "Connected" (1), every step has a tick (2), and a green panel appears (3).
 
-![After a successful Test connection (1), the panel "AI is ready. Try it" (2) starts any AI feature with one click.](img/ai-ready.png)
+![After a successful Test connection (1), all five steps are ticked (2) and the panel "AI is ready. Try it" (3) starts any AI feature with one click.](img/ai-ready.png)
 
-Click one of the buttons to try a feature straight away, or click **Done**. The **AI** chip in the top bar now shows a green dot and the service, for example "AI Gemini".
+Click one of the buttons to try a feature straight away, or click **Done**. The **AI** chip in the top bar now shows a green dot and the service, for example "AI Gemini". **Details**, under the steps, holds the same report as **Copy details**.
 
 ## Before you send anything
 
@@ -801,11 +910,18 @@ Every AI feature says what it will send, and to whom, before you click. Nothing 
 
 If something is missing, the menu tells you what to do first. For example, **Explain a result** with no results yet says **Run an analysis first** and offers a button **Open Crosstabs**. If AI is not set up, any item opens the settings and explains what that feature will do.
 
-**The AI chip** at the top right shows the status of AI help. Click it to see the same features, each with a one-line description.
+**The AI chip** at the top right shows the status of AI help. Click it to see the same features, each with a one-line description. It has four states:
+
+- **not set up**: no AI option has been chosen yet.
+- **Gemini, not tested** (a dashed dot): set up, but nothing has been tried yet. A new key or model starts here again.
+- **Gemini, not connected** (a red dot): the last Test connection or AI request failed. Click the chip to see why.
+- **Gemini** (a green dot): ready. A successful Test connection or AI answer puts the chip here.
+
+Other services show their own name instead of "Gemini", such as "On device".
 
 ![The AI chip (1) with a green dot means AI help is ready. Click it for a list of the AI features.](img/ai-chip.png){width=40 .big}
 
-You also find AI in three other places: the **Assistant** button at the bottom right of every screen, the **Explain with AI** button on every result in Output, and **AI suggestions** in the Text coding toolbar. All three are described below.
+You also find AI in three other places: the **Assistant** button at the right end of the row of tabs, the **Explain with AI** button on every result in Output, and **AI suggestions** in the Text coding toolbar. All three are described below.
 
 ## Explain a result
 
@@ -821,6 +937,8 @@ Every result in Output has an **Explain with AI** button. It asks the AI to expl
 ![Explain with AI (1) is next to Copy on every result.](img/explain-button.png)
 
 ![Before anything is sent: who receives what (1), the exact text (2) and the Explain button (3).](img/explain-confirm.png){width=85 .big}
+
+While the AI works, a line shows what it is doing and for how long, such as "Choosing model", "Waiting for Google", "Thinking" or "Writing". The answer appears bit by bit as it is written. If something goes wrong, a red message says why and what to do; the **Details** link under it shows a report, and **Copy details** copies it for a help request.
 
 The explanation appears under five headings: **What was tested**, **What the numbers mean**, **Assumptions and warnings**, **How to report it** and **Cautions**.
 
@@ -840,11 +958,13 @@ The assistant is a chat panel where you ask questions in your own words, as you 
 
 ### Open it
 
-- Click the round blue **Assistant** button at the bottom right of any screen (number 9 in the [tour](#a-five-minute-tour)).
+- Click the **Assistant** button at the right end of the row of tabs (number 9 in the [tour](#a-five-minute-tour)). On a phone it shows only its sparkle icon.
 - Or press [[Ctrl+J]] ([[Cmd+J]] on a Mac). Press it again to close the panel.
 - Or choose **AI > Ask the Socius assistant**, or type a question in Search and choose **Ask the assistant**.
 
-The panel opens on the right. Drag its left edge to make it wider. Close it with the cross at the top right or [[Esc]]. Your conversation stays while Socius is open, even when you switch tabs; reloading the page clears it.
+The panel opens on the right, below the menus and tabs, so Undo, Search and the menus stay within reach. On a screen at least 1000 pixels wide, your data or output moves aside to make room for it, so nothing is hidden underneath. Drag the panel's left edge to make it wider. Close it with the cross at the top right or [[Esc]]. Your conversation stays while Socius is open, even when you switch tabs; reloading the page clears it.
+
+If AI help is not set up yet and you send a question, the assistant does not lose it: the question stays in the box, and a note offers **Set up AI**. Once AI is set up, click **Send**.
 
 ![The assistant panel: the AI service in use (1), what the assistant can see (2), suggested questions (3) and the message box (4).](img/assistant-start.png){width=100 .big}
 
@@ -880,7 +1000,7 @@ The assistant does not guess. It checks your variables, runs the analysis in Soc
 
 ![The assistant answers a question about life satisfaction. What I did (1) lists each step; the card (2) adds the t-test to Output. Example answer; your AI's wording will differ.](img/assistant-answer.png){width=75 .big}
 
-- **What I did** (1) lists every step it took, such as "Looked at life_sat, migrant" and "Ran Independent-Samples T Test: life_sat by migrant". Click it to see the steps.
+- **What I did** (1) lists every step it took, such as "Looked at the dataset overview", "Looked at life_sat, migrant" and "Ran Independent-Samples T Test: life_sat by migrant". Click it to see the steps.
 - The answer quotes the real numbers, here t(628) = 4.51, p < .001, d = 0.36, the same as in [Comparing two groups](#comparing-two-groups-the-independent-samples-t-test).
 - An analysis the assistant runs is **not** added to Output by itself. Click **Add this analysis to Output** (2) to keep it.
 - Some answers end with **Open dialog**, which opens the analysis dialog with the variables filled in. Check them and click **Run**.
@@ -894,7 +1014,7 @@ A **Proposed change** card (1) describes the recode, reverse-coding, scale or co
 ### Know its limits
 
 - **It can be wrong.** It may misread a table, pick an unsuitable test or phrase a finding too strongly. Check its numbers against the tables in Output, and think about whether its advice fits your research question.
-- **Free tiers have limits.** Google's free tier allows only a few requests a minute and a daily allowance. The assistant paces itself, so a complex question can take 20 to 60 seconds. If you see "Too many AI requests at once, or the free allowance is used up for now", wait a minute (or until the next day) and click **Retry**.
+- **Free tiers have limits.** Google's free tier allows only a certain number of requests a minute and a daily allowance. The assistant paces itself, so a complex question can take 20 to 60 seconds. When Google asks it to slow down, the line under your question counts down, for example "Waiting 11 s for Google's free limit...", and then carries on by itself. If you see "Too many AI requests at once, or the free allowance is used up for now", wait a minute and click **Retry**. When the daily allowance is used up, the message says so; it starts again at midnight Pacific time (morning in Europe, early afternoon in India).
 - **The on-device model is weaker.** On this computer, the assistant works with a small model: slower, with fewer tools and simpler answers. For the assistant, Gemini works much better. Use anonymised data with it.
 - **It cannot replace your judgement** or your supervisor. It is a tutor at your side, not an authority.
 
@@ -934,6 +1054,25 @@ To continue later, on this or any other computer, choose **File > Open project**
 Socius keeps a copy of your current session in the browser and restores it when you come back. But that copy disappears if you clear your browser's history or site data, use a private or incognito window, or switch to another browser or computer. Save a project file regularly and keep it with your other research files.
 :::
 
+If the browser runs out of room (usually after downloading an on-device AI model), autosave pauses and a bar at the bottom says **Browser storage is full, so autosave is paused.** Click **Save project** to save your work to a file straight away, then **Manage storage** to delete a downloaded AI model you do not need. Autosave keeps trying by itself and the bar disappears as soon as a save works again.
+
+## What Socius keeps in your browser
+
+**Help > About Socius** lists what Socius stores in this browser, under "What Socius stores in this browser":
+
+- **Autosave:** the data, output and text-coding project you have open, and your list of recent projects.
+- **Preferences:** the theme, view settings and your search history.
+- **Error log:** technical messages only, without data values, names or keys (see [Troubleshooting with the error log](#troubleshooting-with-the-error-log)).
+- **AI assistant settings:** the AI option and model you chose, and your API key only if you ticked **Remember this key on this computer**.
+
+The About box also points out a limit of the free website: browsers treat all websites published on the same github.io account as one site, so another website published there could read what Socius stores. To keep confidential work safe, save it to project files instead of relying on autosave, use **File > Close data and start fresh** when you finish on a shared or public computer, and leave the remember option for your key off.
+
+Under **Storage used**, the About box shows how much room Socius takes and how much the browser still allows, split into downloaded AI models (each with a **Delete** button), projects and autosave, and the error log and settings.
+
+![Help > About Socius: what Socius stores in this browser, and how much room it uses.](img/about-storage.png){width=85}
+
+**Ask the browser to keep it** asks the browser not to clear Socius's data when the disk runs low. Browsers decide this themselves, so it may say no.
+
 ## Save your data for SPSS, Excel or R
 
 **File > Save data as** writes your data in other formats:
@@ -969,30 +1108,49 @@ Check that the same codes are declared missing (Variable View, Missing column), 
 It is a warning, not a block. Often the fix is to set the right level in the Measure column of Variable View.
 
 **I made a mistake.**
-**Edit > Undo** ([[Ctrl+Z]]) reverses changes to the data one step at a time, and **Edit > Redo** ([[Ctrl+Y]]) brings them back. Text coding has its own **Undo** button in its toolbar.
+**Edit > Undo** ([[Ctrl+Z]]) reverses your last change in the tab you are in: changes to the data in Data View and Variable View, coding changes in Text coding, and a deleted result in Output. **Edit > Redo** ([[Ctrl+Y]]) brings it back. The Undo item says what it will undo, for example "Undo rename of age" or "Undo new variable agegrp". While you type in a box, [[Ctrl+Z]] undoes your typing. Text coding also has an **Undo coding** button in its toolbar.
 
 **I lost my work after clearing the browser.**
 Clearing browsing data, a private window, or another browser or computer loses the autosaved session. Only a saved project file is safe. Save one regularly with **File > Save project**.
 
 **Where is my data stored?**
-Only in your browser, on your computer. Files you open are never uploaded. The only things that can leave your computer are what you choose to send with the optional online AI help (see [Before you send anything](#before-you-send-anything)).
+Only in your browser, on your computer. Files you open are never uploaded. The only things that can leave your computer are what you choose to send with the optional online AI help (see [Before you send anything](#before-you-send-anything)). **Help > About Socius** lists what Socius keeps in the browser (see [What Socius keeps in your browser](#what-socius-keeps-in-your-browser)).
+
+**A bar says "Browser storage is full, so autosave is paused".**
+The browser has no room left for Socius, usually because of a downloaded on-device AI model. Click **Save project** first, then **Manage storage** and delete the AI model you do not use. Autosave starts again by itself. See [Save a project](#save-a-project).
+
+**A message says "Socius was updated".**
+A new version of Socius was published while you were working. Click **Reload**: your work is autosaved first, and the page opens again with the new version.
 
 **I set up AI but I don't see a way to use it.**
-Use the **AI** menu in the menu bar, the **Assistant** button at the bottom right (or [[Ctrl+J]]), **Explain with AI** on any result in Output, or **AI suggestions** in the Text coding toolbar. The **AI** chip at the top right lists every AI feature. See [Where to find AI in Socius](#where-to-find-ai-in-socius).
+Use the **AI** menu in the menu bar, the **Assistant** button at the right end of the tabs (or [[Ctrl+J]]), **Explain with AI** on any result in Output, or **AI suggestions** in the Text coding toolbar. The **AI** chip at the top right lists every AI feature. See [Where to find AI in Socius](#where-to-find-ai-in-socius).
 
 **Test connection fails.**
-Read the red message next to the button; it says what went wrong.
+Look at the list of steps: the first step with a cross shows where it stopped, and the red box below says what to do (see [Test connection, step by step](#test-connection-step-by-step)).
 
-- "The AI service did not accept the key": copy the key again from Google AI Studio, including every character and no spaces, and paste it into **API key**. If it still fails, create a new key.
-- "The AI service did not recognise the model name": empty the **Model** box, so that Socius picks the model for you.
-- "Could not reach the AI service": check your internet connection. Some university or office networks block AI services; try another network.
-- Google AI Studio is not available in every country and asks you to be 18 or older. If you cannot create a key, use **On this computer** instead.
+- **1. Internet connection** failed: this computer is offline. Connect, then test again.
+- **2. Reached Google** failed ("Could not reach the AI service"): something between you and Google blocks it. Common causes are an ad or privacy blocker, antivirus web protection, a university or company firewall, or a VPN. Turn these off for this site, or try another network.
+- **3. Key accepted** failed ("The AI service did not accept the key"): copy the key again from Google AI Studio with its copy button, and paste it into **API key**. A brand-new key can take a few minutes to work. If it still fails, create a new key.
+- **4. Model chosen** failed: set **Model** to **Automatic: Flash-Lite**, so that Socius picks a model your key may use.
+- Google says your location is not supported: the free Gemini API is not offered everywhere. If you use a VPN, turn it off; otherwise use **On this computer**.
+- Google AI Studio asks you to be 18 or older. If you cannot create a key, use **On this computer** instead.
+
+If you cannot solve it, click **Copy details** and send the report with **Help > Send feedback or report a problem**. The report never contains your key.
+
+**Ollama or LM Studio does not connect.**
+Use **Test connection** in the Ollama or LM Studio set-up: it checks each step and shows the fix. The most common one is "Ollama is running but refused this website": set `OLLAMA_ORIGINS` as the app shows and restart Ollama (see [Option 3](#option-3-ollama-or-lm-studio-on-your-computer-for-experienced-users)). In Safari, use Chrome, Edge or Firefox instead.
+
+**AI replies are slow.**
+Check that **Model** is **Automatic: Flash-Lite**, the fastest choice. The line under a request shows what it is waiting for. "Waiting ... for Google's free limit" means the free tier's per-minute limit was reached; Socius waits and continues by itself. The assistant often needs several steps for one question, so 20 to 60 seconds is normal. The on-device model is much slower than Gemini, especially the first time, while it loads.
 
 **The AI says the free allowance is used up ("rate limit").**
-Free tiers allow only a few requests a minute and a limited number a day. Wait a minute and click **Retry** (or **Try again**). If it keeps happening, try again the next day, send fewer excerpts at a time, or switch to **On this computer**.
+Free tiers allow only a certain number of requests a minute and a limited number a day. For the per-minute limit, wait a minute and click **Retry** (or **Try again**). If the message says the daily allowance is used up, it starts again at midnight Pacific time (morning in Europe, early afternoon in India). Meanwhile, send fewer excerpts at a time, or switch to **On this computer**.
 
 **"This browser cannot run the on-device model" (no WebGPU).**
-The on-device model needs WebGPU, which only recent Chrome and Edge on a desktop or laptop offer reliably. Update your browser, or use another computer. Check that hardware acceleration is on (Chrome: Settings > System). Otherwise use Google Gemini with anonymised data.
+The on-device model needs WebGPU, which only recent Chrome and Edge on a desktop or laptop offer reliably. The settings explain what is missing on your computer. Update your browser, or use another computer. Check that graphics acceleration is on (Chrome: Settings > System > "Use graphics acceleration when available"). On Linux, Ollama (Option 3) is usually the more reliable private choice. Otherwise use Google Gemini with anonymised data.
+
+**The model download fails or says there is not enough space.**
+A failed download can be tried again; the parts that already arrived are kept. If the browser has no room, delete a model you no longer use (**Browser storage (downloaded models)** in the settings, or **Help > About Socius**), choose **Small and fast**, or free disk space. Private windows allow very little storage, so use a normal window.
 
 **AI buttons are greyed out.**
 In Text coding, a grey **AI suggestions** button means AI help is not set up: click **Set up AI** next to it. If AI is set up but a single item is grey, it has nothing to work on yet: **Suggest a codebook** needs imported texts, **Suggest codes for open-ended answers** needs imported answers and at least one code, and **Summarise a code** needs coded passages. The **Explain** button in the Explain panel stays grey until AI help is set up.
@@ -1001,21 +1159,51 @@ In Text coding, a grey **AI suggestions** button means AI help is not set up: cl
 Trust the tables in Output. The assistant runs the same analyses, but it can misread or round them. Run the analysis from the menu (or click **Add this analysis to Output**) and report the numbers from Output.
 
 **Can I use Socius on a phone?**
-Yes, for looking at data and results. For coding and analysis, a computer with a mouse and keyboard is much easier.
+Yes, for looking at data and results. For coding and analysis, a computer with a mouse and keyboard is much easier. On a small screen the menus are in a **Menu** button, the variable list opens from **View > Variable list** as a drawer, and the assistant fills the screen.
+
+**I clicked outside a dialog and it did not close.**
+Dialogs with boxes to fill in stay open, so a stray click does not lose your choices. Click **Cancel** or press [[Esc]].
 
 **Where are the keyboard shortcuts?**
 **Help > Keyboard shortcuts** lists them all, including the keys of the Responses view in Text coding. The two most useful are [[Ctrl+K]] for Search and [[Ctrl+J]] for the assistant. **Help > Getting started** gives a six-step overview.
+
+## Troubleshooting with the error log
+
+When something goes wrong, Socius writes a short note in its **error log**, so you can tell us exactly what happened. Open it with **Help > Error log**. After a new error, a small blue dot appears next to **Help** in the menu bar; opening the log removes it.
+
+![The error log. Filter by level or area (1), click a line to see its details (2), then Copy report (3) or Report a problem (4).](img/error-log.png){width=100 .big}
+
+- Each line shows a level (**Error**, **Warning** or **Info**), the area (such as AI, Opening files or Analyses), the message and the time. Click a line (2) to see the technical details.
+- **Level** and **Area** (1) filter the list.
+- **Copy report** (3) copies the whole log as text; **Download report (.txt)** saves it as a file.
+- **Report a problem...** (4) opens the feedback dialog (see [Giving feedback](#giving-feedback)).
+- **Clear log...** deletes all entries, after asking.
+
+The log stays in your browser; nothing is sent anywhere unless you paste it into a message yourself. It never contains your data values, variable names or labels, file names, quotes from your texts, email addresses or API keys: Socius removes them before anything is written. It keeps only the message, the kind of error, the size of the dataset (such as "640 cases x 34 variables"), which tab was open, the AI service and model, and the Socius version.
+
+:::tip If Socius stops working
+If a whole tab stops working, it shows a message with **Try again**, **Copy error report** and **Open the error log**; your data and the other tabs are not affected. If the whole page fails, a card says **Something went wrong**. Click **Copy error report** first, then **Reload**: your work is autosaved in the browser, although the last few seconds may be missing.
+:::
 
 # Giving feedback
 
 Socius is young, and your experience helps make it better. If something does not work, confuses you, or you miss a feature, please tell us.
 
-Choose **Help > Send feedback or report a problem**, or click **Feedback** at the top right of the screen. A form opens on GitHub in a new tab. You can also go there directly: {{FEEDBACK_URL}}
+Choose **Help > Send feedback or report a problem**, or click **Feedback** at the top right of the screen. A small dialog opens first:
 
-![The Help menu, with the user guide, the keyboard shortcuts and the feedback form. AI set-up is in the AI menu.](img/help-menu.png){width=40}
+1. **Copy the error report.** It says how many problems are in the error log. Click **Copy error report**, and paste the report into your message later; it helps us find the cause quickly.
+2. **Open the feedback form.** Keep **Fill in a short summary: version, browser and the last 5 problems** ticked to add that summary to the form for you (you can read it in the dialog first). Click **Open the feedback form** to report a problem, or **Suggest an idea instead**. The form opens on GitHub in a new tab.
+
+![The feedback dialog: copy the error report, then open the form on GitHub.](img/feedback-dialog.png){width=75}
+
+You can also go to the form directly: {{FEEDBACK_URL}}
+
+![The Help menu, with the user guide, the keyboard shortcuts, the feedback dialog and the error log. The blue dot next to Help means a new error was logged. AI set-up is in the AI menu.](img/help-menu.png){width=40}
+
+**Help > About Socius** shows the version you are using, for example "Version 0.1.0 (29e1e76, built 2026-09-24)". The error report includes it, so you do not need to copy it yourself.
 
 - Posting on GitHub needs a free GitHub account. Creating one takes a minute.
-- Say what you did, what you expected and what happened instead. A screenshot helps.
+- Say what you did, what you expected and what happened instead. A screenshot helps, and so does the error report.
 - Never attach confidential data. If a problem only happens with your file, describe the file (for example "an SPSS file with 300 variables from 2012") instead of sending it.
 
 Thank you for trying Socius.
@@ -1025,8 +1213,11 @@ Thank you for trying Socius.
 | I want to... | Where to find it |
 |---|---|
 | Find any command, variable or result | Search box at the top, or [[Ctrl+K]] |
+| Go back to the start screen | The **Socius** logo at the top left |
 | Open an SPSS, CSV or Excel file | **File > Open data file** |
 | See labels, missing values, measure | **Variable View** tab |
+| Rename a variable | **Variable View**, Name column (or double-click the column heading in Data View) |
+| Label values and find missing codes in many variables | **Data > Define variable properties** |
 | Show labels instead of codes in the data | **View > Value labels in Data View** |
 | Copy labels to other variables | **Data > Copy variable properties** |
 | Group ages or incomes | **Transform > Recode into different variables** |
@@ -1053,12 +1244,14 @@ Thank you for trying Socius.
 | Turn codes into variables | **Text coding > Export codes to dataset** |
 | Check agreement between coders | **Text coding > Intercoder reliability** |
 | Set up AI | **AI > AI assistant settings** |
-| Ask a question about my data or methods | **Assistant** button (bottom right), or [[Ctrl+J]] |
+| Ask a question about my data or methods | **Assistant** button (right end of the tabs), or [[Ctrl+J]] |
 | Explain a result in plain language | **Explain with AI** on the result in Output |
 | Save everything | **File > Save project** ([[Ctrl+S]]) |
 | Save data for SPSS | **File > Save data as > SPSS data (.sav)** |
-| Undo | **Edit > Undo** ([[Ctrl+Z]]) |
+| Undo (in the tab you are in) | **Edit > Undo** ([[Ctrl+Z]]) |
 | Report a problem | **Help > Send feedback or report a problem** |
+| See what went wrong | **Help > Error log** |
+| See what Socius stores in the browser | **Help > About Socius** |
 
 # Appendix B: Glossary
 
@@ -1094,3 +1287,6 @@ Thank you for trying Socius.
 | API key | A long password from an AI provider, such as Google, that lets Socius use its AI model on your behalf. Keep it private. |
 | Socius assistant | The chat panel ([[Ctrl+J]]) where an AI model answers your questions, using Socius to look at your data and run analyses. |
 | Search | The box at the top ([[Ctrl+K]]) that finds commands, variables, results and help pages. |
+| Error log | Socius's list of problems it noticed in this browser (**Help > Error log**), without your data, to send with a problem report. |
+| Rate limit | The number of requests a free AI service allows per minute or per day. |
+| Figure | A numbered chart in APA style (Figure 1, Figure 2...), like a numbered table. |

@@ -4,7 +4,9 @@ This guide is a set of short recipes. Each one takes a common research task and 
 
 Menu paths are written like this: **Analyze > Descriptive Statistics > Crosstabs**. In the app, menu items that open a dialog end with "...".
 
-**Can't find something? Search.** Press **Ctrl+K** (**Cmd+K** on a Mac), or **/**, or click **Search Socius** in the top bar (the magnifying glass on a phone). Type what you are after in your own words, for example "chi square", "t test", "alpha", "recode" or "select cases": the search finds the menu command (with its menu path), variables in your data (by name, label or value label), results in Output, sections of the user guide and, in Text coding, your codes and a "Search in texts" action. Use the arrow keys and **Enter**, or tap a result. On a variable, **Enter** selects its column in Data View; **Shift+Enter** opens it in Variable View and **Alt+Enter** opens Frequencies with it. With an empty search box you see your recent commands and some suggestions.
+**Can't find something? Search.** Press **Ctrl+K** (**Cmd+K** on a Mac), or **/**, or click **Search Socius** in the top bar (the magnifying glass on a phone). Type what you are after in your own words, for example "chi square", "t test", "alpha", "recode" or "select cases": the search finds the menu command (with its menu path), variables in your data (by name, label or value label), results in Output, sections of the user guide and, in Text coding, your codes and a "Search in texts" action. Use the arrow keys and **Enter**, or tap a result. On a variable, **Enter** selects its column in Data View; **Shift+Enter** opens it in Variable View and **Alt+Enter** opens Frequencies with it. With an empty search box you see your recent commands and some suggestions. A greyed-out command says why it cannot run yet; choose it anyway and Search explains what is missing, with **Open data file...** and **Load sample survey** buttons when it needs data.
+
+**Back to the start screen.** The **Socius** logo at the top left is the Home button. It shows the start screen (open a file or project, load the sample survey, recent projects) even while data is open; the bar at the top says what is open, and **Back to your data** (or any tab) returns. Opening a file from there replaces the open data, as **File > Open data file** does.
 
 ## Contents
 
@@ -58,7 +60,7 @@ The variables used in this guide:
 | `wt` | Design weight (mean 1) |
 | `q_challenge`, `q_connect` | Two open-ended questions, in English with some answers in Hindi, Bengali and Tamil |
 
-The Text coding part of the guide also uses three fictional interview transcripts (**Text coding > Load sample interviews**).
+The Text coding part of the guide also uses three fictional interview transcripts (**Text coding > Load sample interviews...**, then **Load 3 interviews**).
 
 ## Open your SPSS file
 
@@ -78,9 +80,12 @@ Before any analysis, spend five minutes in Variable View. It saves a lot of wron
 2. Check the **Measure** column. Nominal, ordinal and scale matter in Socius: regression treats nominal and ordinal variables that have value labels as categories and dummy-codes them automatically, and dialogs warn when a variable's level does not suit a box.
 3. Check the **Missing** column. Click a cell and press Enter to open the missing values dialog. In the sample, `trust1` shows 8 and 9, and `hh_income` shows 999999. Declared missing values are left out of every statistic. You can choose **No missing values**, **Discrete missing values** (up to three codes) or **Range plus one optional discrete value** (type LO or HI for an open end, for example 90 to HI).
 4. If a group of variables shares the same coding, set it once and use **Data > Copy variable properties** to copy value labels, missing values or the measure to the others (for example all items of a Likert battery).
+   For many variables at once, use **Data > Define variable properties...** (also on the Variable View toolbar and right-click menu). Tick the variables, click **Scan N variables**, and Socius lists every value that occurs with its count. It flags likely missing codes (**looks like a missing code**: 8 or 9 on a 1 to 5 scale, 98, 99, 999, negative codes, labels such as "Don't know"), unlabelled values and values outside the labelled range, and suggests a measurement level with its reason. Type labels into the grid, tick **Missing**, use **Suggest labels** (agreement scales, yes/no, missing-code labels, always as a preview) or **Apply these properties to other variables...** for a battery. Nothing changes until **Apply**; all edits are then one change (Edit > Undo in Data View reverses it) and the SPSS syntax goes to Output. SPSS limits (3 single missing values, 120-byte value labels) are checked in place.
 5. Run **Analyze > Descriptive Statistics > Frequencies** on `trust1` and `belong`. The table lists the missing codes separately from the valid answers, as in SPSS. Run **Analyze > Descriptive Statistics > Descriptives** on `age` and `hh_income`: `age` has N = 623 and the income mean no longer includes the 999999 codes.
 
 Tip: **View > Value labels in Data View** switches the data grid between codes and labels.
+
+**Renaming a variable.** In Variable View, double-click the **Name** cell (or select it and press Enter or F2, or start typing), type the new name and press Enter or Tab, or click elsewhere. Double-clicking a column heading in Data View takes you there with the name ready to change. Names follow SPSS rules: start with a letter (any alphabet, so Bengali names work), use only letters, digits and `_ . @ # $`, no spaces, do not end with `.` or `_`, at most 64 bytes (about 21 Bengali letters), and different from every other name ignoring capitals. A wrong name shows the reason and a suggestion under the cell ("Names cannot contain spaces. Try age_group."). Weights, filters, exported codes and earlier results follow the variable, so renaming breaks nothing; Edit > Undo shows "Undo rename of ...".
 
 ## Recode age into groups
 
@@ -97,9 +102,9 @@ Goal: a new variable `agegrp` with 1 = 18-29, 2 = 30-44, 3 = 45-64, 4 = 65+, kee
 4. Under **Labels for the new codes**, type 18-29, 30-44, 45-64 and 65+.
 5. Click **OK**.
 
-The first matching rule wins, as in SPSS. Putting the missing rule first matters: ranges also catch user-missing codes, so without it a code such as 999 would land in "65+". Values without any rule become missing in the new variable.
+The first matching rule wins, as in SPSS. Putting the missing rule first matters: ranges also catch user-missing codes, so without it a code such as 999 would land in "65+". Values without any rule become missing in the new variable: the dialog says so in an orange box whenever there is no **All other values** rule, with a one-click **Keep them: add "All other values → Copy old value"**. Here every age is covered, so leave it.
 
-The new variable appears next to the data, and Output logs the step with its SPSS syntax. **Edit > Undo** (Ctrl+Z) removes it if you made a mistake.
+The new variable appears at the end of the data, and Output logs the step with its SPSS syntax. The message that confirms it has a **Show** button, which selects the new column in Data View. **Edit > Undo** (Ctrl+Z) in Data View or Variable View removes it if you made a mistake.
 
 An alternative is **Transform > Visual binning**: pick `age`, choose **My own cutpoints**, type `29, 44, 64`, and Socius shows how many cases fall in each group before you create it. It can also make equal-width intervals or equal-size groups (quartiles, quintiles).
 
@@ -328,6 +333,8 @@ All charts come from the **Graphs** menu or from options inside analyses. They a
 
 Under each chart: **Show data** lists the numbers behind it, **PNG** saves a picture for Word or PowerPoint, and **SVG** saves a sharp vector version for publication.
 
+In APA style (the default), charts are numbered like tables: **Figure 1**, **Figure 2** and so on in bold, with the title in italics above the chart, in Output and in the Word and HTML reports. The numbering runs through the whole Output tab, so plots that analyses draw (such as regression residual plots) count too. In SPSS style a chart keeps its title inside the chart. PNG and SVG files keep the title inside the picture.
+
 ## Copy APA tables into Word and export the report
 
 At the top of the **Output** tab:
@@ -341,7 +348,7 @@ To put one result into Word:
 2. Click **Copy** at the top right of the output item.
 3. Paste into Word or Google Docs. The tables keep their formatting.
 
-The APA sentence has its own **Copy** button. The **Outline** button lists all items so you can jump between them, and you can move items up and down or delete them.
+The APA sentence has its own **Copy** button. The **Outline** button lists all items so you can jump between them, and you can move items up and down or delete them. Deleting a result shows a message with **Undo**; in the Output tab, **Edit > Undo** (Ctrl+Z) brings back the last deleted result too.
 
 To export everything at once, click **Export report** in the Output tab (or **File > Export output report**) and choose:
 
@@ -404,7 +411,9 @@ Filters at the top show **Not coded yet** responses, responses with a given code
 
 Auto-coded segments are marked as such. Always read a sample of them in **Text coding > Retrieve coded segments**. Keyword rules miss answers in other scripts (the sample has some answers in Hindi, Bengali and Tamil) and answers that describe a theme without the keyword, so code the rest by hand.
 
-**Look at the results.** **Text coding > Code frequencies** counts responses per code; **Codes by attribute** shows how often each code appears in each group (for example by city); **Code co-occurrence** shows which codes go together; **Word frequencies** and **Keyword in context** help you find themes you have not coded yet. **Send to Output** puts a table in the Output tab with your statistics. **Memos** keep your analytic notes next to the data.
+**Undo.** **Undo coding** in the Text coding toolbar, or **Edit > Undo** (Ctrl+Z) while you are in the Text coding tab, takes back the last coding change (codes, coded passages, memos, sources); **Edit > Redo** (Ctrl+Y) brings it back. It never touches the data: undo **Export codes to dataset...** from Data View.
+
+**Look at the results.** **Text coding > Code frequencies** counts responses per code (a theme shows the total of its sub-codes, marked "theme total"); **Codes by attribute** shows how often each code appears in each group (for example by city); **Code co-occurrence** shows which codes go together; **Word frequencies** and **Keyword in context** help you find themes you have not coded yet. **Send to Output** puts a table in the Output tab with your statistics. **Memos** keep your analytic notes next to the data.
 
 ## Turn codes into variables and crosstab them
 
@@ -425,7 +434,7 @@ If you code more responses later, delete the old code variables (or undo) and ex
 
 ## Code interview transcripts
 
-1. **Text coding > Load sample interviews** adds three fictional interviews (Shyamali in Kolkata, Manoj in Bengaluru, Sunita in Delhi) with attributes such as age, gender, city and migration. For your own transcripts use **Text coding > Import documents**: Word `.docx`, `.txt` or `.md` files (one document per file), or paste text.
+1. **Text coding > Load sample interviews...** (or **Import > Load sample interviews...** in the toolbar) opens the **Sample interviews** tab of **Import sources**; click **Load 3 interviews**. It adds three fictional interviews (Shyamali in Kolkata, Manoj in Bengaluru, Sunita in Delhi) with attributes such as age, gender, city and migration. For your own transcripts use **Text coding > Import documents**: Word `.docx`, `.txt` or `.md` files (one document per file), or paste text.
 2. Open the **Documents** view and click an interview in the **Sources** panel.
 3. Select a passage with the mouse. A small box appears: type to find a code, press Enter to apply it, or type a new name and choose **Create code** to add it to the codebook on the spot. You can also select text and click a code in the Codebook panel.
 4. Coded passages are highlighted in the code's colour, with bars in the margin. Click a highlight to see or remove its codes. Passages can have several codes, and codes can overlap.
@@ -471,7 +480,7 @@ Socius can ask an AI model to explain results and to help with text coding. It i
 
 **Where to find it.** The **AI** menu (between Text coding and Help, also in the phone menu) lists everything AI can do. The small **AI** chip in the top bar shows the state of AI: **not set up**, **not tested** (set up, but no test or request has worked yet), **not connected** (the last test or request failed; click the chip for the reason) or ready (with the provider's name); click it for the same list and the settings. If you choose an AI item before AI is set up, the settings open and say what the item will do once it is. If the item needs something first (a result to explain, answers to code), a short message says what to do, with a button that does it.
 
-- **Ask the Socius assistant:** opens the assistant, which answers questions about methods and your data (for example "Which test should I use to compare trust between three cities?").
+- **Ask the Socius assistant:** opens the assistant, which answers questions about methods and your data (for example "Which test should I use to compare trust between three cities?"). You can also click the **Assistant** button at the right end of the view tabs (only its icon on a phone) or press Ctrl+J (Cmd+J on a Mac). The panel opens on the right, below the top bar and the tabs; in a window at least 1000 pixels wide the workspace moves aside to make room for it. If AI is not set up yet, a question you send stays in the box and a note offers **Set up AI**.
 - **Explain a result:** every result in Output has an **Explain with AI** button next to **Copy**. It first shows which provider will receive what, with a **What will be sent** preview: the result's tables (numbers and labels), Socius's own summary, the APA sentence and any warnings. Individual answers are never sent: scatter plot points, outlier values and tables that list single cases are left out. Click **Explain** and the answer appears under the result, in five parts: what was tested, what the numbers mean, whether the assumptions and warnings matter, how to report it, and cautions (such as association is not causation). **Stop** ends it, **Copy** copies it, and **Add to output** keeps it in the output as a note labelled AI-generated. **Discuss with the assistant** continues in the assistant. The explanation can be wrong: check every number against the tables.
 - **Suggest a codebook:** the AI reads a sample of your excerpts and proposes codes with definitions, inclusion and exclusion criteria and example quotes. Add a research question or focus to steer it. You choose which codes to keep.
 - **Suggest codes for open-ended answers:** the AI applies your existing codebook to open-ended responses, in batches. You review every suggestion and **Accept** or **Reject** it; nothing is coded without your approval. Accepted codes are marked as AI suggestions.
@@ -483,7 +492,11 @@ The AI menu is their one home. In the Text coding workspace the **AI suggestions
 
 - **On this computer (free, private).** A small language model runs inside your browser. Nothing leaves your computer, and after a one-time download it works offline. Choose **Small and fast** (about 1 GB to download) or **Better quality** (about 1.8 GB, needs more graphics memory). Click **Download model** and wait for the progress bar; the browser keeps the model for next time. Before downloading, Socius checks that the browser has room for the model (with some to spare for your autosaved work); if not, it says so and offers to delete another downloaded model, choose the smaller model, or use Gemini or Ollama instead. **Browser storage (downloaded models)** at the bottom of this section shows what each model takes and deletes it. It needs WebGPU, which recent Chrome and Edge offer on Windows, Mac and ChromeOS desktops and laptops; the settings say whether your browser can run it. It is slower and less accurate than the online options, and handles fewer excerpts at a time. This is the option to use for confidential interviews.
 - **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and copy the key with its copy button into the settings (new keys start with `AQ.`). Leave **Model** on **Automatic: Flash-Lite (fastest, most free requests)**: Socius picks the newest Flash-Lite model your key can use, and another one if that is not available. **Automatic: Flash** writes somewhat better answers but starts slower and allows only about 5 requests a minute on the free tier; the assistant still uses Flash-Lite for looking things up, and coding suggestions always use Flash-Lite. (If you had chosen Flash in an earlier version, Socius switched you to Flash-Lite once and says so in the settings; choose Flash again if you prefer it.) Click **Test connection** to check it. By default the key is kept only until you close the tab. Tick **Remember this key on this computer** to keep it: anyone using this browser profile, and other sites hosted on hackhead95.github.io, could then read it, so leave it off on shared computers.
-- **Other service (advanced).** Any OpenAI-compatible service: Groq and OpenRouter (choose them from the list to fill in the address, then paste your key; on OpenRouter, free models end in `:free`), or a model on your own computer with Ollama or LM Studio (the service must allow requests from the Socius page; for Ollama, start it with `OLLAMA_ORIGINS` set to the site's address).
+- **Other service (advanced).** Any OpenAI-compatible service: Groq and OpenRouter (choose them from the list to fill in the address, then paste your key; on OpenRouter, free models end in `:free`), or a model on your own computer: choose **Ollama on this computer** (address `http://localhost:11434/v1`, model `llama3.2`) or **LM Studio on this computer** (`http://localhost:1234/v1`) under **Service**. A **Set up Ollama** (or **Set up LM Studio**) box then lists the steps, with a **Copy** button for commands such as `ollama pull llama3.2`, and **Test connection** checks five things in turn: **Is the program running?**, **Does it allow this website?**, **Browser permission for this computer**, **Is the model installed?** and **Did it answer?**. A failed step shows the fix:
+  - Ollama refuses websites that are not on your computer until the `OLLAMA_ORIGINS` setting lists the site's address (`https://hackhead95.github.io`, exactly, with no path and no spaces), and Ollama is restarted. The check shows the steps for **Windows** (`setx OLLAMA_ORIGINS "https://hackhead95.github.io"`, or **Edit environment variables for your account**, then restart Ollama from the Start menu), **macOS** (`launchctl setenv OLLAMA_ORIGINS "https://hackhead95.github.io"`, then quit and reopen Ollama; repeat after each restart of the Mac) and **Linux** (`sudo systemctl edit ollama.service`, add `Environment="OLLAMA_ORIGINS=https://hackhead95.github.io"`, then `sudo systemctl daemon-reload && sudo systemctl restart ollama`), with Copy buttons. Only list websites you trust. LM Studio needs **Enable CORS** in its server settings (or `lms server start --cors`).
+  - Chrome and Edge ask before a website may reach programs on your computer: click **Allow**. If it was blocked, click the icon at the left of the address bar, **Site settings**, and set **Apps on device** (or **Local network access**) to **Allow**, then reload.
+  - Safari blocks secure websites from reaching programs on your computer: use Chrome, Edge or Firefox for Ollama or LM Studio.
+  - If the model is missing, the check lists the installed ones to pick from, or shows the `ollama pull` command.
 - **Claude.** When Socius runs inside Claude, it uses Claude automatically.
 
 After a successful **Test connection**, an **AI is ready. Try it:** panel offers a button for each AI feature; it closes the settings and takes you there.
@@ -539,13 +552,22 @@ This is a text encoding problem. Recent SPSS files state their encoding and open
 Every procedure is tested against scipy, statsmodels and other reference software, and p-values agree to at least six significant digits. If you still see a difference, copy the syntax Socius shows and run it in SPSS to compare like with like.
 
 **Where is my data stored?**
-Only in your browser, on your computer. Files you open are never uploaded. The autosaved session and the Recent projects list are kept in the browser's own storage (IndexedDB). Files you save go wherever your browser puts downloads. The only data that can leave your computer is the excerpts you choose to send with the optional AI suggestion features, and only to the provider you chose in **AI > AI assistant settings** (with the on-device option, nothing leaves at all). AI keys are kept in the browser, never in project files.
+Only in your browser, on your computer. Files you open are never uploaded. The autosaved session and the Recent projects list are kept in the browser's own storage (IndexedDB). **Help > About Socius** lists what Socius stores in this browser (autosave, preferences and search history, the error log, and AI settings with the key only if you ticked **Remember this key on this computer**), warns that other websites on the same github.io account could read it, and shows the storage used. Files you save go wherever your browser puts downloads. The only data that can leave your computer is the excerpts you choose to send with the optional AI suggestion features, and only to the provider you chose in **AI > AI assistant settings** (with the on-device option, nothing leaves at all). AI keys are kept in the browser, never in project files.
 
 **I lost my work after clearing the browser.**
 Clearing your browser's history, cookies or site data, using a private or incognito window, or switching to another browser or computer loses the autosaved session. **File > Close data and start fresh** also clears it on purpose. The autosave is a convenience, not a backup: use **File > Save project** regularly and keep the `.socius.json` file with your other research files.
 
 **I made a mistake in a transformation.**
-**Edit > Undo** (Ctrl+Z) reverses data changes one step at a time, and **Edit > Redo** (Ctrl+Y) brings them back. Coding actions have their own **Undo** button in the Text coding toolbar.
+**Edit > Undo** (Ctrl+Z) reverses the last change in the tab you are in, and **Edit > Redo** (Ctrl+Y, or Ctrl+Shift+Z) brings it back: data changes in Data View and Variable View, coding changes in Text coding, and the last deleted result in Output (otherwise the last data change). The Edit menu names the step, for example **Undo rename of age** or **Undo new variable agegrp**. Text coding also has its own **Undo coding** button in its toolbar.
+
+**An analysis takes a long time.**
+Analyses with roughly 50,000 data cells or more (cases times variables used) run in the background: the dialog shows a moving bar, "Running in the background" with the seconds so far, and a **Stop** button instead of Cancel. The rest of Socius stays usable.
+
+**A dialog did not close when I clicked outside it.**
+Dialogs with fields or check boxes stay open on a stray click so your choices are not lost (the dialog's edge lights up briefly). Use **Cancel** or Esc.
+
+**A banner says "Socius was updated".**
+A new version was published while the page was open. Click **Reload**: the session is saved first, then the page reloads with the new version.
 
 **A dialog warns that a variable has the wrong measurement level.**
 It is a warning, not a block. Socius suggests which levels suit each box (for example scale for a t-test outcome). Often the fix is to set the right measure in Variable View.
