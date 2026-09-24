@@ -7,3 +7,5 @@ playwright-report
 .DS_Store
 scripts/oracle/__pycache__
 site
+__pycache__/
+*.pyc
