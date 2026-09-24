@@ -2,7 +2,7 @@
 .chart { position: relative; width: 100%; min-width: 0; }
 .chart-svg text { font-family: var(--font-ui); }
 .chart-hit { cursor: default; outline: none; }
-.chart-hit:focus-visible { stroke: var(--focus); stroke-width: 2px; }
+.chart-hit:focus-visible { stroke: var(--focus); stroke-width: 3px; vector-effect: non-scaling-stroke; } /* keeps its width when the chart is scaled down on small screens */
 .chart-hit-quiet:focus-visible { stroke-dasharray: none; }
 .chart-tip {
   position: absolute; z-index: 5; pointer-events: none; min-width: 120px; max-width: 280px;

@@ -354,7 +354,7 @@ function CommandPalette() {
                     </span>
                     <span className="palette-text">
                       <span className={`palette-title ${e.group === 'variables' ? 'mono' : ''}`}>{e.title}</span>
-                      {e.detail ? <span className="palette-detail">{e.detail}</span> : null}
+                      {e.detail ? <span className="palette-detail" title={e.detail}>{e.detail}</span> : null}
                       {e.disabled && e.disabledReason ? <span className="palette-reason">{e.disabledReason}</span> : null}
                     </span>
                     {e.secondary?.length ? (
