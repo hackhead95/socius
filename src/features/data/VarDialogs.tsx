@@ -42,6 +42,18 @@ function kindOf(v: Variable): TypeKind {
   return 'numeric';
 }
 
+/** Decimal places shown by numbers stored as text (for a sensible format when converting to numeric). */
+function textDecimals(ds: Dataset, v: Variable): number {
+  const col = ds.columns[v.id];
+  if (!Array.isArray(col)) return v.decimals;
+  let dec = 0;
+  for (let i = 0; i < Math.min(col.length, 5000); i++) {
+    const m = /\.(\d+)\s*$/.exec(col[i]);
+    if (m && /^[\s$+-]*[\d,]*\.\d+\s*%?$/.test(col[i])) dec = Math.max(dec, Math.min(4, m[1].length));
+  }
+  return dec;
+}
+
 export function TypeDialog({ ds, v, onClose }: { ds: Dataset; v: Variable; onClose: () => void }) {
   const mutate = useStore((s) => s.mutateDataset);
   const [kind, setKind] = useState<TypeKind>(kindOf(v));
@@ -103,7 +115,7 @@ export function TypeDialog({ ds, v, onClose }: { ds: Dataset; v: Variable; onClo
         <div className="radio-list" role="radiogroup" aria-label="Type">
           {kinds.map((x) => (
             <label key={x.k} className="check">
-              <input type="radio" name="vtype" checked={kind === x.k} onChange={() => { setKind(x.k); setErr(''); if (x.k === 'string' && v.type !== 'string') setWidth('24'); }} />
+              <input type="radio" name="vtype" checked={kind === x.k} onChange={() => { setKind(x.k); setErr(''); if (x.k === 'string' && v.type !== 'string') setWidth('24'); else if (x.k !== 'string' && v.type === 'string') { setWidth('8'); setDec(String(textDecimals(ds, v))); } }} />
               <span>{x.label}</span>
               <span className="help">{x.help}</span>
             </label>
@@ -160,9 +172,11 @@ export function parseLabelLines(text: string, type: VarType): { labels: ValueLab
       bad.push(line);
       continue;
     }
-    const valText = m[1] ?? m[2] ?? m[3];
-    const label = m[4].trim().replace(/^(['"])(.*)\1$/, '$2');
+    let valText = m[1] ?? m[2] ?? m[3];
+    // Questionnaire styles: "1) Yes", "1. Yes", "1 - Yes", "1 – Yes".
+    const label = m[4].trim().replace(/^[-–—]\s+/, '').replace(/^(['"])(.*)\1$/, '$2');
     if (type === 'numeric') {
+      if (m[3] && /^-?\d+(\.\d+)?[).]$/.test(valText)) valText = valText.slice(0, -1);
       const n = Number(valText);
       if (!Number.isFinite(n)) {
         bad.push(line);

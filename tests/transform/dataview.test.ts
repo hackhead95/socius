@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCellInput, parseDateText, parseTsv, toTsv, editText } from '../../src/features/data/gridEdit';
-import { changeType, clearRange, copyProperties, defaultVarName, duplicateVariables, formatWith, writeTexts } from '../../src/features/data/mutations';
+import { changeType, clearRange, copyProperties, defaultVarName, duplicateVariables, formatWith, looksLikeHeader, nameVariablesFromHeader, writeTexts } from '../../src/features/data/mutations';
 import { findNext, summarizeColumn } from '../../src/features/data/find';
 import { parseLabelLines } from '../../src/features/data/VarDialogs';
 import { makeVariable } from '../../src/core/types';
@@ -32,6 +32,47 @@ describe('cell input parsing', () => {
   it('truncates strings to their width', () => {
     const s = makeVariable({ name: 's', type: 'string', width: 3 });
     expect(parseCellInput(s, 'abcdef')).toEqual({ ok: true, value: 'abc' });
+  });
+});
+
+describe('numeric to string keeps labels and missing codes matching the data', () => {
+  it('converts labels and missing values with the same format as the values', () => {
+    const d = ds([{ name: 'q', values: [1, 2, 9, null] }]);
+    d.variables[0] = { ...d.variables[0], format: 'F8.2', decimals: 2, valueLabels: [{ value: 1, label: 'Yes' }, { value: 2, label: 'No' }], missing: { discrete: [9] } };
+    const r = changeType(d, d.variables[0].id, 'string', 'A8', 8, 0);
+    expect(col(r, 'q')).toEqual(['1.00', '2.00', '9.00', '']);
+    expect(r.variables[0].valueLabels).toEqual([{ value: '1.00', label: 'Yes' }, { value: '2.00', label: 'No' }]);
+    expect(r.variables[0].missing.discrete).toEqual(['9.00']);
+  });
+});
+
+describe('pasting a table with headings into an empty dataset', () => {
+  it('detects a heading row and names the variables from it', () => {
+    expect(looksLikeHeader([['name', 'score'], ['Asha', '3.5'], ['Bikram', '4']])).toBe(true);
+    expect(looksLikeHeader([['1', '2'], ['3', '4']])).toBe(false); // numbers are data
+    expect(looksLikeHeader([['Asha', 'Delhi'], ['Bikram', 'Pune']])).toBe(false); // all text: cannot tell
+    expect(looksLikeHeader([['a', 'a'], ['1', '2']])).toBe(false); // duplicate headings
+    expect(looksLikeHeader([['x', 'y']])).toBe(false);
+    const empty = ds([]);
+    const rep = writeTexts(empty, [{ row: 0, col: 0, text: 'Asha' }, { row: 0, col: 1, text: '3.5' }]);
+    const named = nameVariablesFromHeader(rep.dataset, 0, ['name', 'Score (1-5)']);
+    expect(named.variables.map((v) => v.name)).toEqual(['name', 'Score_1_5']);
+    expect(named.variables[1].label).toBe('Score (1-5)');
+    expect(named.variables[1].type).toBe('numeric');
+  });
+});
+
+describe('long text in string variables', () => {
+  it('widens the variable instead of cutting typed or pasted text', () => {
+    const d = ds([{ name: 's', values: ['ab', 'cd'] }]);
+    d.variables[0] = { ...d.variables[0], width: 2, format: 'A2' };
+    const r = writeTexts(d, [{ row: 0, col: 0, text: 'Kolkata North' }, { row: 1, col: 0, text: 'দিল্লি' }]);
+    expect(col(r.dataset, 's')).toEqual(['Kolkata North', 'দিল্লি']);
+    expect(r.dataset.variables[0].width).toBe(18); // দিল্লি is 18 UTF-8 bytes
+    expect(r.dataset.variables[0].format).toBe('A18');
+    expect(r.widened).toEqual(['s']);
+    expect(d.variables[0].width).toBe(2); // original untouched (undo)
+    expect(writeTexts(d, [{ row: 0, col: 0, text: 'x' }]).widened).toEqual([]);
   });
 });
 
@@ -78,7 +119,7 @@ describe('variable properties', () => {
     const d = ds([{ name: 'x', values: [1.5, null, 3], opts: { valueLabels: [{ value: 3, label: 'Three' }] } }]);
     const s = changeType(d, d.variables[0].id, 'string', 'A8', 8, 0);
     expect(col(s, 'x')).toEqual(['1.50', '', '3.00']);
-    expect(s.variables[0].valueLabels).toEqual([{ value: '3', label: 'Three' }]);
+    expect(s.variables[0].valueLabels).toEqual([{ value: '3.00', label: 'Three' }]);
     const back = changeType(s, d.variables[0].id, 'numeric', 'F8.2', 8, 2);
     expect(col(back, 'x').map((v) => (Number.isNaN(v) ? null : v))).toEqual([1.5, null, 3]);
     const t = ds([{ name: 'd', values: ['2020-01-02', 'nope'] }]);
@@ -111,6 +152,13 @@ describe('variable properties', () => {
     expect(r.labels).toEqual([{ value: 1, label: 'Strongly disagree' }, { value: 2, label: 'Disagree' }, { value: 3, label: 'Neutral' }]);
     expect(r.bad.length).toBe(2);
     expect(parseLabelLines("m=Male\n'f'=\"Female\"", 'string').labels).toEqual([{ value: 'm', label: 'Male' }, { value: 'f', label: 'Female' }]);
+  });
+  it('reads questionnaire-style lists: 1) Yes, 2. No, 3 - Maybe, -9 = Refused', () => {
+    const r = parseLabelLines('1) Yes\n2. No\n3 - Maybe\n4 – Not sure\n-9 = Refused\n1.5 Half', 'numeric');
+    expect(r.labels).toEqual([
+      { value: 1, label: 'Yes' }, { value: 2, label: 'No' }, { value: 3, label: 'Maybe' }, { value: 4, label: 'Not sure' }, { value: -9, label: 'Refused' }, { value: 1.5, label: 'Half' },
+    ]);
+    expect(r.bad).toEqual([]);
   });
 });
 

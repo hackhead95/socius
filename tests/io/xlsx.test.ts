@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { makeDataset, makeVariable } from '../../src/core/types';
 import { exportXlsx, importFile, listXlsxSheets } from '../../src/lib/io';
+import { parseMissingText, parseValueLabelsText } from '../../src/lib/io/xlsx';
 import { FIXTURES, HAS_ORACLE, PYTHON, tempPath } from './helpers';
 
 const workbook = () => new Uint8Array(readFileSync(join(FIXTURES, 'workbook.xlsx')));
@@ -105,12 +106,32 @@ describe('XLSX export', () => {
     expect(col(r, 'when').v.format).toBe('DATE11');
     expect(col(r, 'dur').data).toEqual([2700, 3723, NaN]);
     expect(col(r, 'income').data).toEqual([1500.25, NaN, -1]);
+    // The Variables sheet brings the dictionary back: labels, value labels, missing values, measure.
+    const g = col(r, 'gender').v;
+    expect(g.label).toBe('Gender');
+    expect(g.valueLabels).toEqual([{ value: 1, label: 'Male' }, { value: 2, label: 'Female' }]);
+    expect(g.missing).toEqual({ discrete: [9] });
+    expect(g.measure).toBe('nominal');
+    expect(col(r, 'income').v.missing).toEqual({ discrete: [], range: { lo: -Infinity, hi: 0 } });
+    expect(col(r, 'comment').v.label).toBe('Comment');
+    expect(r.warnings.join(' ')).toMatch(/restored from the "Variables" sheet/);
+  });
+
+  it('parses codebook text back into value labels and missing values', () => {
+    expect(parseValueLabelsText('1 = Yes; 2 = No; 3 = Maybe; or not', 'numeric')).toEqual([{ value: 1, label: 'Yes' }, { value: 2, label: 'No' }, { value: 3, label: 'Maybe; or not' }]);
+    expect(parseValueLabelsText('KOL = Kolkata; DEL = Delhi', 'string')).toEqual([{ value: 'KOL', label: 'Kolkata' }, { value: 'DEL', label: 'Delhi' }]);
+    expect(parseMissingText('90 THRU HI, -1', 'numeric')).toEqual({ discrete: [-1], range: { lo: 90, hi: Infinity } });
+    expect(parseMissingText('LO THRU 0', 'numeric')).toEqual({ discrete: [], range: { lo: -Infinity, hi: 0 } });
+    expect(parseMissingText('8, 9', 'numeric')).toEqual({ discrete: [8, 9] });
+    expect(parseMissingText('NA, DK', 'string')).toEqual({ discrete: ['NA', 'DK'] });
+    expect(parseMissingText('oops', 'numeric')).toBeNull();
   });
 
   it('writes labels instead of codes when asked, and a codebook sheet', async () => {
     const bytes = new Uint8Array(await (await exportXlsx(exportSample(), { values: 'labels' })).arrayBuffer());
     const r = await importFile('x.xlsx', bytes);
     expect(col(r, 'gender').data).toEqual(['Male', 'Female', '9']);
+    expect(col(r, 'gender').v.valueLabels).toEqual([]); // codes 1/2 are not in the label text data
     const book = await importFile('x.xlsx', bytes, { sheet: 'Variables' });
     const names = col(book, 'Name').data;
     expect(names).toEqual(['gender', 'comment', 'when', 'dur', 'income']);

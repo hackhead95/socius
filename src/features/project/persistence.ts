@@ -70,11 +70,13 @@ function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) 
 export interface SessionRecord {
   savedAt: number;
   state: ProjectState;
+  /** The data had changes not saved in a project file (so a restored session still asks before replacing it). */
+  modified?: boolean;
 }
 
 /** Save the working state (structured clone keeps typed arrays as-is). Returns false if storage is unavailable. */
-export async function saveSession(state: ProjectState): Promise<boolean> {
-  const rec: SessionRecord = { savedAt: Date.now(), state };
+export async function saveSession(state: ProjectState, modified = false): Promise<boolean> {
+  const rec: SessionRecord = { savedAt: Date.now(), state, modified };
   const ok = await tx(SESSION_STORE, 'readwrite', (s) => s.put(rec, 'current'));
   return ok !== null;
 }

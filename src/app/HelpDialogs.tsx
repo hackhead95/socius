@@ -17,7 +17,7 @@ export function GettingStartedDialog({ onClose }: { onClose: () => void }) {
           <strong>Prepare what you need.</strong> The Transform menu recodes age into groups, reverse-codes negatively worded items, builds scales (with Cronbach's alpha) and computes new variables with SPSS-style formulas. Every step is logged in Output with its SPSS syntax, and Ctrl+Z undoes it.
         </li>
         <li>
-          <strong>Run an analysis.</strong> For example Analyze &gt; Descriptive Statistics &gt; Crosstabs with sex in the columns and voting in the rows. Results appear in Output with SPSS-style tables, a plain-language summary and an APA sentence.
+          <strong>Run an analysis.</strong> For example, in the sample survey, Analyze &gt; Descriptive Statistics &gt; Crosstabs with gender in the rows and vote in the columns: the row percentages compare how many women and men voted. Results appear in Output with SPSS-style tables, a plain-language summary and an APA sentence.
         </li>
         <li>
           <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group.

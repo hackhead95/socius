@@ -1,5 +1,6 @@
 // File import/export entry points. Other modules code against these signatures.
 // Nothing here touches DOM-only globals at import time; everything runs in the browser and in node.
+import { unzipSync } from 'fflate';
 import type { Dataset } from '../../core/types';
 import { codebookRows as buildCodebookRows } from './codebook';
 import { readDelimited, writeDelimited } from './csv';
@@ -24,7 +25,7 @@ export type ImportOptions = {
   sheet?: string | number;
 };
 
-type Kind = 'sav' | 'xlsx' | 'delimited';
+type Kind = 'sav' | 'xlsx' | 'delimited' | 'zip';
 
 const TEXT_EXTENSIONS = new Set(['csv', 'tsv', 'tab', 'txt', 'dat', 'psv', 'text']);
 
@@ -41,7 +42,15 @@ const UNSUPPORTED: Record<string, string> = {
   numbers: 'Apple Numbers files cannot be opened directly. In Numbers, use File > Export To > Excel or CSV, then open that file.',
   sps: 'This is an SPSS syntax file, not a data file. Open the .sav data file instead.',
   spv: 'This is an SPSS output file, not a data file. Open the .sav data file instead.',
+  pdf: 'PDF files cannot be opened as data. If the PDF holds a table, copy it into Excel, save it as .xlsx or CSV, then open that file. To code interview text, use Text coding > Import documents.',
+  doc: 'Word documents cannot be opened as data. To code interview text, use Text coding > Import documents. For a table, copy it into Excel and save as .xlsx or CSV.',
+  docx: 'Word documents cannot be opened as data. To code interview text, use Text coding > Import documents. For a table, copy it into Excel and save as .xlsx or CSV.',
+  ppt: 'PowerPoint files cannot be opened as data. Open a .sav, .csv or .xlsx data file instead.',
+  pptx: 'PowerPoint files cannot be opened as data. Open a .sav, .csv or .xlsx data file instead.',
 };
+
+const IMAGE = 'Images cannot be opened as data. Open a .sav, .csv or .xlsx data file instead.';
+for (const ext of ['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'bmp', 'tif', 'tiff']) UNSUPPORTED[ext] = IMAGE;
 
 function extensionOf(name: string): string {
   const base = name.replace(/^.*[\\/]/, '');
@@ -63,12 +72,54 @@ function looksLikeText(bytes: Uint8Array): boolean {
   return true;
 }
 
+const ZIP_SIG = [0x50, 0x4b, 0x03, 0x04];
+const OPENABLE_IN_ZIP = /\.(sav|zsav|csv|tsv|txt|tab|dat|xlsx|xlsm|json)$/i;
+
+/** True for a zip archive that is not an Office document (xlsx/docx carry [Content_Types].xml). */
+export function isPlainZip(bytes: Uint8Array): boolean {
+  if (!startsWith(bytes, ZIP_SIG)) return false;
+  // The first local file header names its entry at offset 30; Office files start with [Content_Types].xml
+  // (or at least list it early). Scan the head for the name rather than trusting entry order.
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, 65536)));
+  if (head.includes('[Content_Types].xml')) return false;
+  // Fall back to the central directory at the end of the archive.
+  const tail = new TextDecoder('latin1').decode(bytes.subarray(Math.max(0, bytes.length - 65536)));
+  return !tail.includes('[Content_Types].xml');
+}
+
+/**
+ * The single data or project file inside a plain zip (for example `survey.sav.zip`, which is how
+ * the claude.ai Artifact viewer saves .sav files). Throws a plain-language error when the archive
+ * holds no file Socius can open, or several.
+ */
+export function unwrapZip(name: string, bytes: Uint8Array): { name: string; bytes: Uint8Array } {
+  const usable = (n: string) => !n.endsWith('/') && !/(^|\/)(__MACOSX\/|\.)/.test(n) && OPENABLE_IN_ZIP.test(n);
+  let files: Record<string, Uint8Array>;
+  try {
+    files = unzipSync(bytes, { filter: (f) => usable(f.name) });
+  } catch {
+    throw new Error(`"${name}" is a damaged or unsupported zip archive. Unzip it on your computer, then open the file inside.`);
+  }
+  const names = Object.keys(files);
+  if (!names.length) {
+    throw new Error(`"${name}" is a zip archive with no data file Socius can open inside. Supported files: .sav, .zsav, .csv, .tsv, .txt, .xlsx and .socius.json projects.`);
+  }
+  if (names.length > 1) {
+    const list = names.slice(0, 4).map((n) => n.replace(/^.*\//, '')).join(', ');
+    throw new Error(`"${name}" holds ${names.length} files (${list}${names.length > 4 ? ', ...' : ''}). Unzip it on your computer, then open the one you need.`);
+  }
+  return { name: names[0].replace(/^.*\//, ''), bytes: files[names[0]] };
+}
+
 function detectKind(name: string, bytes: Uint8Array): Kind {
   const ext = extensionOf(name);
   // Magic bytes first.
   if (startsWith(bytes, [0x24, 0x46, 0x4c, 0x32]) || startsWith(bytes, [0x24, 0x46, 0x4c, 0x33])) return 'sav'; // $FL2 / $FL3
+  if (startsWith(bytes, [0x25, 0x50, 0x44, 0x46])) throw new Error(UNSUPPORTED.pdf); // %PDF
+  if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47]) || startsWith(bytes, [0xff, 0xd8, 0xff]) || startsWith(bytes, [0x47, 0x49, 0x46, 0x38])) throw new Error(IMAGE);
   if (startsWith(bytes, [0x50, 0x4b, 0x03, 0x04])) {
-    if (ext === 'ods' || ext === 'numbers') throw new Error(UNSUPPORTED[ext]);
+    if (UNSUPPORTED[ext]) throw new Error(UNSUPPORTED[ext]);
+    if (ext !== 'xlsx' && ext !== 'xlsm' && isPlainZip(bytes)) return 'zip';
     if (ext && ext !== 'xlsx' && ext !== 'xlsm' && ext !== 'zip') {
       throw new Error(`"${name}" is a compressed (zip) file, not a spreadsheet Socius can read. Supported files: .sav, .zsav, .csv, .tsv, .txt and .xlsx.`);
     }
@@ -88,10 +139,30 @@ function detectKind(name: string, bytes: Uint8Array): Kind {
   throw new Error(`Socius cannot open "${name}": the file type is not recognised. Supported files: .sav, .zsav, .csv, .tsv, .txt and .xlsx.`);
 }
 
+/**
+ * A plain-language reason why a file cannot be opened as data, judged from its name and first bytes
+ * (cheap: no parsing), or null if it looks openable. Lets the UI refuse before asking to replace data.
+ */
+export function unopenableReason(name: string, head?: Uint8Array): string | null {
+  try {
+    if (head && head.length) detectKind(name, head);
+    else if (UNSUPPORTED[extensionOf(name)]) return UNSUPPORTED[extensionOf(name)];
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
 /** Import .sav, .zsav, .csv, .tsv, .txt (delimited), .xlsx. Detects type by magic bytes, then extension. */
 export async function importFile(name: string, bytes: Uint8Array, opts: ImportOptions = {}): Promise<ImportResult> {
   if (!bytes || bytes.length === 0) throw new Error(`"${name}" is empty (0 bytes).`);
   const kind = detectKind(name, bytes);
+  if (kind === 'zip') {
+    const inner = unwrapZip(name, bytes);
+    if (/\.json$/i.test(inner.name)) throw new Error(`"${name}" holds a Socius project (${inner.name}). Open it with File > Open project.`);
+    if (isPlainZip(inner.bytes)) throw new Error(`"${name}" holds another zip archive. Unzip it on your computer, then open the file inside.`);
+    return importFile(inner.name, inner.bytes, opts);
+  }
   if (kind === 'sav') return readSav(bytes, { fileName: name, encoding: opts.encoding });
   if (kind === 'xlsx') return readXlsx(name, bytes, { sheet: opts.sheet, header: opts.header });
   return readDelimited(name, bytes, { delimiter: opts.delimiter, header: opts.header, encoding: opts.encoding });

@@ -9,6 +9,7 @@ import {
   exportCodebook, exportCsvFile, exportSavFile, exportXlsxFile, loadSample, newDataset, openDataFile, openProjectFile, saveProject, startFresh,
 } from '../features/project/fileActions';
 import { samples } from '../samples';
+import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { modKey } from './shortcuts';
 
 export interface TopMenu {
@@ -132,8 +133,8 @@ export function useMenus(): TopMenu[] {
       ],
     }),
     needData({ id: 'd-agg', label: 'Aggregate...', onSelect: openT('aggregate') }),
-    filterOn ? { id: 'd-filter-off', label: 'Turn filter off (use all cases)', separator: true, onSelect: () => st().setFilter(null) } : null,
-    weightOn ? { id: 'd-weight-off', label: 'Turn weighting off', separator: !filterOn, onSelect: () => st().setWeight(null) } : null,
+    filterOn ? { id: 'd-filter-off', label: 'Turn filter off (use all cases)', separator: true, onSelect: turnFilterOff } : null,
+    weightOn ? { id: 'd-weight-off', label: 'Turn weighting off', separator: !filterOn, onSelect: turnWeightOff } : null,
   ].filter(Boolean) as MenuItem[];
 
   const transform: MenuItem[] = [

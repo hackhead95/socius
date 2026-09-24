@@ -4,6 +4,11 @@ import type { Column, Dataset, Variable, VarType } from '../../core/types';
 import { makeVariable, newId } from '../../core/types';
 import { formatRawValue, isDateFormat, uniqueVarName } from '../../core/data';
 import { parseCellInput, parseDateText } from './gridEdit';
+import { utf8ByteLength } from '../../lib/io/encoding';
+import { variableNameFor } from '../../lib/io/infer';
+
+/** Longest string SPSS can store (bytes). */
+const MAX_STRING_WIDTH = 32767;
 
 function bump(ds: Dataset, patch: Partial<Dataset>): Dataset {
   return { ...ds, ...patch, version: ds.version + 1 };
@@ -50,6 +55,8 @@ export interface WriteReport {
   rejected: number;
   addedCases: number;
   addedVars: number;
+  /** Names of string variables that were widened so the new text fits. */
+  widened: string[];
 }
 
 /**
@@ -57,7 +64,7 @@ export interface WriteReport {
  * variables (numeric if every value in that column is a number, else string).
  */
 export function writeTexts(ds: Dataset, writes: CellWrite[]): WriteReport {
-  if (!writes.length) return { dataset: ds, rejected: 0, addedCases: 0, addedVars: 0 };
+  if (!writes.length) return { dataset: ds, rejected: 0, addedCases: 0, addedVars: 0, widened: [] };
   let variables = ds.variables;
   const nVars = ds.variables.length;
   const maxCol = Math.max(...writes.map((w) => w.col));
@@ -83,6 +90,22 @@ export function writeTexts(ds: Dataset, writes: CellWrite[]): WriteReport {
     }
     working = { ...ds, variables, columns: { ...ds.columns, ...columns } };
   }
+  // Widen existing string variables so typed or pasted text is never cut off silently.
+  const need = new Map<number, number>();
+  for (const w of writes) {
+    if (w.col >= nVars || variables[w.col].type !== 'string') continue;
+    const b = Math.min(MAX_STRING_WIDTH, utf8ByteLength(w.text));
+    if (b > variables[w.col].width && b > (need.get(w.col) ?? 0)) need.set(w.col, b);
+  }
+  const widened: string[] = [];
+  if (need.size) {
+    if (variables === ds.variables) variables = ds.variables.slice();
+    for (const [c, width] of need) {
+      const v = variables[c];
+      variables[c] = { ...v, width, format: `A${width}`, columns: Math.max(v.columns, Math.min(width, 40)) };
+      widened.push(v.name);
+    }
+  }
   const maxRow = Math.max(...writes.map((w) => w.row));
   const nCases = Math.max(ds.nCases, maxRow + 1);
   const cols: Record<string, Column> = {};
@@ -106,7 +129,39 @@ export function writeTexts(ds: Dataset, writes: CellWrite[]): WriteReport {
     else col[w.row] = r.value as string;
   }
   const next = bump(ds, { variables, columns: { ...working.columns, ...cols }, nCases });
-  return { dataset: next, rejected, addedCases: nCases - ds.nCases, addedVars: variables.length - nVars };
+  return { dataset: next, rejected, addedCases: nCases - ds.nCases, addedVars: variables.length - nVars, widened };
+}
+
+/**
+ * Does the first pasted row look like column headings (as when copying a table from Excel)? True when
+ * every heading is non-empty text that is not a number and at least one column below holds numbers.
+ */
+export function looksLikeHeader(grid: string[][]): boolean {
+  if (grid.length < 2) return false;
+  const head = grid[0].map((t) => t.trim());
+  const isNum = (t: string) => t !== '' && Number.isFinite(Number(t.replace(/,/g, '')));
+  if (!head.length || head.some((t) => t === '' || isNum(t))) return false;
+  if (new Set(head.map((t) => t.toLowerCase())).size !== head.length) return false;
+  return head.some((_, j) => {
+    const below = grid.slice(1).map((r) => (r[j] ?? '').trim()).filter((t) => t !== '');
+    return below.length > 0 && below.every(isNum);
+  });
+}
+
+/** Rename variables from `start` on after pasted headings (invalid names are made valid; the heading becomes the label). */
+export function nameVariablesFromHeader(ds: Dataset, start: number, headings: string[]): Dataset {
+  const variables = ds.variables.slice();
+  const taken: Dataset = { ...ds, variables: variables.slice(0, start) };
+  headings.forEach((h, k) => {
+    const i = start + k;
+    if (!variables[i]) return;
+    const text = h.trim();
+    const name = variableNameFor(taken, text);
+    variables[i] = { ...variables[i], name, label: name === text ? variables[i].label : text.slice(0, 255) };
+    taken.variables.push(variables[i]);
+  });
+  for (let i = start + headings.length; i < variables.length; i++) taken.variables.push(variables[i]);
+  return { ...ds, variables };
 }
 
 /** Clear a rectangle (sysmis for numbers, empty for text). */
@@ -162,9 +217,11 @@ export function changeType(ds: Dataset, varId: string, type: VarType, format: st
       if (nv.measure === 'nominal' && !nv.valueLabels.length) nv.measure = 'scale';
     } else {
       const src = col as Float64Array;
-      col = Array.from(src, (x) => (Number.isNaN(x) ? '' : formatRawValue(old, x).trim()).slice(0, width));
-      nv.valueLabels = old.valueLabels.map((l) => ({ value: String(l.value), label: l.label }));
-      nv.missing = { discrete: old.missing.discrete.map(String).slice(0, 3) };
+      // Labels and missing codes must be converted exactly like the data ("1.00", not "1"), or they stop matching.
+      const asText = (x: number) => formatRawValue(old, x).trim().slice(0, width);
+      col = Array.from(src, (x) => (Number.isNaN(x) ? '' : asText(x)));
+      nv.valueLabels = old.valueLabels.map((l) => ({ value: typeof l.value === 'number' ? asText(l.value) : l.value, label: l.label }));
+      nv.missing = { discrete: old.missing.discrete.map((d) => (typeof d === 'number' ? asText(d) : d)).slice(0, 3) };
       nv.align = 'left';
       nv.measure = 'nominal';
     }

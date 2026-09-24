@@ -7,6 +7,7 @@ import { useUi, type ThemePref } from './ui-store';
 import { MenuBar } from './MenuBar';
 import { modKey } from './shortcuts';
 import { isModified } from '../features/project/fileActions';
+import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 
 const fmtN = (n: number) => n.toLocaleString('en-US');
 
@@ -26,8 +27,6 @@ export function TopBar() {
   const undo = useStore((s) => s.undo);
   const redo = useStore((s) => s.redo);
   const openDialog = useStore((s) => s.openDialog);
-  const setFilter = useStore((s) => s.setFilter);
-  const setWeight = useStore((s) => s.setWeight);
   const theme = useUi((s) => s.theme);
   const setTheme = useUi((s) => s.setTheme);
   useUi((s) => s.cleanDataset);
@@ -73,7 +72,7 @@ export function TopBar() {
                 <button type="button" className="chip-main" onClick={() => openDialog({ kind: 'transform', id: 'weight' })} title="Change weighting">
                   <Icon name="weight" size={13} /> Weighted by <span className="mono">{weightVar.name}</span>
                 </button>
-                <button type="button" className="chip-x" onClick={() => setWeight(null)} aria-label="Turn weighting off" title="Turn weighting off"><Icon name="x" size={12} /></button>
+                <button type="button" className="chip-x" onClick={turnWeightOff} aria-label="Turn weighting off" title="Turn weighting off"><Icon name="x" size={12} /></button>
               </span>
             ) : null}
             {filterVar ? (
@@ -81,7 +80,7 @@ export function TopBar() {
                 <button type="button" className="chip-main num" onClick={() => openDialog({ kind: 'transform', id: 'select' })} title={`Filter variable ${filterVar.name}. Click to change.`}>
                   <Icon name="filter" size={13} /> Filter on: {fmtN(nActive)} of {fmtN(ds.nCases)} cases
                 </button>
-                <button type="button" className="chip-x" onClick={() => setFilter(null)} aria-label="Turn filter off" title="Use all cases"><Icon name="x" size={12} /></button>
+                <button type="button" className="chip-x" onClick={turnFilterOff} aria-label="Turn filter off" title="Use all cases"><Icon name="x" size={12} /></button>
               </span>
             ) : null}
           </span>

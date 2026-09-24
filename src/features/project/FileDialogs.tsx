@@ -11,14 +11,49 @@ import { listRecent, removeRecent, type RecentEntry } from './persistence';
 
 const PREVIEW_BYTES = 96 * 1024;
 
+/** Encodings offered for SPSS files that do not name theirs (older SPSS versions, other programs). */
+const SAV_ENCODINGS: Array<[string, string]> = [
+  ['utf-8', 'UTF-8 (Unicode)'],
+  ['windows-1252', 'Western European (Windows-1252)'],
+  ['windows-1250', 'Central European (Windows-1250)'],
+  ['windows-1251', 'Cyrillic (Windows-1251)'],
+  ['windows-1253', 'Greek (Windows-1253)'],
+  ['windows-1254', 'Turkish (Windows-1254)'],
+  ['windows-1256', 'Arabic (Windows-1256)'],
+  ['iso-8859-2', 'Central European (ISO-8859-2)'],
+  ['koi8-r', 'Cyrillic (KOI8-R)'],
+  ['gbk', 'Chinese Simplified (GBK)'],
+  ['big5', 'Chinese Traditional (Big5)'],
+  ['shift_jis', 'Japanese (Shift-JIS)'],
+  ['euc-kr', 'Korean (EUC-KR)'],
+];
+
+// eslint-disable-next-line no-control-regex
+const NON_ASCII = /[^\x00-\x7f]/;
+
+/** Variables whose names, labels, value labels or first string values show the encoding at work. */
+function textSamples(ds: Dataset): Array<{ name: string; text: string }> {
+  const out: Array<{ name: string; text: string }> = [];
+  const plain: Array<{ name: string; text: string }> = [];
+  for (const v of ds.variables) {
+    const col = ds.columns[v.id];
+    const firstText = Array.isArray(col) ? col.find((x) => x.trim() !== '') ?? '' : '';
+    const parts = [v.label, ...v.valueLabels.slice(0, 3).map((l) => l.label), firstText].filter(Boolean);
+    const text = parts.join(' · ');
+    (NON_ASCII.test(v.name + text) ? out : plain).push({ name: v.name, text });
+  }
+  return [...out, ...plain].slice(0, 8);
+}
+
 export function ImportDialog({ params, onClose }: { params?: Record<string, unknown>; onClose: () => void }) {
   const name = String(params?.name ?? 'file');
   const bytes = params?.bytes instanceof Uint8Array ? params.bytes : new Uint8Array();
-  const kind = params?.kind === 'xlsx' ? 'xlsx' : 'text';
+  const kind = params?.kind === 'xlsx' ? 'xlsx' : params?.kind === 'sav' ? 'sav' : 'text';
+  const note = typeof params?.note === 'string' ? params.note.replace(/\s*If letters look wrong.*$/, '') : '';
   const sheets = Array.isArray(params?.sheets) ? (params!.sheets as string[]) : [];
   const [delimiter, setDelimiter] = useState('auto');
   const [header, setHeader] = useState(true);
-  const [encoding, setEncoding] = useState('auto');
+  const [encoding, setEncoding] = useState(kind === 'sav' ? (/Windows-1252/.test(note) ? 'windows-1252' : 'utf-8') : 'auto');
   const [sheet, setSheet] = useState(0);
   const [preview, setPreview] = useState<{ ds?: Dataset; warnings?: string[]; error?: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,7 +62,9 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
     () =>
       kind === 'xlsx'
         ? { header, sheet }
-        : { header, ...(delimiter !== 'auto' ? { delimiter } : {}), ...(encoding !== 'auto' ? { encoding } : {}) },
+        : kind === 'sav'
+          ? { encoding }
+          : { header, ...(delimiter !== 'auto' ? { delimiter } : {}), ...(encoding !== 'auto' ? { encoding } : {}) },
     [kind, header, sheet, delimiter, encoding],
   );
 
@@ -65,7 +102,8 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
   }, [bytes, name, kind, opts]);
 
   const doImport = async () => {
-    if (!(await confirmReplace(`Opening ${name}`))) return;
+    // For an SPSS file the data was just opened from this same file, so re-reading replaces nothing new.
+    if (kind !== 'sav' && !(await confirmReplace(`Opening ${name}`))) return;
     setBusy(true);
     const ok = await importBytes(name, bytes, opts);
     setBusy(false);
@@ -74,6 +112,46 @@ export function ImportDialog({ params, onClose }: { params?: Record<string, unkn
 
   const ds = preview?.ds;
   const cols = ds ? ds.variables.slice(0, 12) : [];
+  if (kind === 'sav') {
+    const samples = ds ? textSamples(ds) : [];
+    return (
+      <Modal
+        title={`Text encoding of ${name}`}
+        subtitle="This SPSS file does not say which character set its labels and text use."
+        onClose={onClose}
+        footer={
+          <>
+            <button className="btn" onClick={onClose}>Keep as opened</button>
+            <button className="btn btn-primary" onClick={doImport} disabled={busy || !!preview?.error}>{busy ? 'Reading...' : 'Re-read with this encoding'}</button>
+          </>
+        }
+      >
+        <div className="stack">
+          <div className="callout callout-info">{note} If letters in the labels below look wrong (for example Ã© instead of é), choose the encoding the file was made with.</div>
+          <div className="field" style={{ maxWidth: 320 }}>
+            <label htmlFor="imp-sav-enc">Character encoding</label>
+            <select id="imp-sav-enc" className="select" value={encoding} onChange={(e) => setEncoding(e.target.value)}>
+              {SAV_ENCODINGS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </select>
+          </div>
+          {preview?.error ? <div className="callout callout-bad">{preview.error}</div> : null}
+          {!preview ? <div className="help">Reading...</div> : null}
+          {samples.length ? (
+            <div className="scroll-x import-preview">
+              <table className="table">
+                <thead><tr><th>Variable</th><th>Label, value labels and text with this encoding</th></tr></thead>
+                <tbody>
+                  {samples.map((x) => (
+                    <tr key={x.name}><td className="mono">{x.name}</td><td>{x.text || <span className="muted">(no text)</span>}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
+      </Modal>
+    );
+  }
   const nRows = ds ? Math.min(ds.nCases, 8) : 0;
 
   return (

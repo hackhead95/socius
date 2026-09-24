@@ -6,7 +6,7 @@ import { OutputViewer } from '../features/output/OutputViewer';
 import { CodingWorkspace } from '../features/coding/CodingWorkspace';
 import { DataView } from '../features/data/DataView';
 import { VariableView } from '../features/data/VariableView';
-import { applyProject, currentProjectState, loadSample } from '../features/project/fileActions';
+import { applyProject, currentProjectState, isModified, loadSample } from '../features/project/fileActions';
 import { loadSession, saveSession } from '../features/project/persistence';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
@@ -32,6 +32,8 @@ function useStartup(): boolean {
         const s = rec?.state;
         if (alive && s && (s.dataset || s.outputs.length || s.coding.docs.length || s.coding.codes.length)) {
           applyProject(s);
+          // Unsaved edits stay "unsaved" after a reload, so opening another file still asks first.
+          if (rec!.modified) useUi.getState().markClean(null);
           useUi.getState().setRestoredAt(rec!.savedAt);
           return;
         }
@@ -55,15 +57,26 @@ function useAutosave(enabled: boolean) {
     if (!enabled) return;
     const save = () => {
       timer.current = null;
-      void saveSession(currentProjectState()).catch(() => undefined);
+      void saveSession(currentProjectState(), isModified()).catch(() => undefined);
     };
-    const unsub = useStore.subscribe((s, prev) => {
-      if (s.dataset === prev.dataset && s.outputs === prev.outputs && s.coding === prev.coding && s.showValueLabels === prev.showValueLabels && s.tab === prev.tab) return;
+    const schedule = () => {
       if (timer.current) clearTimeout(timer.current);
-      const ds = s.dataset;
+      const ds = useStore.getState().dataset;
       if (ds && ds.nCases * ds.variables.length > BIG_CELLS) return; // very large data: save when the page is hidden
       timer.current = setTimeout(save, AUTOSAVE_MS);
+    };
+    const unsubStore = useStore.subscribe((s, prev) => {
+      if (s.dataset === prev.dataset && s.outputs === prev.outputs && s.coding === prev.coding && s.showValueLabels === prev.showValueLabels && s.tab === prev.tab) return;
+      schedule();
     });
+    // Saving a project marks the data clean; remember that too.
+    const unsubUi = useUi.subscribe((s, prev) => {
+      if (s.cleanDataset !== prev.cleanDataset) schedule();
+    });
+    const unsub = () => {
+      unsubStore();
+      unsubUi();
+    };
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
         if (timer.current) clearTimeout(timer.current);

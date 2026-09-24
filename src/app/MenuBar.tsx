@@ -87,7 +87,8 @@ export function MenuBar() {
                 }}
                 onClose={(reason) => {
                   setOpen(null);
-                  if (reason === 'escape') btnRefs.current[i]?.focus();
+                  // After a choice, focus returns to the menu button, so a dialog it opens hands focus back there on close.
+                  if (reason === 'escape' || reason === 'select') btnRefs.current[i]?.focus();
                 }}
               />
             ) : null}
@@ -115,16 +116,40 @@ function MenuSheetButton({ menus }: { menus: TopMenu[] }) {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return;
     sheetRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      // Keep Tab inside the sheet (it is a modal dialog).
+      if (e.key !== 'Tab' || !sheetRef.current) return;
+      const items = Array.from(sheetRef.current.querySelectorAll<HTMLElement>('button:not([disabled])'));
+      if (!items.length) return;
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      if (e.shiftKey && i <= 0) {
+        e.preventDefault();
+        items[items.length - 1].focus();
+      } else if (!e.shiftKey && (i === items.length - 1 || i < 0)) {
+        e.preventDefault();
+        items[0].focus();
+      }
+    };
     window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('keydown', key);
+      // Back to the Menu button, unless the chosen item moved focus elsewhere (a dialog).
+      requestAnimationFrame(() => {
+        if (!document.activeElement || document.activeElement === document.body) btnRef.current?.focus({ preventScroll: true });
+      });
+    };
   }, [open]);
   return (
     <>
-      <button type="button" className="btn btn-sm menu-sheet-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+      <button ref={btnRef} type="button" className="btn btn-sm menu-sheet-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
         <Icon name="menu" size={15} /> Menu
       </button>
       {open ? (

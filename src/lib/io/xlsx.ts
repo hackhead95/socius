@@ -2,7 +2,7 @@
 // write-excel-file, which take ArrayBuffer/Blob and run in the browser and in node alike. They are
 // loaded on demand so the main bundle stays small.
 
-import type { Dataset } from '../../core/types';
+import type { Dataset, MeasureLevel, MissingSpec, ValueLabel, Variable } from '../../core/types';
 import { codebookRows } from './codebook';
 import { isoForFormat } from './csv';
 import { tableToDataset, type RawCell } from './infer';
@@ -71,7 +71,106 @@ export async function readXlsx(fileName: string, bytes: Uint8Array, opts: XlsxIm
     rows: header ? rows.slice(1) : rows,
     source: { kind: 'xlsx', fileName },
   });
+  // A workbook Socius (or a codebook-minded colleague) wrote: restore the dictionary from its "Variables" sheet.
+  const dict = header ? sheets.find((s) => s !== sheet && s.sheet.toLowerCase() === 'variables') : undefined;
+  if (dict) {
+    const n = applyDictionarySheet(result.dataset, dict.data ?? []);
+    if (n) warnings.push(`Variable labels, value labels, missing values and measurement levels for ${n} variable${n === 1 ? ' were' : 's were'} restored from the "${dict.sheet}" sheet.`);
+  }
   return { dataset: result.dataset, warnings: [...warnings, ...result.warnings] };
+}
+
+const cellStr = (c: RawCell): string => (c === null || c === undefined ? '' : c instanceof Date ? c.toISOString() : String(c)).trim();
+
+/** "1 = Male; 2 = Female" (as written by codebookRows) back into value labels. */
+export function parseValueLabelsText(text: string, type: 'numeric' | 'string'): ValueLabel[] {
+  const out: ValueLabel[] = [];
+  const parts: string[] = [];
+  for (const p of text.split('; ')) {
+    if (parts.length && !/^[^=]*? = /.test(p)) parts[parts.length - 1] += '; ' + p; // a label containing "; "
+    else parts.push(p);
+  }
+  for (const p of parts) {
+    const i = p.indexOf(' = ');
+    if (i < 0) continue;
+    const raw = p.slice(0, i).trim();
+    const label = p.slice(i + 3).trim();
+    if (type === 'numeric') {
+      const x = Number(raw);
+      if (raw !== '' && Number.isFinite(x)) out.push({ value: x, label });
+    } else out.push({ value: raw, label });
+  }
+  return out;
+}
+
+/** "LO THRU 0, -1" (as written by codebookRows) back into a missing-value spec; null if not understood. */
+export function parseMissingText(text: string, type: 'numeric' | 'string'): MissingSpec | null {
+  const spec: MissingSpec = { discrete: [] };
+  if (!text.trim()) return spec;
+  if (type === 'string') {
+    spec.discrete = text.split(', ').slice(0, 3);
+    return spec;
+  }
+  for (const part of text.split(/,\s*/)) {
+    const m = /^(\S+) THRU (\S+)$/i.exec(part.trim());
+    const num = (t: string) => (/^(LO|LOWEST)$/i.test(t) ? -Infinity : /^(HI|HIGHEST)$/i.test(t) ? Infinity : Number(t));
+    if (m) {
+      const lo = num(m[1]), hi = num(m[2]);
+      if (Number.isNaN(lo) || Number.isNaN(hi)) return null;
+      spec.range = { lo, hi };
+    } else {
+      const x = Number(part.trim());
+      if (part.trim() === '' || !Number.isFinite(x)) return null;
+      spec.discrete.push(x);
+    }
+  }
+  return spec;
+}
+
+const MEASURES: Record<string, MeasureLevel> = { nominal: 'nominal', ordinal: 'ordinal', scale: 'scale' };
+
+/** Apply a codebook sheet (header row with Name, Label, Measure, Value labels, Missing values, Format). Returns how many variables matched. */
+function applyDictionarySheet(ds: Dataset, data: RawCell[][]): number {
+  if (data.length < 2) return 0;
+  const head = data[0].map((c) => cellStr(c).toLowerCase());
+  const col = (name: string) => head.indexOf(name);
+  const iName = col('name');
+  if (iName < 0 || col('label') < 0) return 0;
+  const byName = new Map(ds.variables.map((v, i) => [v.name.toLowerCase(), i] as const));
+  let n = 0;
+  for (const row of data.slice(1)) {
+    const name = cellStr(row[iName]);
+    const idx = byName.get(name.toLowerCase());
+    if (idx === undefined) continue;
+    const v: Variable = { ...ds.variables[idx] };
+    const get = (k: string) => (col(k) >= 0 ? cellStr(row[col(k)]) : '');
+    const label = get('label');
+    if (label) v.label = label;
+    const measure = MEASURES[get('measure').toLowerCase()];
+    if (measure && !(measure === 'scale' && v.type === 'string')) v.measure = measure;
+    const vl = get('value labels');
+    const labels = vl ? parseValueLabelsText(vl, v.type) : [];
+    // With "Excel with value labels" the data holds label text, so codes would not match: skip them then.
+    const col0 = ds.columns[v.id];
+    const matches = labels.length && labels.some((l) => (Array.isArray(col0) ? col0.includes(l.value as string) : (col0 as Float64Array).includes(l.value as number)));
+    if (labels.length && matches) v.valueLabels = labels;
+    const miss = get('missing values');
+    const spec = miss ? parseMissingText(miss, v.type) : null;
+    if (spec) v.missing = spec;
+    const fmt = get('format').toUpperCase();
+    const fm = /^([A-Z]+)(\d+)(?:\.(\d+))?$/.exec(fmt);
+    if (fm && v.type === 'numeric' && fm[1] !== 'A') {
+      const w = Number(fm[2]), d = Number(fm[3] ?? 0);
+      if (w >= 1 && w <= 40 && d < w) {
+        v.format = fmt;
+        v.width = w;
+        v.decimals = d;
+      }
+    }
+    ds.variables[idx] = v;
+    n++;
+  }
+  return n;
 }
 
 // ---------------------------------------------------------------------------------------------

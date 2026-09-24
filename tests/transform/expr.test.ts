@@ -255,7 +255,7 @@ describe('catalogue', () => {
     const argsFor: Record<string, string> = {
       NUMBER: "'1', F8.0", STRING: '1, F8.2', DATEDIFF: "bdate, bdate, 'days'", CONCAT: "'a', 'b'", SUBSTR: "'abc', 1",
       UPCASE: "'a'", LOWER: "'a'", LENGTH: "'a'", LTRIM: "'a'", RTRIM: "'a'", REPLACE: "'a', 'b', 'c'", 'CHAR.INDEX': "'a', 'b'",
-      VALUE: 'a', MISSING: 'a', SYSMIS: 'a', ANY: 'a, 1', RANGE: 'a, 1, 2', MOD: '5, 2', 'DATE.DMY': '1, 1, 2000', 'DATE.MDY': '1, 1, 2000',
+      VALUE: 'a', VALUELABEL: 'a', MISSING: 'a', SYSMIS: 'a', ANY: 'a, 1', RANGE: 'a, 1, 2', MOD: '5, 2', 'DATE.DMY': '1, 1, 2000', 'DATE.MDY': '1, 1, 2000',
       'DATE.MOYR': '1, 2000', YRMODA: '2000, 1, 1',
     };
     for (const f of FUNCTION_DOCS) {

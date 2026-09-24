@@ -26,6 +26,31 @@ export interface Toast {
 }
 
 const HISTORY_LIMIT = 40;
+/** Memory the undo history may hold on top of the current data (columns shared between states count once). */
+const HISTORY_BYTES = 700 * 1024 * 1024;
+
+function columnBytes(c: Column): number {
+  return c instanceof Float64Array ? c.byteLength : c.length * 24;
+}
+
+/**
+ * Drop the oldest undo states once the columns they alone hold pass HISTORY_BYTES. Sorting or
+ * deleting cases in a 100,000 x 200 file copies every column (160 MB), so 40 steps would exhaust memory.
+ * Always keeps at least the most recent state.
+ */
+export function trimHistory(states: Dataset[], current: Dataset | null, budget = HISTORY_BYTES): Dataset[] {
+  const seen = new Set<Column>(current ? Object.values(current.columns) : []);
+  let bytes = 0;
+  for (let i = states.length - 1; i >= 0; i--) {
+    for (const c of Object.values(states[i].columns)) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      bytes += columnBytes(c);
+    }
+    if (bytes > budget && i < states.length - 1) return states.slice(i + 1);
+  }
+  return states;
+}
 
 export interface AppState {
   dataset: Dataset | null;
@@ -108,7 +133,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (next === cur) return;
     const withVersion = next.version === cur.version ? { ...next, version: cur.version + 1 } : next;
     if (opts?.noHistory) set({ dataset: withVersion });
-    else set({ dataset: withVersion, past: [...get().past, cur].slice(-HISTORY_LIMIT), future: [] });
+    else set({ dataset: withVersion, past: trimHistory([...get().past, cur].slice(-HISTORY_LIMIT), withVersion), future: [] });
   },
 
   setCell: (row, varId, value) =>

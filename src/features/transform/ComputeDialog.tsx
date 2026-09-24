@@ -8,7 +8,8 @@ import { applyTransform, ExpressionField, ExpressionHelper, insertAtCursor, Tran
 export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: () => void; params?: Record<string, unknown> }) {
   const [target, setTarget] = useState(typeof params?.target === 'string' ? params.target : '');
   const [label, setLabel] = useState('');
-  const [type, setType] = useState<'numeric' | 'string'>('numeric');
+  // 'auto' follows the formula: text functions make a string variable, arithmetic a numeric one.
+  const [type, setType] = useState<'auto' | 'numeric' | 'string'>('auto');
   const [expr, setExpr] = useState(typeof params?.expression === 'string' ? params.expression : '');
   const [useIf, setUseIf] = useState(false);
   const [cond, setCond] = useState('');
@@ -19,7 +20,7 @@ export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: (
 
   const existing = target.trim() ? getVariable(ds, target.trim()) : undefined;
   const exists = !!existing && existing.name.toLowerCase() === target.trim().toLowerCase();
-  const spec: ComputeSpec = { target: target.trim(), label: label.trim() || undefined, type: exists ? undefined : type, expression: expr, condition: useIf ? cond : undefined };
+  const spec: ComputeSpec = { target: target.trim(), label: label.trim() || undefined, type: exists || type === 'auto' ? undefined : type, expression: expr, condition: useIf ? cond : undefined };
 
   const preview = useMemo(() => {
     if (!expr.trim()) return { rows: null, err: null as ComputeError | null };
@@ -68,9 +69,10 @@ export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: (
             <datalist id="cv-names">{ds.variables.map((v) => <option key={v.id} value={v.name} />)}</datalist>
             <TextField id="cv-label" label="Label (optional)" value={label} onChange={setLabel} placeholder={existing?.label || 'What the new variable measures'} />
             {!exists ? (
-              <div className="field" style={{ width: 120 }}>
+              <div className="field" style={{ width: 150 }}>
                 <label htmlFor="cv-type">Type</label>
-                <select id="cv-type" className="select" value={type} onChange={(e) => setType(e.target.value as 'numeric' | 'string')}>
+                <select id="cv-type" className="select" value={type} onChange={(e) => setType(e.target.value as 'auto' | 'numeric' | 'string')}>
+                  <option value="auto">From the formula</option>
                   <option value="numeric">Numeric</option>
                   <option value="string">String</option>
                 </select>
@@ -106,7 +108,7 @@ export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: (
               onFocus={() => (lastField.current = 'cond')}
               error={condErr}
               rows={2}
-              placeholder="e.g. age >= 18 AND sex = 2"
+              placeholder="e.g. age >= 18 AND gender = 2"
               help={exists ? 'Other cases keep their current value.' : 'Other cases get system-missing.'}
             />
           ) : null}

@@ -6,14 +6,14 @@ import { makeDataset } from '../../core/types';
 import { emptyCodingProject } from '../../core/coding-types';
 import { useStore } from '../../core/store';
 import { saveFile } from '../../platform/host';
-import { codebookRows, exportCsv, exportSavWithReport, exportXlsx, importFile, listXlsxSheets, type ImportOptions } from '../../lib/io';
+import { codebookRows, exportCsv, exportSavWithReport, exportXlsx, importFile, isPlainZip, listXlsxSheets, unopenableReason, unwrapZip, type ImportOptions } from '../../lib/io';
 import { loadSampleDataset, samples } from '../../samples';
 import { useUi } from '../../app/ui-store';
 import { parseProject, projectFileName, serializeProject, type ProjectState } from './projectFile';
 import { addRecent, clearSession, loadRecent } from './persistence';
 
-export const DATA_ACCEPT = '.sav,.zsav,.csv,.tsv,.txt,.tab,.dat,.xlsx,.xlsm';
-export const PROJECT_ACCEPT = '.json,.socius.json,application/json';
+export const DATA_ACCEPT = '.sav,.zsav,.csv,.tsv,.txt,.tab,.dat,.xlsx,.xlsm,.zip';
+export const PROJECT_ACCEPT = '.json,.socius.json,application/json,.zip';
 
 const TEXT_EXT = /\.(csv|tsv|txt|tab|dat|psv|text)$/i;
 
@@ -22,7 +22,7 @@ export function isProjectFileName(name: string): boolean {
 }
 
 export function isDataFileName(name: string): boolean {
-  return /\.(sav|zsav|csv|tsv|txt|tab|dat|xlsx|xlsm)$/i.test(name);
+  return /\.(sav|zsav|csv|tsv|txt|tab|dat|xlsx|xlsm|zip)$/i.test(name);
 }
 
 /** Open the browser file chooser. Resolves null if the user cancels. */
@@ -80,30 +80,40 @@ export function activateDataset(ds: Dataset, opts: { sample?: boolean; warnings?
   for (const w of opts.warnings ?? []) st.toast(w, 'warning');
 }
 
+function plural(n: number, word: string): string {
+  return `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 's'}`;
+}
+
 async function readBytes(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }
 
-/** Import bytes as the active dataset (after the caller confirmed replacing). */
-export async function importBytes(name: string, bytes: Uint8Array, opts: ImportOptions = {}): Promise<boolean> {
+/** Import bytes as the active dataset (after the caller confirmed replacing). Resolves the import warnings, or null on failure. */
+export async function importBytes(name: string, bytes: Uint8Array, opts: ImportOptions = {}, hideWarning?: (w: string) => boolean): Promise<string[] | null> {
   const ui = useUi.getState();
   const st = useStore.getState();
   ui.setBusy(`Opening ${name}...`);
   try {
     const res = await importFile(name, bytes, opts);
     const ds = { ...res.dataset, name: res.dataset.name || stripExt(name) };
+    const shown = hideWarning ? res.warnings.filter((w) => !hideWarning(w)) : res.warnings;
     activateDataset(ds, {
-      warnings: res.warnings.slice(0, 4),
-      message: `Opened ${name}: ${ds.nCases.toLocaleString('en-US')} cases, ${ds.variables.length} variables.`,
+      warnings: shown.slice(0, 4),
+      message: `Opened ${name}: ${plural(ds.nCases, 'case')}, ${plural(ds.variables.length, 'variable')}.`,
     });
-    if (res.warnings.length > 4) st.toast(`${res.warnings.length - 4} more notes about this file were not shown.`, 'info');
-    return true;
+    if (shown.length > 4) st.toast(`${shown.length - 4} more notes about this file were not shown.`, 'info');
+    return res.warnings;
   } catch (e) {
     st.toast(e instanceof Error ? e.message : `Could not open ${name}.`, 'error');
-    return false;
+    return null;
   } finally {
     ui.setBusy(null);
   }
+}
+
+/** The SPSS reader's note when a file does not say which text encoding it uses. */
+export function isEncodingGuess(warning: string): boolean {
+  return /does not state its text encoding/i.test(warning);
 }
 
 /** File > Open data file (or a dropped file). CSV/TSV and multi-sheet Excel files get an options dialog. */
@@ -111,6 +121,7 @@ export async function openDataFile(file?: File | null): Promise<void> {
   const f = file ?? (await pickFile(DATA_ACCEPT));
   if (!f) return;
   const st = useStore.getState();
+  let name = f.name;
   let bytes: Uint8Array;
   try {
     bytes = await readBytes(f);
@@ -118,21 +129,45 @@ export async function openDataFile(file?: File | null): Promise<void> {
     st.toast(`Could not read ${f.name}.`, 'error');
     return;
   }
-  if (TEXT_EXT.test(f.name)) {
-    st.openDialog({ kind: 'file', id: 'import', params: { name: f.name, bytes, kind: 'text' } });
+  if (isPlainZip(bytes)) {
+    // e.g. survey.sav.zip, which is how the Artifact viewer saves SPSS files.
+    try {
+      const inner = unwrapZip(name, bytes);
+      if (isProjectFileName(inner.name)) {
+        await openProjectText(inner.name, new TextDecoder().decode(inner.bytes));
+        return;
+      }
+      name = inner.name;
+      bytes = inner.bytes;
+    } catch (e) {
+      st.toast(e instanceof Error ? e.message : `Could not open ${f.name}.`, 'error');
+      return;
+    }
+  }
+  const why = unopenableReason(name, bytes.subarray(0, 8192));
+  if (why) {
+    st.toast(why, 'error');
     return;
   }
-  if (/\.xlsx?m?$/i.test(f.name)) {
+  if (TEXT_EXT.test(name)) {
+    st.openDialog({ kind: 'file', id: 'import', params: { name, bytes, kind: 'text' } });
+    return;
+  }
+  if (/\.xlsx?m?$/i.test(name)) {
     try {
       const sheets = await listXlsxSheets(bytes);
-      st.openDialog({ kind: 'file', id: 'import', params: { name: f.name, bytes, kind: 'xlsx', sheets } });
+      st.openDialog({ kind: 'file', id: 'import', params: { name, bytes, kind: 'xlsx', sheets } });
       return;
     } catch {
       /* fall through: importFile reports the real problem */
     }
   }
-  if (!(await confirmReplace(`Opening ${f.name}`))) return;
-  await importBytes(f.name, bytes);
+  if (!(await confirmReplace(`Opening ${name}`))) return;
+  // The encoding note is shown in the dialog below instead of a toast.
+  const warnings = await importBytes(name, bytes, {}, isEncodingGuess);
+  // SPSS files without an encoding record: offer to re-read the text with another encoding.
+  const note = warnings?.find(isEncodingGuess);
+  if (note) st.openDialog({ kind: 'file', id: 'import', params: { name, bytes, kind: 'sav', note } });
 }
 
 export function currentProjectState(): ProjectState {
@@ -169,12 +204,28 @@ export async function openProjectFile(file?: File | null): Promise<void> {
   if (!f) return;
   const st = useStore.getState();
   let text: string;
+  let name = f.name;
   try {
-    text = await f.text();
-  } catch {
-    st.toast(`Could not read ${f.name}.`, 'error');
+    const bytes = await readBytes(f);
+    if (isPlainZip(bytes)) {
+      const inner = unwrapZip(f.name, bytes);
+      if (!isProjectFileName(inner.name)) {
+        // A data file in a zip picked from Open project: open it as data instead.
+        await openDataFile(new File([inner.bytes as BlobPart], inner.name));
+        return;
+      }
+      name = inner.name;
+      text = new TextDecoder().decode(inner.bytes);
+    } else text = new TextDecoder().decode(bytes);
+  } catch (e) {
+    st.toast(e instanceof Error && /zip/.test(e.message) ? e.message : `Could not read ${f.name}.`, 'error');
     return;
   }
+  await openProjectText(name, text);
+}
+
+async function openProjectText(name: string, text: string): Promise<void> {
+  const st = useStore.getState();
   let p: ProjectState;
   try {
     p = parseProject(text);
@@ -182,9 +233,9 @@ export async function openProjectFile(file?: File | null): Promise<void> {
     st.toast(e instanceof Error ? e.message : 'This project could not be opened.', 'error');
     return;
   }
-  if (!(await confirmReplace(`Opening the project ${f.name}`))) return;
-  applyProject(p, `Opened project ${f.name}.`);
-  void addRecent(stripExt(f.name), p);
+  if (!(await confirmReplace(`Opening the project ${name}`))) return;
+  applyProject(p, `Opened project ${name}.`);
+  void addRecent(stripExt(name), p);
 }
 
 export async function openRecentProject(id: string, name: string): Promise<void> {
@@ -272,7 +323,7 @@ export async function exportXlsxFile(values: 'codes' | 'labels'): Promise<void> 
   useUi.getState().setBusy('Preparing the Excel file...');
   try {
     const blob = await exportXlsx(ds, { values });
-    const file = `${baseName(ds)}.xlsx`;
+    const file = `${baseName(ds)}${values === 'labels' ? '_labels' : ''}.xlsx`;
     reportSave(await saveFile(file, blob, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), file);
   } catch (e) {
     st.toast(e instanceof Error ? e.message : 'Could not write the Excel file.', 'error');
@@ -351,5 +402,10 @@ export async function startFresh(): Promise<void> {
 export async function openDroppedFile(file: File): Promise<void> {
   if (isProjectFileName(file.name)) return openProjectFile(file);
   if (isDataFileName(file.name)) return openDataFile(file);
+  const why = unopenableReason(file.name);
+  if (why) {
+    useStore.getState().toast(why, 'warning');
+    return;
+  }
   useStore.getState().toast(`${file.name} is not a file Socius can open. Drop a .sav, .zsav, .csv, .tsv, .xlsx or .socius.json file.`, 'warning');
 }

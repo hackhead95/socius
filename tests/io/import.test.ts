@@ -38,11 +38,14 @@ describe('importFile: detection', () => {
       ['legacy.xls', Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]), /Save As.*\.xlsx/],
       ['sheet.ods', Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0, 0]), /OpenDocument/],
       ['data.csv.gz', Uint8Array.from([0x1f, 0x8b, 8, 0]), /gzip-compressed/],
-      ['photo.png', Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]), /not recognised.*Supported files/],
+      ['photo.png', Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]), /Images cannot be opened as data/],
+      ['scan.bin', Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]), /PDF files cannot be opened/],
+      ['report.pdf', enc('hello'), /PDF files cannot be opened/],
       ['empty.csv', new Uint8Array(0), /is empty/],
       ['fake.sav', enc('id,name\n1,a\n'), /not a valid SPSS data file/],
       ['fake.xlsx', enc('id,name\n1,a\n'), /not a valid Excel workbook/],
-      ['archive.zip.docx', Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0, 0]), /compressed \(zip\) file/],
+      ['archive.zip.docx', Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0, 0]), /Word documents cannot be opened/],
+      ['broken.zip', Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0, 0]), /damaged or unsupported zip/],
     ];
     for (const [name, bytes, re] of cases) {
       await expect(importFile(name, bytes), name).rejects.toThrow(re);

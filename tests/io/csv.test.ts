@@ -142,6 +142,18 @@ describe('CSV import', () => {
     expect(col(r, 'n').data).toEqual(['1,500', '2,250']);
   });
 
+  it('tells the user about comma numbers kept as text and NA words read as missing', async () => {
+    const r = await importFile('m.csv', enc('id,income,age,city\n1,"1,234",34,Delhi\n2,NA,n/a,Mumbai\n3,"12,345.50",.,NA\n'));
+    expect(col(r, 'income').v.type).toBe('string');
+    expect(col(r, 'age').data).toEqual([34, NaN, NaN]);
+    expect(col(r, 'city').data).toEqual(['Delhi', 'Mumbai', 'NA']);
+    const w = r.warnings.join('\n');
+    expect(w).toMatch(/income holds numbers written with thousands separators.*change the type to Numeric/);
+    expect(w).toMatch(/"NA", "n\/a" or "\." were read as missing values in age\./);
+    const clean = await importFile('c.csv', enc('a,b\n1,x\n,y\n'));
+    expect(clean.warnings).toEqual([]);
+  });
+
   it('falls back to windows-1252 for invalid UTF-8, and honours an encoding override', async () => {
     const bytes = Uint8Array.from([...enc('name\n'), 0x43, 0x72, 0xe8, 0x6d, 0x65, 0x0a]); // Crème in cp1252
     const r = await importFile('w.csv', bytes);

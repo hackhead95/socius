@@ -6,7 +6,7 @@
 // - any non-finite numeric result (overflow, division by zero, SQRT(-1)) becomes system-missing.
 
 import type { Dataset, Variable } from '../../core/types';
-import { dateToSpssSeconds, isUserMissing, spssSecondsToDate } from '../../core/data';
+import { dateToSpssSeconds, isUserMissing, spssSecondsToDate, valueLabelFor } from '../../core/data';
 import { ExprError, parse, type Node } from './expr';
 import { FUNCTION_DOCS } from './functions';
 
@@ -464,6 +464,14 @@ export function compileExpression(ds: Dataset, src: string, opts: CompileOptions
         if (v.type === 'string') { const sc = col as string[]; return { type: 'str', f: (i) => sc[i] ?? '' }; }
         const nc = col as Float64Array;
         return { type: 'num', f: (i) => nc[i] };
+      }
+      case 'VALUELABEL': {
+        arity(n, name, 1, 1);
+        const arg = n.args[0];
+        if (arg.k !== 'ident' || arg.name.startsWith('$')) throw new ExprError('VALUELABEL needs a variable name, e.g. VALUELABEL(city).', arg.pos, arg.end);
+        const v = lookupVar(arg.name, arg.pos, arg.end);
+        const col = ds.columns[v.id];
+        return { type: 'str', f: (i) => valueLabelFor(v, col[i]) ?? '' };
       }
       case 'ANY': {
         arity(n, name, 2, Infinity);

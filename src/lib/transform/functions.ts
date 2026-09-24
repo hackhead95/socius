@@ -42,6 +42,7 @@ export const FUNCTION_DOCS: FunctionDoc[] = [
   // Missing
   { name: 'MISSING', sig: 'MISSING(x)', insert: 'MISSING(', desc: '1 if x is system- or user-missing, else 0.', cat: 'Missing values' },
   { name: 'SYSMIS', sig: 'SYSMIS(x)', insert: 'SYSMIS(', desc: '1 if x is system-missing (empty), else 0.', cat: 'Missing values' },
+  { name: 'VALUELABEL', sig: 'VALUELABEL(var)', insert: 'VALUELABEL(', desc: 'The value label of the case\'s value (empty text if it has none).', cat: 'Conversion' },
   { name: 'VALUE', sig: 'VALUE(var)', insert: 'VALUE(', desc: 'The stored value, even when it is declared user-missing.', cat: 'Missing values' },
   // Search
   { name: 'ANY', sig: 'ANY(x, v1, v2, ...)', insert: 'ANY(', desc: '1 if x equals any of the listed values, else 0.', cat: 'Search' },

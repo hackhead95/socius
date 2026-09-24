@@ -166,7 +166,9 @@ export function ScaleDialog({ ds, onClose }: { ds: Dataset; onClose: () => void 
 
   const run = () =>
     tryRun(() => {
-      applyTransform(createScale(ds, { itemIds: ids, method, minValid: effMin, name, label: label.trim() || undefined }));
+      const res = createScale(ds, { itemIds: ids, method, minValid: effMin, name, label: label.trim() || undefined });
+      // Keep the reliability estimate in the output log next to the syntax.
+      applyTransform(alpha && /alpha/.test(alpha.text) ? { ...res, summary: `${res.summary} ${alpha.text}` } : res);
       onClose();
     }, setError);
 

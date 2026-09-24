@@ -2,7 +2,7 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { useStore } from '../../core/store';
 import type { Dataset, Variable } from '../../core/types';
-import { transformLogItem, type TransformResult, FUNCTION_DOCS, OPERATOR_DOCS, SYSTEM_VARIABLES, type FunctionCategory, type RecodeFrom } from '../../lib/transform';
+import { selectCasesTransform, transformLogItem, weightCases, type TransformResult, FUNCTION_DOCS, OPERATOR_DOCS, SYSTEM_VARIABLES, type FunctionCategory, type RecodeFrom } from '../../lib/transform';
 import { Modal } from '../../ui/Modal';
 import { VarMeasureIcon } from '../../ui/MeasureIcon';
 import { Icon } from '../../ui/Icon';
@@ -15,6 +15,16 @@ export function applyTransform(res: TransformResult) {
   st.addOutput(transformLogItem(res, name), { focus: false });
   st.toast(res.summary, 'success');
   for (const w of res.warnings.slice(0, 3)) st.toast(w, 'warning');
+}
+
+/** FILTER OFF / WEIGHT OFF from a chip or menu, logged like the dialogs so the syntax log stays complete. */
+export function turnFilterOff() {
+  const ds = useStore.getState().dataset;
+  if (ds?.filterVarId) applyTransform(selectCasesTransform(ds, { kind: 'all' }, 'filter'));
+}
+export function turnWeightOff() {
+  const ds = useStore.getState().dataset;
+  if (ds?.weightVarId) applyTransform(weightCases(ds, null));
 }
 
 export function TransformModal(props: {

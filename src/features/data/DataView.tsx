@@ -5,7 +5,7 @@ import type { Dataset } from '../../core/types';
 import { activeCaseMask, formatCell, formatRawValue } from '../../core/data';
 import { DataGrid, selRect, type EditCommit, type Rect, type Sel } from './DataGrid';
 import { parseCellInput, parseTsv, toTsv } from './gridEdit';
-import { clearRange, newDefaultVariable, writeTexts } from './mutations';
+import { clearRange, looksLikeHeader, nameVariablesFromHeader, newDefaultVariable, writeTexts } from './mutations';
 import { findNext, summarizeColumn, type ColumnSummary } from './find';
 import { useUi } from '../../app/ui-store';
 import { ContextMenu, type MenuItem } from '../../ui/Menu';
@@ -93,6 +93,15 @@ function DataViewInner({ ds }: { ds: Dataset }) {
       return true;
     }
     const v = ds.variables[col];
+    if (v.type === 'string' && text.length > v.width / 3) {
+      // Might not fit the declared width: writeTexts widens the variable instead of cutting the text.
+      const rep = writeTexts(ds, [{ row, col, text }]);
+      if (rep.widened.length) {
+        mutate(() => rep.dataset);
+        toast(`Widened ${v.name} to ${rep.dataset.variables[col].width} characters so the text fits.`, 'info');
+        return true;
+      }
+    }
     const r = parseCellInput(v, text);
     if (!r.ok) return r.error;
     const old = ds.columns[v.id][row];
@@ -127,8 +136,14 @@ function DataViewInner({ ds }: { ds: Dataset }) {
   };
 
   const onPaste = (text: string) => {
-    const grid = parseTsv(text.replace(/\n$/, ''));
+    let grid = parseTsv(text.replace(/\n$/, ''));
     if (!grid.length) return;
+    // Pasting a table with headings into an empty dataset: the first row names the variables.
+    let headings: string[] | null = null;
+    if (nVars === 0 && ds.nCases === 0 && looksLikeHeader(grid)) {
+      headings = grid[0];
+      grid = grid.slice(1);
+    }
     const writes: Array<{ row: number; col: number; text: string }> = [];
     const r = selRect(sel);
     if (grid.length === 1 && grid[0].length === 1 && (r.r1 > r.r0 || r.c1 > r.c0)) {
@@ -141,12 +156,15 @@ function DataViewInner({ ds }: { ds: Dataset }) {
       return;
     }
     const rep = writeTexts(ds, writes);
-    mutate(() => rep.dataset);
+    const named = headings ? nameVariablesFromHeader(rep.dataset, 0, headings) : rep.dataset;
+    mutate(() => named);
+    if (headings) toast('The first row was used as variable names.', 'info');
     const parts = [`Pasted ${writes.length.toLocaleString('en-US')} value${writes.length === 1 ? '' : 's'}`];
     if (rep.addedCases) parts.push(`added ${rep.addedCases} case${rep.addedCases === 1 ? '' : 's'}`);
     if (rep.addedVars) parts.push(`added ${rep.addedVars} variable${rep.addedVars === 1 ? '' : 's'}`);
     toast(parts.join(', ') + '.', 'success');
-    if (rep.rejected) toast(`${rep.rejected} pasted value${rep.rejected === 1 ? ' was' : 's were'} not numbers and ${rep.rejected === 1 ? 'was' : 'were'} left unchanged.`, 'warning');
+    if (rep.widened.length) toast(`Widened ${rep.widened.join(', ')} so the pasted text fits.`, 'info');
+    if (rep.rejected) toast(rep.rejected === 1 ? '1 pasted value did not fit its variable (for example text in a numeric variable) and that cell was left unchanged.' : `${rep.rejected.toLocaleString('en-US')} pasted values did not fit their variables (for example text in a numeric variable) and those cells were left unchanged.`, 'warning');
     const lastR = r.r0 + grid.length - 1, lastC = Math.min(r.c0, nVars) + Math.max(...grid.map((g) => g.length)) - 1;
     setSelState({ r: lastR, c: lastC, ar: r.r0, ac: Math.min(r.c0, nVars) });
   };

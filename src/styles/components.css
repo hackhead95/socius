@@ -34,6 +34,7 @@
   display: flex; align-items: center; gap: 4px; padding: 6px var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border);
   overflow-x: auto; min-height: 40px; flex: none; scrollbar-width: thin;
 }
+.view-toolbar > .btn, .view-toolbar > .toolbar-status { flex: none; } /* scroll the toolbar instead of squashing its buttons */
 .toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex: none; }
 .toolbar-status { font-size: var(--fs-xs); color: var(--text-2); white-space: nowrap; padding-left: 8px; }
 
@@ -65,6 +66,12 @@
 /* Mini bar used in previews and quick stats */
 .stats-bar { display: block; height: 8px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
 .stats-bar > span { display: block; height: 100%; background: var(--accent); opacity: 0.75; }
+
+/* Touch screens: small buttons grow to a comfortable target. */
+@media (pointer: coarse) {
+  .btn-sm { height: 32px; }
+  .btn-sm.btn-icon { width: 32px; }
+}
 
 @media (max-width: 760px) {
   .dialog-cols, .dialog-cols-main { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }

@@ -26,6 +26,8 @@ const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ISO_DATETIME = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?(?:Z|[+-]00:?00)?$/;
 const CLOCK_TIME = /^(\d{1,3}):([0-5]\d)(?::([0-5]\d(?:\.\d+)?))?$/;
 const MAX_DECIMALS = 6;
+/** "1,234" or "12,345.50": a number written with thousands separators (kept as text, see below). */
+const NUM_THOUSANDS = /^[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
 const SECONDS_PER_DAY = 86400;
 
 /** Days from 1970-01-01 to the given proleptic Gregorian date (Howard Hinnant's algorithm). */
@@ -228,6 +230,10 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
   const columns: Record<string, Column> = {};
   const nameDs = makeDataset({ name: t.name, variables });
   let renamed = 0;
+  /** Numeric columns where words like "NA" or "n/a" were read as system-missing. */
+  const tokenMissing: string[] = [];
+  /** Text columns that hold numbers written with thousands separators. */
+  const commaNumbers: string[] = [];
 
   for (let j = 0; j < nCols; j++) {
     const headerText = t.header ? cellText(t.header[j]).trim() : '';
@@ -257,6 +263,7 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
         values[i] = parsed[i].value;
         if (parsed[i].decimals > dec) dec = parsed[i].decimals;
       }
+      if (nonMissing > 0 && rows.some((r) => j < r.length && typeof r[j] === 'string' && MISSING_TOKENS.has((r[j] as string).trim().toLowerCase()) && (r[j] as string).trim() !== '')) tokenMissing.push(name);
       const onlyBool = counts.bool > 0 && counts.number === 0;
       const valueLabels: ValueLabel[] = onlyBool ? [{ value: 0, label: 'FALSE' }, { value: 1, label: 'TRUE' }] : [];
       const decimals = nonMissing === 0 ? 2 : dec;
@@ -273,6 +280,7 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
       v = makeVariable({ name, label, type: 'numeric', width: fmt.w, decimals: 0, format: fmt.f, measure: 'scale', columns: fmt.w });
       col = values;
     } else {
+      if (counts.text > 0 && parsed.every((p, i) => p.kind === 'missing' || p.kind === 'number' || (p.kind === 'text' && NUM_THOUSANDS.test(cellText(rows[i][j]).trim())))) commaNumbers.push(name);
       const values = new Array<string>(rows.length);
       let width = 1;
       for (let i = 0; i < rows.length; i++) {
@@ -293,6 +301,13 @@ export function tableToDataset(t: TableInput): { dataset: Dataset; warnings: str
     }
     variables.push(v);
     columns[v.id] = col;
+  }
+  const list = (names: string[]) => (names.length > 5 ? `${names.slice(0, 5).join(', ')} and ${names.length - 5} more` : names.join(', '));
+  if (tokenMissing.length) warnings.push(`Entries such as "NA", "n/a" or "." were read as missing values in ${list(tokenMissing)}.`);
+  if (commaNumbers.length) {
+    warnings.push(
+      `${list(commaNumbers)} ${commaNumbers.length === 1 ? 'holds' : 'hold'} numbers written with thousands separators (such as "1,234") and ${commaNumbers.length === 1 ? 'was' : 'were'} kept as text. To use ${commaNumbers.length === 1 ? 'it' : 'them'} as numbers, change the type to Numeric in Variable View.`,
+    );
   }
   if (renamed) warnings.push(`${renamed} column name(s) were not valid SPSS variable names and were changed; the original names were kept as variable labels.`);
 

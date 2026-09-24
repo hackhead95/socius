@@ -204,7 +204,7 @@ export function SelectCasesDialog({ ds, onClose }: { ds: Dataset; onClose: () =>
             <label className="check"><input type="radio" name="sc" checked={kind === 'if'} onChange={() => setKind('if')} /> Cases that meet a condition</label>
             {kind === 'if' ? (
               <div style={{ paddingLeft: 24 }}>
-                <ExpressionField id="sc-cond" label="Condition" value={cond} onChange={(s) => { setCond(s); setError(null); }} inputRef={condRef} rows={3} error={condErr} placeholder="e.g. sex = 2 AND age > 30" help="Cases where the condition is missing are not selected." />
+                <ExpressionField id="sc-cond" label="Condition" value={cond} onChange={(s) => { setCond(s); setError(null); }} inputRef={condRef} rows={3} error={condErr} placeholder="e.g. gender = 2 AND age > 30" help="Cases where the condition is missing are not selected." />
               </div>
             ) : null}
             <label className="check"><input type="radio" name="sc" checked={kind === 'percent' || kind === 'exact'} onChange={() => setKind('percent')} /> A random sample</label>
