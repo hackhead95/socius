@@ -29,33 +29,36 @@ describe('settings persistence', () => {
   it('starts with defaults and no provider when nothing is stored', () => {
     const s = getAiSettings();
     expect(s.provider).toBeNull();
-    expect(s.gemini).toEqual({ apiKey: '', model: 'gemini-2.5-flash' });
+    expect(s.gemini).toEqual({ apiKey: '', model: '' }); // empty = automatic model choice
     expect(s.openai.baseUrl).toBe(OPENAI_PRESETS.groq.baseUrl);
     expect(effectiveProvider()).toBeNull();
     expect(getAiStatus().ready).toBe('no');
   });
 
   it('saves to localStorage only and reads it back after a reload', () => {
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIza123', model: 'gemini-2.5-flash-lite' } });
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIza123', model: 'gemini-3.6-flash-lite' } });
     const raw = JSON.parse(store.data.get(AI_SETTINGS_KEY)!);
     expect(raw.provider).toBe('gemini');
     expect(raw.gemini.apiKey).toBe('AIza123');
     __reloadAiSettings();
-    expect(getAiSettings().gemini.model).toBe('gemini-2.5-flash-lite');
+    expect(getAiSettings().gemini.model).toBe('gemini-3.6-flash-lite');
     expect(effectiveProvider()).toBe('gemini');
-    expect(providerLabel('gemini')).toBe('Google Gemini (gemini-2.5-flash-lite)');
+    expect(providerLabel('gemini')).toBe('Google Gemini (gemini-3.6-flash-lite)');
   });
 
   it('forget key removes only the key', () => {
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIza123', model: 'gemini-2.5-flash' } });
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIza123', model: 'gemini-3.6-flash' } });
     forgetAiKey('gemini');
     __reloadAiSettings();
-    expect(getAiSettings().gemini).toEqual({ apiKey: '', model: 'gemini-2.5-flash' });
+    expect(getAiSettings().gemini).toEqual({ apiKey: '', model: 'gemini-3.6-flash' });
     expect(getAiSettings().provider).toBe('gemini');
   });
 
   it('tolerates corrupt or partial stored settings', () => {
     expect(parseAiSettings('{not json').provider).toBeNull();
+    // A retired model name saved as the default by earlier versions becomes "automatic".
+    expect(parseAiSettings(JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-2.5-flash' } })).gemini.model).toBe('');
+    expect(parseAiSettings(JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-3.6-pro' } })).gemini.model).toBe('gemini-3.6-pro');
     const p = parseAiSettings(JSON.stringify({ provider: 'bogus', openai: { preset: 'ollama' }, webllm: { model: 'unknown' } }));
     expect(p.provider).toBeNull();
     expect(p.openai.baseUrl).toBe('http://localhost:11434/v1');
@@ -75,7 +78,7 @@ describe('settings persistence', () => {
     const statusSeen = vi.fn();
     const u1 = subscribeAiSettings(settingsSeen);
     const u2 = subscribeAi(statusSeen);
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-2.5-flash' } });
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-3.6-flash' } });
     expect(settingsSeen).toHaveBeenCalledTimes(1);
     const st = await refreshAiStatus();
     expect(st).toMatchObject({ provider: 'gemini', ready: 'yes', privacy: 'google' });
@@ -102,7 +105,7 @@ describe('provider choice', () => {
     expect(await aiAvailable()).toBe(false);
     saveAiSettings({ provider: 'gemini' });
     expect(await aiAvailable()).toBe(false);
-    saveAiSettings({ gemini: { apiKey: 'k', model: 'gemini-2.5-flash' } });
+    saveAiSettings({ gemini: { apiKey: 'k', model: 'gemini-3.6-flash' } });
     expect(await aiAvailable()).toBe(true);
     saveAiSettings({ provider: 'openai', openai: { preset: 'custom', baseUrl: 'http://localhost:11434/v1', apiKey: '', model: '' } });
     expect(await aiAvailable()).toBe(false);
@@ -160,13 +163,13 @@ describe('asking', () => {
   });
 
   it('routes to Gemini with JSON mode and parses a fenced JSON reply', async () => {
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIzaKEY', model: 'gemini-2.5-flash' } });
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIzaKEY', model: 'gemini-3.6-flash' } });
     const f = vi.fn(async (_url: string, _init: RequestInit) => jsonResponse({ candidates: [{ content: { parts: [{ text: '```json\n{"codes":[{"name":"Water"}]}\n```' }] } }] }));
     vi.stubGlobal('fetch', f);
     const out = await askAIJson<{ codes: Array<{ name: string }> }>('propose a codebook');
     expect(out.codes[0].name).toBe('Water');
     const [url, init] = f.mock.calls[0];
-    expect(url).toContain('/models/gemini-2.5-flash:generateContent');
+    expect(url).toContain('/models/gemini-3.6-flash:generateContent');
     expect((init.headers as Record<string, string>)['x-goog-api-key']).toBe('AIzaKEY');
     expect(JSON.parse(init.body as string).generationConfig.responseMimeType).toBe('application/json');
   });
@@ -180,7 +183,7 @@ describe('asking', () => {
   });
 
   it('invalid JSON from a provider becomes invalid_json', async () => {
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-2.5-flash' } });
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-3.6-flash' } });
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ candidates: [{ content: { parts: [{ text: 'Sorry, no.' }] } }] })));
     await expect(askAIJson('x')).rejects.toMatchObject({ code: 'invalid_json' });
   });

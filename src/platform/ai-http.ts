@@ -6,6 +6,8 @@ import { AiUnavailableError } from './claude';
 
 export interface HttpAskOptions {
   onText?: (text: string) => void;
+  /** Called when the configured model was unavailable and another one answered instead. */
+  onModelFallback?: (model: string) => void;
   signal?: AbortSignal;
   json?: boolean;
   maxTokens?: number;
@@ -31,8 +33,80 @@ export interface BuiltRequest {
   init: { method: 'POST'; headers: Record<string, string>; body: string };
 }
 
+/** Model id without a "models/" prefix. Empty or "auto" means: pick automatically (see resolveGeminiModel). */
 export function geminiModelName(model: string): string {
-  return model.trim().replace(/^models\//, '') || 'gemini-2.5-flash';
+  const m = model.trim().replace(/^models\//, '');
+  return m.toLowerCase() === 'auto' ? '' : m;
+}
+
+// ---------- automatic model choice ----------
+// Google retires model versions for new keys (e.g. "gemini-2.5-flash is no longer available to new
+// users"), so no model name is hard-coded. We ask the API which models this key may use and pick the
+// newest stable general-purpose Flash model (free tier, fast), falling back to Flash-Lite or Pro.
+
+interface GeminiModelInfo {
+  name: string;
+  supportedGenerationMethods?: string[];
+}
+
+/** Rank candidates; returns the best model id, or '' when none fits. Pure, exported for tests. */
+export function pickGeminiModel(models: GeminiModelInfo[]): string {
+  const SPECIAL = /(image|tts|audio|live|embed|vision|thinking|learnlm|robotics|computer|native|aqa|gemma|nano|customtools)/i;
+  const cands = models
+    .filter((m) => (m.supportedGenerationMethods ?? []).includes('generateContent'))
+    .map((m) => m.name.replace(/^models\//, ''))
+    .filter((id) => /^gemini-/i.test(id) && !SPECIAL.test(id));
+  const version = (id: string) => {
+    const v = id.match(/^gemini-(\d+(?:\.\d+)?)/i);
+    return v ? parseFloat(v[1]) : 0;
+  };
+  const score = (id: string) => {
+    let s = version(id) * 100;
+    if (/-flash(?!-lite)/i.test(id)) s += 30;
+    else if (/flash-lite/i.test(id)) s += 20;
+    else if (/-pro/i.test(id)) s += 10;
+    else s -= 50;
+    if (/latest$/i.test(id)) s += 5; // a "-latest" alias tracks the newest release of that family
+    if (/(preview|exp)/i.test(id)) s -= 60; // prefer stable releases
+    if (/-\d{3,}$/.test(id)) s -= 1; // prefer the unversioned alias over a pinned build number
+    return s;
+  };
+  cands.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
+  return cands[0] ?? '';
+}
+
+const resolvedModels = new Map<string, string>();
+
+/** The model to use for this key: the user's explicit choice, else the best model the key can use. */
+export async function resolveGeminiModel(cfg: GeminiConfig, signal?: AbortSignal, forceRefresh = false): Promise<string> {
+  const explicit = geminiModelName(cfg.model);
+  if (explicit) return explicit;
+  const key = cfg.apiKey.trim();
+  if (!forceRefresh && resolvedModels.has(key)) return resolvedModels.get(key)!;
+  if (signal?.aborted) throw new AiUnavailableError('cancelled', 'Stopped.');
+  let res: Response;
+  try {
+    res = await fetch(`${GEMINI_BASE}/models?pageSize=1000`, { headers: { 'x-goog-api-key': key }, signal });
+  } catch (e: any) {
+    if (isAbort(e, signal)) throw new AiUnavailableError('cancelled', 'Stopped.');
+    throw new AiUnavailableError('network', 'Could not reach the AI service.', e?.message);
+  }
+  if (!res.ok) throw await errorFromResponse(res);
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    throw new AiUnavailableError('unavailable', 'The AI service sent an unreadable reply.');
+  }
+  const picked = pickGeminiModel(Array.isArray(data?.models) ? data.models : []);
+  if (!picked) throw new AiUnavailableError('bad_model', 'No suitable Gemini model is available for this key.', 'Your key did not list any Gemini text model. Type a model name in AI assistant settings.');
+  resolvedModels.set(key, picked);
+  return picked;
+}
+
+/** The model most recently picked automatically for this key, if any (for display). */
+export function lastResolvedGeminiModel(apiKey: string): string {
+  return resolvedModels.get(apiKey.trim()) ?? '';
 }
 
 export function buildGeminiRequest(cfg: GeminiConfig, prompt: string, opts: { stream: boolean; json?: boolean; maxTokens?: number }): BuiltRequest {
@@ -171,6 +245,8 @@ function isAbort(e: any, signal?: AbortSignal): boolean {
 }
 
 async function send(req: BuiltRequest, signal?: AbortSignal): Promise<Response> {
+  // Stopped while an earlier step (e.g. choosing the model) was still running.
+  if (signal?.aborted) throw new AiUnavailableError('cancelled', 'Stopped.');
   let res: Response;
   try {
     res = await fetch(req.url, { ...req.init, signal });
@@ -219,7 +295,20 @@ async function streamText(res: Response, pick: (data: any) => string, opts: Http
 export async function askGemini(cfg: GeminiConfig, prompt: string, opts: HttpAskOptions = {}): Promise<string> {
   if (!cfg.apiKey.trim()) throw new AiUnavailableError('not_configured', 'No Gemini key.');
   const stream = !!opts.onText;
-  const res = await send(buildGeminiRequest(cfg, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens }), opts.signal);
+  const explicit = !!geminiModelName(cfg.model);
+  let model = await resolveGeminiModel(cfg, opts.signal);
+  let res: Response;
+  try {
+    res = await send(buildGeminiRequest({ ...cfg, model }, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens }), opts.signal);
+  } catch (e) {
+    // A retired or mistyped model name: fall back once to the best model this key can use.
+    if (!(e instanceof AiUnavailableError) || e.code !== 'bad_model') throw e;
+    const fallback = await resolveGeminiModel({ ...cfg, model: '' }, opts.signal, !explicit);
+    if (fallback === model) throw e;
+    model = fallback;
+    res = await send(buildGeminiRequest({ ...cfg, model }, prompt, { stream, json: opts.json, maxTokens: opts.maxTokens }), opts.signal);
+    opts.onModelFallback?.(model);
+  }
   let blocked = false;
   let text: string;
   if (stream) {

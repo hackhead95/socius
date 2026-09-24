@@ -34,10 +34,17 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   await noWebGpu(page);
   let mode: 'ok' | 'badkey' | 'quota' = 'ok';
   const seen: Array<{ url: string; key: string | undefined; body: any }> = [];
+  const listed: string[] = [];
   await page.route(GEMINI, async (route: Route) => {
     const req = route.request();
-    seen.push({ url: req.url(), key: req.headers()['x-goog-api-key'], body: req.postDataJSON() });
     const cors = { 'Access-Control-Allow-Origin': '*' };
+    if (req.method() === 'GET' && req.url().includes('/models?')) {
+      // The model list: Socius picks the newest stable Flash model the key can use.
+      listed.push(req.headers()['x-goog-api-key'] ?? '');
+      const names = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.6-flash-image', 'gemini-3.6-pro'];
+      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ models: names.map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) }) });
+    }
+    seen.push({ url: req.url(), key: req.headers()['x-goog-api-key'], body: req.postDataJSON() });
     if (mode === 'badkey')
       return route.fulfill({ status: 400, headers: cors, contentType: 'application/json', body: JSON.stringify({ error: { code: 400, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [{ reason: 'API_KEY_INVALID' }] } }) });
     if (mode === 'quota')
@@ -64,7 +71,7 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   await expect(dlg.locator('.ai-privacy')).toHaveAttribute('data-privacy', 'google');
   await expect(dlg.locator('.ai-privacy')).toContainText('human reviewers may read it');
   await expect(dlg.locator('.ai-privacy')).toContainText('anonymise');
-  await expect(dlg.locator('#ai-gemini-model')).toHaveValue('gemini-2.5-flash');
+  await expect(dlg.locator('#ai-gemini-model')).toHaveValue(''); // empty = automatic
   const key = dlg.locator('#ai-gemini-key');
   await expect(key).toHaveAttribute('type', 'password');
   await key.fill('AIza-e2e-key');
@@ -74,9 +81,10 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   expect(seen).toHaveLength(0);
 
   await dlg.getByRole('button', { name: 'Test connection' }).click();
-  await expect(dlg.locator('.ai-test-result')).toContainText('Connected');
+  await expect(dlg.locator('.ai-test-result')).toContainText('Connected to gemini-3.6-flash');
+  expect(listed).toEqual(['AIza-e2e-key']);
   expect(seen).toHaveLength(1);
-  expect(seen[0].url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+  expect(seen[0].url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent');
   expect(seen[0].key).toBe('AIza-e2e-key');
   expect(seen[0].url).not.toContain('AIza');
 
@@ -89,7 +97,7 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
 
   // The key is kept in this browser's localStorage only.
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}'));
-  expect(stored).toMatchObject({ provider: 'gemini', gemini: { apiKey: 'AIza-e2e-key', model: 'gemini-2.5-flash' } });
+  expect(stored).toMatchObject({ provider: 'gemini', gemini: { apiKey: 'AIza-e2e-key', model: '' } });
   await dlg.getByRole('button', { name: 'Forget key' }).click();
   await expect(key).toHaveValue('');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}').gemini.apiKey)).toBe('');
@@ -118,7 +126,7 @@ async function importChallenge(page: Page) {
 
 test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest codes, streamed summary', async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem('socius.ai', JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'AIza-e2e', model: 'gemini-2.5-flash' } }));
+    localStorage.setItem('socius.ai', JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'AIza-e2e', model: 'gemini-3.6-flash' } }));
   });
   const calls: Array<{ url: string; body: any }> = [];
   await page.route(GEMINI, async (route) => {
@@ -157,7 +165,7 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
   await aiMenu('Suggest a codebook');
   const dlg = page.getByRole('dialog', { name: 'Suggest a codebook' });
   // Before sending: which provider, how much.
-  await expect(dlg.locator('.ai-note')).toContainText('will be sent to Google Gemini (gemini-2.5-flash)');
+  await expect(dlg.locator('.ai-note')).toContainText('will be sent to Google Gemini (gemini-3.6-flash)');
   await expect(dlg.locator('.ai-note')).toContainText(/up to \d+ excerpts/);
   expect(calls).toHaveLength(0);
   await dlg.getByRole('button', { name: 'Suggest codes' }).click();
@@ -190,7 +198,7 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
 
 test('AI errors from Gemini show a friendly message in the coding dialog', async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem('socius.ai', JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'wrong', model: 'gemini-2.5-flash' } }));
+    localStorage.setItem('socius.ai', JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'wrong', model: 'gemini-3.6-flash' } }));
   });
   await page.route(GEMINI, (route) =>
     route.fulfill({ status: 403, headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ error: { code: 403, message: 'Permission denied', status: 'PERMISSION_DENIED' } }) }),

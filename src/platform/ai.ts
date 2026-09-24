@@ -10,7 +10,7 @@
 // exports). Components follow changes through subscribeAi / getAiStatus.
 
 import { AiUnavailableError, askClaude, askClaudeJson, claudeGlobal, claudeSampleAvailable } from './claude';
-import { askGemini, askOpenAiCompatible, normaliseBaseUrl } from './ai-http';
+import { askGemini, askOpenAiCompatible, lastResolvedGeminiModel, normaliseBaseUrl } from './ai-http';
 import {
   DEFAULT_WEBLLM_MODEL, WEBLLM_IN_BUILD, WEBLLM_MAX_TOKENS, WEBLLM_PROMPT_BUDGET_BYTES, askWebLlm, detectWebGpu, isWebLlmCached, webLlmChoice, type WebGpuStatus,
 } from './ai-webllm';
@@ -28,7 +28,10 @@ export interface AiSettings {
   webllm: { model: string };
 }
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+/** Empty = pick the newest Flash model the key can use (see resolveGeminiModel). */
+export const DEFAULT_GEMINI_MODEL = '';
+/** Model names that earlier versions saved as defaults; treated as "automatic" so retired names don't stick. */
+const OLD_DEFAULT_GEMINI_MODELS = new Set(['gemini-2.5-flash']);
 export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 /** Largest prompt sent to Claude or Gemini (the Claude sample capability accepts 64 KB). */
 export const DEFAULT_PROMPT_BUDGET_BYTES = 40_000;
@@ -116,7 +119,7 @@ export function parseAiSettings(raw: string | null): AiSettings {
   const preset: OpenAiPreset = o.openai?.preset in OPENAI_PRESETS ? o.openai.preset : DEFAULT_SETTINGS.openai.preset;
   return {
     provider: PROVIDERS.includes(o.provider) ? o.provider : null,
-    gemini: { apiKey: str(o.gemini?.apiKey, ''), model: str(o.gemini?.model, DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL },
+    gemini: { apiKey: str(o.gemini?.apiKey, ''), model: OLD_DEFAULT_GEMINI_MODELS.has(str(o.gemini?.model, '').trim()) ? DEFAULT_GEMINI_MODEL : str(o.gemini?.model, DEFAULT_GEMINI_MODEL).trim() },
     openai: {
       preset,
       baseUrl: str(o.openai?.baseUrl, OPENAI_PRESETS[preset].baseUrl),
@@ -212,7 +215,7 @@ export function providerLabel(p: AiProviderId | null, s: AiSettings = settings):
     case 'webllm':
       return `the on-device model (${webLlmChoice(s.webllm.model).label.toLowerCase()})`;
     case 'gemini':
-      return `Google Gemini (${s.gemini.model || DEFAULT_GEMINI_MODEL})`;
+      return `Google Gemini (${s.gemini.model || lastResolvedGeminiModel(s.gemini.apiKey) || 'newest Flash model'})`;
     case 'openai': {
       const preset = s.openai.preset !== 'custom' ? OPENAI_PRESETS[s.openai.preset].label : isLocalUrl(s.openai.baseUrl) ? 'a service on this computer' : hostOf(s.openai.baseUrl) || 'an OpenAI-compatible service';
       return s.openai.model ? `${preset} (${s.openai.model})` : preset;
@@ -382,7 +385,14 @@ export async function askAI(prompt: string, opts: AiAskOptions = {}): Promise<st
       case 'claude':
         return await askClaude(prompt, { onText: opts.onText, signal: opts.signal, modelTier: opts.modelTier });
       case 'gemini':
-        return await askGemini({ apiKey: s.gemini.apiKey, model: s.gemini.model }, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens });
+        return await askGemini({ apiKey: s.gemini.apiKey, model: s.gemini.model }, prompt, {
+          onText,
+          signal: opts.signal,
+          json: opts.json,
+          maxTokens: opts.maxTokens,
+          // The saved model was retired or mistyped and another answered: switch the setting to automatic.
+          onModelFallback: () => saveAiSettings({ gemini: { ...settings.gemini, model: DEFAULT_GEMINI_MODEL } }),
+        });
       case 'openai':
         return stripThinking(await askOpenAiCompatible({ baseUrl: s.openai.baseUrl, apiKey: s.openai.apiKey, model: s.openai.model }, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens }));
       case 'webllm':

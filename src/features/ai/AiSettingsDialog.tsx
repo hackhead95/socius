@@ -10,7 +10,7 @@ import {
   type AiProviderId, type OpenAiPreset,
 } from '../../platform/ai';
 import { WEBLLM_IN_BUILD, WEBLLM_MODELS, deleteWebLlmModel, detectWebGpu, prepareWebLlm, type WebGpuStatus } from '../../platform/ai-webllm';
-import { normaliseBaseUrl } from '../../platform/ai-http';
+import { lastResolvedGeminiModel, normaliseBaseUrl } from '../../platform/ai-http';
 import { AiPrivacyNotice } from './AiBits';
 import { useAiSettingsDialog, useAiStatus, useWebLlmState } from './hooks';
 import './ai.css';
@@ -52,7 +52,10 @@ export function AiSettingsDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => () => testAbort.current?.abort(), []);
   // Any change to the settings makes an earlier test result stale.
-  useEffect(() => setTest({ phase: 'idle' }), [settings]);
+  // Clear an old test result when the set-up changes (but not when the model switches to automatic
+  // on its own after a retired model name, which happens during a successful test).
+  const setupKey = JSON.stringify({ ...settings, gemini: { apiKey: settings.gemini.apiKey } });
+  useEffect(() => setTest({ phase: 'idle' }), [setupKey]);
 
   const choose = (id: AiProviderId) => saveAiSettings({ provider: id });
 
@@ -122,7 +125,11 @@ export function AiSettingsDialog({ onClose }: { onClose: () => void }) {
             </button>
             {test.phase === 'running' ? <button className="btn btn-ghost btn-sm" onClick={() => testAbort.current?.abort()}>Stop</button> : null}
             <span className="ai-test-result" role="status" aria-live="polite">
-              {test.phase === 'ok' ? <span className="ai-ok">Connected. The AI answered{test.reply ? `: "${test.reply.slice(0, 40)}"` : ''}.</span> : null}
+              {test.phase === 'ok' ? (
+                <span className="ai-ok">
+                  Connected{provider === 'gemini' ? ` to ${settings.gemini.model || lastResolvedGeminiModel(settings.gemini.apiKey) || 'Gemini'}` : ''}. The AI answered{test.reply ? `: "${test.reply.slice(0, 40)}"` : ''}.
+                </span>
+              ) : null}
               {test.phase === 'error' ? <span className="text-bad">{test.message}</span> : null}
               {test.phase === 'idle' && !canTest && status.ready === 'no' ? <span className="help">Finish the set-up above, then test it.</span> : null}
             </span>
@@ -188,8 +195,11 @@ function GeminiSection() {
         <KeyField id="ai-gemini-key" value={s.gemini.apiKey} onChange={(v) => saveAiSettings({ gemini: { ...s.gemini, apiKey: v } })} placeholder="Paste your key" />
         <div className="field">
           <label htmlFor="ai-gemini-model">Model</label>
-          <input id="ai-gemini-model" className="input mono" value={s.gemini.model} onChange={(e) => saveAiSettings({ gemini: { ...s.gemini, model: e.target.value.trim() } })} spellCheck={false} />
-          <span className="help">gemini-2.5-flash is free and fast. gemini-2.5-flash-lite allows more requests per day.</span>
+          <input id="ai-gemini-model" className="input mono" value={s.gemini.model} placeholder="Automatic" onChange={(e) => saveAiSettings({ gemini: { ...s.gemini, model: e.target.value.trim() } })} spellCheck={false} />
+          <span className="help">
+            Leave empty and Socius picks the newest free Flash model your key can use
+            {lastResolvedGeminiModel(s.gemini.apiKey) ? ` (now ${lastResolvedGeminiModel(s.gemini.apiKey)})` : ''}. Google retires old model names, so only type one if you need a specific model.
+          </span>
         </div>
       </div>
       {s.gemini.apiKey ? (

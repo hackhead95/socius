@@ -1,11 +1,11 @@
 // Gemini and OpenAI-compatible adapters: request building, response parsing, SSE streaming and error codes.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  askGemini, askOpenAiCompatible, buildGeminiRequest, buildOpenAiRequest, geminiText, httpErrorCode, normaliseBaseUrl, readSse,
+  askGemini, askOpenAiCompatible, buildGeminiRequest, buildOpenAiRequest, geminiModelName, geminiText, httpErrorCode, lastResolvedGeminiModel, normaliseBaseUrl, pickGeminiModel, readSse,
 } from '../../src/platform/ai-http';
 import { jsonResponse, sseResponse } from './helpers';
 
-const gem = { apiKey: ' AIza-test ', model: 'gemini-2.5-flash' };
+const gem = { apiKey: ' AIza-test ', model: 'gemini-3.6-flash' };
 const oa = { baseUrl: 'https://api.groq.com/openai/v1/', apiKey: 'gsk_test', model: 'llama-3.3-70b-versatile' };
 
 afterEach(() => {
@@ -21,14 +21,14 @@ function mockFetch(respond: (url: string, init: RequestInit) => Response | Promi
 describe('request building', () => {
   it('Gemini: model URL, key header, JSON mode, streaming URL', () => {
     const r = buildGeminiRequest(gem, 'Hello', { stream: false, json: true });
-    expect(r.url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+    expect(r.url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent');
     expect(r.init.headers['x-goog-api-key']).toBe('AIza-test');
     expect(r.init.headers['Content-Type']).toBe('application/json');
     const body = JSON.parse(r.init.body);
     expect(body.contents).toEqual([{ role: 'user', parts: [{ text: 'Hello' }] }]);
     expect(body.generationConfig.responseMimeType).toBe('application/json');
-    const s = buildGeminiRequest({ ...gem, model: 'models/gemini-2.5-flash-lite' }, 'Hi', { stream: true, maxTokens: 50 });
-    expect(s.url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse');
+    const s = buildGeminiRequest({ ...gem, model: 'models/gemini-3.6-flash-lite' }, 'Hi', { stream: true, maxTokens: 50 });
+    expect(s.url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash-lite:streamGenerateContent?alt=sse');
     const sb = JSON.parse(s.init.body);
     expect(sb.generationConfig.responseMimeType).toBeUndefined();
     expect(sb.generationConfig.maxOutputTokens).toBe(50);
@@ -154,8 +154,53 @@ describe('errors', () => {
 
   it('refuses to send without a key or model', async () => {
     const f = mockFetch(() => jsonResponse({}));
-    await expect(askGemini({ apiKey: '', model: 'gemini-2.5-flash' }, 'p')).rejects.toMatchObject({ code: 'not_configured' });
+    await expect(askGemini({ apiKey: '', model: 'gemini-3.6-flash' }, 'p')).rejects.toMatchObject({ code: 'not_configured' });
     await expect(askOpenAiCompatible({ baseUrl: 'https://x/v1', apiKey: 'k', model: '' }, 'p')).rejects.toMatchObject({ code: 'not_configured' });
     expect(f).not.toHaveBeenCalled();
+  });
+});
+
+describe('automatic Gemini model choice', () => {
+  const list = (names: string[]) => ({ models: names.map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent', 'countTokens'] })) });
+
+  it('picks the newest stable Flash model and skips special-purpose ones', () => {
+    const models = list(['gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.6-flash-image', 'gemini-3.7-flash-preview-09-2026', 'gemini-3.6-pro', 'gemini-3.6-flash-tts', 'gemma-3-27b-it']).models;
+    models.push({ name: 'models/text-embedding-004', supportedGenerationMethods: ['embedContent'] });
+    expect(pickGeminiModel(models)).toBe('gemini-3.6-flash');
+    expect(pickGeminiModel(list(['gemini-3.6-flash-lite', 'gemini-3.6-pro']).models)).toBe('gemini-3.6-flash-lite');
+    expect(pickGeminiModel(list(['gemini-3.7-flash-preview-09-2026']).models)).toBe('gemini-3.7-flash-preview-09-2026');
+    expect(pickGeminiModel([])).toBe('');
+  });
+
+  it('lists the models when no model is set, then generates with the pick', async () => {
+    const urls: string[] = [];
+    mockFetch((u: string) => {
+      urls.push(u);
+      if (u.includes('/models?')) return jsonResponse(list(['gemini-2.5-flash', 'gemini-3.6-flash']));
+      return jsonResponse({ candidates: [{ content: { parts: [{ text: 'OK' }] } }] });
+    });
+    await expect(askGemini({ apiKey: 'fresh-key-1', model: '' }, 'p')).resolves.toBe('OK');
+    expect(urls[0]).toBe('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000');
+    expect(urls[1]).toContain('/models/gemini-3.6-flash:generateContent');
+    expect(lastResolvedGeminiModel('fresh-key-1')).toBe('gemini-3.6-flash');
+  });
+
+  it('falls back from a retired model name and reports it', async () => {
+    const urls: string[] = [];
+    mockFetch((u: string) => {
+      urls.push(u);
+      if (u.includes('/models?')) return jsonResponse(list(['gemini-3.6-flash']));
+      if (u.includes('gemini-2.5-flash:')) return jsonResponse({ error: { code: 404, message: 'This model models/gemini-2.5-flash is no longer available to new users.', status: 'NOT_FOUND' } }, 404);
+      return jsonResponse({ candidates: [{ content: { parts: [{ text: 'OK' }] } }] });
+    });
+    let fellBackTo = '';
+    await expect(askGemini({ apiKey: 'fresh-key-2', model: 'gemini-2.5-flash' }, 'p', { onModelFallback: (m) => (fellBackTo = m) })).resolves.toBe('OK');
+    expect(fellBackTo).toBe('gemini-3.6-flash');
+    expect(urls.some((u) => u.includes('/models/gemini-3.6-flash:generateContent'))).toBe(true);
+  });
+
+  it('treats the old saved default as automatic', () => {
+    expect(geminiModelName('auto')).toBe('');
+    expect(geminiModelName('models/gemini-3.6-flash')).toBe('gemini-3.6-flash');
   });
 });
