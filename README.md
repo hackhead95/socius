@@ -61,7 +61,7 @@ The **Graphs** menu has Bar Chart (counts, percentages or means with 95% confide
 
 ## How to use it
 
-**Live app:** [Socius on claude.ai](https://claude.ai/artifact/QhdiZywvzVpZPtkPGkcENi) (single-file build; ask the owner for access if the link is private)
+**Live app:** https://hackhead95.github.io/socius/ (free, runs in your browser; nothing is uploaded)
 
 Open the link in a recent version of Chrome, Edge, Firefox or Safari. On the first visit the sample survey loads so you can try things straight away. Use **File > Open data file...** (or drag a file onto the window) to open your own data.
 
