@@ -6,7 +6,8 @@ import { useStore } from '../../core/store';
 import { newId } from '../../core/types';
 import { sampleTranscripts } from '../../samples';
 import { normaliseText } from '../../lib/coding/importers';
-import { aiAvailable } from '../../platform/host';
+import { useAiStatus, openAiSettings } from '../ai/hooks';
+import { AiSetupButton } from '../ai/AiBits';
 import { Modal } from '../../ui/Modal';
 import { addDocs } from './actions';
 import { plural, toast } from './hooks';
@@ -56,23 +57,50 @@ function LoadSamples({ onClose }: { onClose: () => void }) {
   return null;
 }
 
-/** AI dialogs appear only when AI is available; otherwise explain once. */
+/** AI dialogs open when an AI provider is ready; otherwise explain the free options and offer set-up. */
 function AiGate({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  const ai = useCodingUi((s) => s.ai);
-  useEffect(() => {
-    if (ai !== 'unknown') return;
-    let alive = true;
-    void aiAvailable().then((ok) => alive && useCodingUi.getState().set({ ai: ok ? 'yes' : 'no' }));
-    return () => {
-      alive = false;
-    };
-  }, [ai]);
-  if (ai === 'yes') return <>{children}</>;
+  const ai = useAiStatus();
+  if (ai.ready === 'yes') return <>{children}</>;
+  const chosen = ai.provider && ai.provider !== 'claude';
   return (
-    <Modal title="AI suggestions" size="narrow" onClose={onClose} footer={<button className="btn btn-primary" onClick={onClose}>Close</button>}>
-      <p style={{ fontSize: 'var(--fs-sm)' }}>{ai === 'unknown' ? 'Checking whether AI suggestions are available…' : 'AI suggestions are available when Socius runs as a Claude artifact. Everything else in Text coding works here as usual.'}</p>
+    <Modal
+      title="AI suggestions"
+      size="narrow"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn" onClick={onClose}>Close</button>
+          {ai.ready === 'no' ? <AiSetupButton label={chosen ? 'Open AI assistant settings' : 'Set up free AI help'} /> : null}
+        </>
+      }
+    >
+      <div className="stack" style={{ fontSize: 'var(--fs-sm)' }}>
+        {ai.ready === 'unknown' ? (
+          <p>Checking whether AI help is ready…</p>
+        ) : chosen ? (
+          <p>The AI option you chose ({ai.label}) is not ready yet. Finish its set-up in AI assistant settings, or choose another option.</p>
+        ) : (
+          <>
+            <p>AI help is optional and not set up yet. There are two free options:</p>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <li><b>On this computer:</b> a model runs in your browser and nothing leaves your computer. Best for confidential interviews.</li>
+              <li><b>Google Gemini:</b> paste a free key from Google. Faster and better, but excerpts go to Google, so anonymise first.</li>
+            </ul>
+            <p className="help">Everything else in Text coding works without AI.</p>
+          </>
+        )}
+      </div>
     </Modal>
   );
+}
+
+/** Opens the app-wide AI assistant settings, then closes this menu dialog. */
+function OpenAiSettings({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    openAiSettings();
+    onClose();
+  }, [onClose]);
+  return null;
 }
 
 export function CodingDialog(props: { id: string; params?: Record<string, unknown>; onClose: () => void }) {
@@ -100,6 +128,8 @@ export function CodingDialog(props: { id: string; params?: Record<string, unknow
           <AiSuggestDialog onClose={onClose} docIds={p.docIds as string[] | undefined} />
         </AiGate>
       );
+    case 'ai-settings':
+      return <OpenAiSettings onClose={onClose} />;
     case 'export':
       return <ExportDialog onClose={onClose} initialTab={(p.tab as any) ?? 'segments'} />;
     case 'export-report':

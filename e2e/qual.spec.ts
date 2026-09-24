@@ -1,10 +1,10 @@
 // Qualitative coding end to end: open-ended answers, codebook, keyboard coding, auto-coding, export to
 // the dataset and crosstabs, intercoder reliability, interview coding, AI help (mocked) and persistence.
 import { expect, test, type Page } from '@playwright/test';
+import { loadSampleFromWelcome, openWithSample } from './helpers';
 
 async function ready(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('.grid-scroll')).toBeVisible({ timeout: 30_000 });
+  await openWithSample(page);
 }
 
 async function menu(page: Page, top: string, item: string | RegExp) {
@@ -137,8 +137,10 @@ test('worked example: one click loads answers, a starter codebook and keyword co
   await expect(counts).toHaveText(/^630 shown · \d+ of 630 coded$/);
   const coded = Number(/(\d+) of 630/.exec(await counts.innerText())![1]);
   expect(coded / 630).toBeGreaterThan(0.6);
-  await expect(page.locator('.toast')).toContainText('Example loaded');
-  await expect(page.locator('.toast')).toContainText('review them');
+  // Loading the sample from the welcome screen leaves its own toast, so pick the example's.
+  const exToast = page.locator('.toast', { hasText: 'Example loaded' });
+  await expect(exToast).toBeVisible();
+  await expect(exToast).toContainText('review them');
   const note = page.locator('.cw-example-note');
   await expect(note).toContainText('Worked example.');
   await expect(note).toContainText(`coded ${coded} of 630 answers automatically`);
@@ -313,14 +315,20 @@ test('themes: co-occurrence and codes by attribute count sub-codes in their them
   await expect(page.locator('.cw-ftable tbody tr').first()).toContainText('with sub-codes');
 });
 
-test('AI help is hidden outside the artifact viewer', async ({ page }) => {
+test('outside the artifact, AI items lead to free set-up instead of disappearing', async ({ page }) => {
   await ready(page);
   await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
-  await expect(page.getByRole('menuitem', { name: /with AI/ })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: /with AI/ })).toHaveCount(2);
   await page.keyboard.press('Escape');
   await importChallenge(page);
-  await expect(page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' })).toHaveCount(0);
-  await expect(page.locator('.cw-ainote')).toHaveText('AI suggestions are available when Socius runs as a Claude artifact.');
+  await expect(page.locator('.cw-ainote')).toContainText('Optional: AI can draft a codebook');
+  await expect(page.locator('.cw-ainote button', { hasText: 'Set up free AI help' })).toBeVisible();
+  await page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' }).click();
+  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Suggest a codebook' }).click();
+  const gate = page.getByRole('dialog', { name: 'AI suggestions' });
+  await expect(gate).toContainText('not set up yet');
+  await gate.getByRole('button', { name: 'Set up free AI help' }).click();
+  await expect(page.getByRole('dialog', { name: 'AI assistant' })).toBeVisible();
 });
 
 test('AI help with a mocked Claude: suggest a codebook, suggest codes, summarise, errors', async ({ page }) => {

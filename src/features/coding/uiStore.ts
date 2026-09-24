@@ -38,7 +38,6 @@ interface CodingUiState {
   pending: PendingSelection | null;
   history: HistoryEntry[];
   dialog: LocalDialog | null;
-  ai: 'unknown' | 'yes' | 'no';
   /** Source list filters. */
   docSearch: string;
   docFilter: 'all' | 'coded' | 'uncoded';
@@ -64,7 +63,6 @@ export const useCodingUi = create<CodingUiState>((set) => ({
   pending: null,
   history: [],
   dialog: null,
-  ai: 'unknown',
   docSearch: '',
   docFilter: 'all',
   docAttr: null,

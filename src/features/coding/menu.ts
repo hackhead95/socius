@@ -1,8 +1,6 @@
 // The "Text coding" menu. The app shell renders these; selecting one switches to the coding tab and
 // calls openDialog({ kind: 'coding', id }) unless `tabOnly`. Ids starting with "view:" switch the
 // workspace view (CodingDialog handles them and closes immediately).
-import { useCodingUi } from './uiStore';
-
 export interface CodingMenuItem {
   id: string;
   label: string;
@@ -10,17 +8,17 @@ export interface CodingMenuItem {
   separator?: boolean;
   /** Only switch to the Text coding tab (no dialog). */
   tabOnly?: boolean;
-  /** AI item: shown only where AI help can be offered (see aiMenuAvailable). */
+  /** AI item: opens the set-up help when no AI provider is ready (see aiMenuAvailable). */
   ai?: boolean;
 }
 
 /**
- * Whether the AI items belong in the menu: only inside the Claude artifact viewer (a `claude` global
- * exists) and not after the capability check said no. Reading this makes no request to Claude.
+ * Whether the AI items belong in the menu. Always: free options exist everywhere (a model on this
+ * computer, Gemini with a free key), and an AI item opens the set-up help when nothing is set up yet.
+ * Reading this makes no request to any AI service.
  */
 export function aiMenuAvailable(): boolean {
-  const c = (globalThis as { claude?: { use?: unknown } }).claude;
-  return typeof c?.use === 'function' && useCodingUi.getState().ai !== 'no';
+  return true;
 }
 
 export const codingMenuItems: CodingMenuItem[] = [
@@ -32,6 +30,7 @@ export const codingMenuItems: CodingMenuItem[] = [
   { id: 'auto-code', label: 'Auto-code with keyword rules…' },
   { id: 'ai-codebook', label: 'Suggest a codebook with AI…', ai: true },
   { id: 'ai-suggest', label: 'Suggest codes for responses with AI…', ai: true },
+  { id: 'ai-settings', label: 'AI assistant settings…', ai: true },
   { id: 'view:retrieve', label: 'Retrieve coded segments', separator: true },
   { id: 'view:frequencies', label: 'Code frequencies' },
   { id: 'view:cooccurrence', label: 'Code co-occurrence' },

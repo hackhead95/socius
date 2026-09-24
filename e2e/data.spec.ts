@@ -1,6 +1,7 @@
 // Data management end to end: opening messy real-world files, Data View editing, transforms,
 // round trips, session restore, the Artifact sandbox and small screens.
 import { expect, test, type Page } from '@playwright/test';
+import { loadSampleFromWelcome, openWithSample } from './helpers';
 import { readFileSync } from 'node:fs';
 import { zipSync } from 'fflate';
 import { buildSav, valueLabels } from '../tests/io/sav-builder';
@@ -8,9 +9,7 @@ import { buildSav, valueLabels } from '../tests/io/sav-builder';
 const FIX = 'tests/io/fixtures/';
 
 async function ready(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('.grid-scroll')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.dataset-size')).toContainText('cases');
+  await openWithSample(page);
 }
 
 async function menu(page: Page, top: string, item: string) {
@@ -194,7 +193,8 @@ test('inside a sandboxed Artifact iframe, files go through downloads.save and .s
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/__wrap.html');
   const f = page.frameLocator('#f');
-  await expect(f.locator('.dataset-size')).toContainText('640 cases', { timeout: 30_000 });
+  await loadSampleFromWelcome(f);
+  await expect(f.locator('.dataset-size')).toContainText('640 cases');
   for (const item of ['SPSS data (.sav)', 'CSV with codes']) {
     await f.getByRole('menuitem', { name: 'File', exact: true }).click();
     await f.getByRole('menuitem', { name: 'Save data as' }).click();

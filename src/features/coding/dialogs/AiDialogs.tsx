@@ -1,12 +1,16 @@
-// AI-assisted coding (only offered when running as a Claude artifact). Every request starts with a
-// click; suggestion runs are sequential batches with progress and a Stop button.
+// AI-assisted coding through the provider the user set up (src/platform/ai: Claude inside the
+// artifact, a model on this computer, Gemini, or another service). Every request starts with a click,
+// after the dialog has said what will be sent where; suggestion runs are sequential batches with
+// progress and a Stop button.
 
 import { useMemo, useRef, useState } from 'react';
 import { Modal } from '../../../ui/Modal';
 import { useStore } from '../../../core/store';
 import type { CodeDef } from '../../../core/coding-types';
 import { newId } from '../../../core/types';
-import { askClaudeJson, aiErrorMessage } from '../../../platform/host';
+import { aiErrorMessage, aiErrorText, aiPromptBudget, askAIJson } from '../../../platform/ai';
+import { useAiStatus } from '../../ai/hooks';
+import { AiLoadProgress, AiProviderNote } from '../../ai/AiBits';
 import { buildCodebookPrompt, buildSuggestBatches, parseCodeSuggestions, parseCodebookSuggestions, spreadSample, type CodebookSuggestion } from '../../../lib/coding/ai';
 import { splitParagraphs } from '../../../lib/coding/text';
 import { nextCodeColor } from '../../../lib/coding/palette';
@@ -23,6 +27,7 @@ export function AiCodebookDialog(props: { onClose: () => void }) {
   const [state, setState] = useState<{ running: boolean; error?: string; used?: number }>({ running: false });
   const [items, setItems] = useState<Array<CodebookSuggestion & { pick: boolean }>>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const ai = useAiStatus();
 
   const excerpts = useMemo(() => {
     if (source === 'response') return spreadSample(project.docs.filter((d) => d.kind === 'response').map((d) => d.text), 150);
@@ -31,21 +36,27 @@ export function AiCodebookDialog(props: { onClose: () => void }) {
     return spreadSample(paras, 150);
   }, [project.docs, source]);
 
+  // How many excerpts fit the current provider's prompt size (shown before anything is sent).
+  const previewUsed = useMemo(
+    () => buildCodebookPrompt(excerpts, { researchQuestion: focus, existing: project.codes.map((c) => c.name), budgetBytes: aiPromptBudget() }).used,
+    [excerpts, focus, project.codes, ai.provider, ai.label],
+  );
+
   const run = async () => {
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    const { prompt, used } = buildCodebookPrompt(excerpts, { researchQuestion: focus, existing: project.codes.map((c) => c.name) });
+    const { prompt, used } = buildCodebookPrompt(excerpts, { researchQuestion: focus, existing: project.codes.map((c) => c.name), budgetBytes: aiPromptBudget() });
     setState({ running: true, used });
     setItems([]);
     try {
-      const raw = await askClaudeJson(prompt, { signal: ctrl.signal, modelTier: 'complex' });
+      const raw = await askAIJson(prompt, { signal: ctrl.signal, modelTier: 'complex' });
       const parsed = parseCodebookSuggestions(raw);
       // Names already in the codebook start unticked (adding them would change nothing).
       const have = new Set(project.codes.map((c) => c.name.trim().toLowerCase()));
       setItems(parsed.map((p) => ({ ...p, pick: !have.has(p.name.trim().toLowerCase()) })));
-      setState({ running: false, used, error: parsed.length ? undefined : 'Claude did not suggest any codes. Try again, or add a research focus.' });
+      setState({ running: false, used, error: parsed.length ? undefined : 'The AI did not suggest any codes. Try again, or add a research focus.' });
     } catch (e: any) {
-      setState({ running: false, used, error: aiErrorMessage(e?.code ?? 'unavailable') });
+      setState({ running: false, used, error: ctrl.signal.aborted ? aiErrorMessage('cancelled') : aiErrorText(e) });
     }
   };
 
@@ -74,12 +85,11 @@ export function AiCodebookDialog(props: { onClose: () => void }) {
   return (
     <Modal
       title="Suggest a codebook"
-      subtitle="Claude reads a sample of your data and proposes inductive codes. You decide which to keep."
+      subtitle="The AI reads a sample of your data and proposes inductive codes. You decide which to keep."
       size="wide"
       onClose={() => { abortRef.current?.abort(); props.onClose(); }}
       footer={
         <>
-          <span className="help">{excerpts.length ? `${plural(Math.min(excerpts.length, state.used ?? excerpts.length), 'excerpt')} will be sent to Claude.` : ''}</span>
           <span className="spacer" />
           {state.running ? <button className="btn" onClick={() => abortRef.current?.abort()}>Stop</button> : null}
           {items.length ? (
@@ -107,8 +117,10 @@ export function AiCodebookDialog(props: { onClose: () => void }) {
           </div>
         </div>
         {!excerpts.length ? <div className="callout callout-info">Import documents or responses first.</div> : null}
+        {excerpts.length && !items.length ? <AiProviderNote when="When you click Suggest codes" what={`up to ${plural(Math.min(excerpts.length, state.used ?? previewUsed), 'excerpt')}`} /> : null}
         {state.error ? <div className="callout callout-bad">{state.error}</div> : null}
-        {state.running ? <p className="help" aria-live="polite">Claude is reading the excerpts. This can take up to a minute.</p> : null}
+        {state.running ? <AiLoadProgress onCancel={() => abortRef.current?.abort()} /> : null}
+        {state.running ? <p className="help" aria-live="polite">The AI is reading the excerpts. This can take a minute{ai.provider === 'webllm' ? ' or more on this computer' : ''}.</p> : null}
         {items.length ? (
           <>
             <div className="row">
@@ -158,6 +170,7 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
   const [rows, setRows] = useState<RowSuggestion[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number; running: boolean; error?: string } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const ai = useAiStatus();
 
   const targets = useMemo(() => {
     const coded = new Set(project.segments.filter((s) => s.coder === project.activeCoder).map((s) => s.docId));
@@ -167,7 +180,10 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
   }, [project.docs, project.segments, project.activeCoder, scope, props.docIds, maxN]);
 
   const codes = project.codes;
-  const batches = useMemo(() => buildSuggestBatches(codes, targets.map((d, i) => ({ id: `r${i + 1}`, text: d.text }))), [codes, targets]);
+  const batches = useMemo(
+    () => buildSuggestBatches(codes, targets.map((d, i) => ({ id: `r${i + 1}`, text: d.text })), { budgetBytes: aiPromptBudget() }),
+    [codes, targets, ai.provider, ai.label],
+  );
   const docText = useMemo(() => new Map(project.docs.map((d) => [d.id, d])), [project.docs]);
 
   const run = async () => {
@@ -179,7 +195,7 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
     for (let b = 0; b < batches.length; b++) {
       if (ctrl.signal.aborted) break;
       try {
-        const raw = await askClaudeJson(batches[b].prompt, { signal: ctrl.signal, modelTier: 'default' });
+        const raw = await askAIJson(batches[b].prompt, { signal: ctrl.signal, modelTier: 'default' });
         const m = parseCodeSuggestions(raw, batches[b].ids, codes);
         const add: RowSuggestion[] = [];
         for (const id of batches[b].ids) {
@@ -190,8 +206,7 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
         setRows((r) => [...r, ...add]);
         setProgress({ done: b + 1, total: batches.length, running: b + 1 < batches.length });
       } catch (e: any) {
-        const code = ctrl.signal.aborted ? 'cancelled' : (e?.code ?? 'unavailable');
-        setProgress({ done: b, total: batches.length, running: false, error: aiErrorMessage(code) });
+        setProgress({ done: b, total: batches.length, running: false, error: ctrl.signal.aborted ? aiErrorMessage('cancelled') : aiErrorText(e) });
         return;
       }
     }
@@ -215,7 +230,7 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
   return (
     <Modal
       title="Suggest codes for responses"
-      subtitle="Claude applies your existing codebook to open-ended responses. You review every suggestion before it is added."
+      subtitle="The AI applies your existing codebook to open-ended responses. You review every suggestion before it is added."
       size="wide"
       onClose={() => { abortRef.current?.abort(); props.onClose(); }}
       footer={
@@ -253,9 +268,11 @@ export function AiSuggestDialog(props: { onClose: () => void; docIds?: string[] 
         ) : null}
         {!rows.length && !progress?.running ? (
           <p className="help">
-            {plural(targets.length, 'response')} in {plural(batches.length, 'request')} to Claude, sent one after another. You can stop at any time and keep what has arrived. Accepted codes are marked as AI suggestions and belong to {project.activeCoder}.
+            {plural(targets.length, 'response')} in {plural(batches.length, 'request')}, sent one after another. You can stop at any time and keep what has arrived. Accepted codes are marked as AI suggestions and belong to {project.activeCoder}.
           </p>
         ) : null}
+        {!rows.length && !progress?.running && targets.length && codes.length ? <AiProviderNote when="When you click Suggest codes" what={`${plural(targets.length, 'response')} and your codebook`} /> : null}
+        {progress?.running ? <AiLoadProgress onCancel={() => abortRef.current?.abort()} /> : null}
         {progress ? (
           <div className="stack" style={{ gap: 4 }} aria-live="polite">
             <div className="row">

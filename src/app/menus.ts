@@ -11,6 +11,8 @@ import {
 import { samples } from '../samples';
 import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { modKey } from './shortcuts';
+import { FEEDBACK_URL, GUIDE_URL, openExternal } from './links';
+import { openAiSettings } from '../features/ai/hooks';
 
 export interface TopMenu {
   id: string;
@@ -179,7 +181,10 @@ export function useMenus(): TopMenu[] {
 
   const help: MenuItem[] = [
     { id: 'h-start', label: 'Getting started', onSelect: () => st().openDialog({ kind: 'custom', id: 'getting-started' }) },
+    { id: 'h-guide', label: 'User guide', title: 'Opens the full guide in a new tab', onSelect: () => openExternal(GUIDE_URL) },
     { id: 'h-keys', label: 'Keyboard shortcuts', onSelect: () => st().openDialog({ kind: 'custom', id: 'shortcuts' }) },
+    { id: 'h-ai', label: 'AI assistant settings...', separator: true, onSelect: openAiSettings },
+    { id: 'h-feedback', label: 'Send feedback or report a problem', separator: true, title: 'Opens a form on GitHub in a new tab', onSelect: () => openExternal(FEEDBACK_URL) },
     { id: 'h-about', label: 'About Socius', separator: true, onSelect: () => st().openDialog({ kind: 'custom', id: 'about' }) },
   ];
 

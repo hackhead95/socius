@@ -1,10 +1,9 @@
 // App shell end-to-end checks: sample data, Data View editing, transforms, undo, projects, theme, narrow layout.
 import { expect, test, type Page } from '@playwright/test';
+import { loadSampleFromWelcome, openWithSample } from './helpers';
 
 async function ready(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('.grid-scroll')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.dataset-size')).toContainText('cases');
+  await openWithSample(page);
 }
 
 async function menu(page: Page, top: string, item: string) {
@@ -12,8 +11,13 @@ async function menu(page: Page, top: string, item: string) {
   await page.getByRole('menuitem', { name: item }).click();
 }
 
-test('loads the sample survey with a banner on first run', async ({ page }) => {
-  await ready(page);
+test('first run shows the welcome screen; loading the sample shows its banner', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.welcome')).toBeVisible({ timeout: 30_000 });
+  for (const b of [/Open data file/, /Open project/, /Load sample survey/, /New empty dataset/]) await expect(page.getByRole('button', { name: b })).toBeVisible();
+  await expect(page.locator('.dataset-size')).toHaveCount(0);
+  await expect(page.locator('.sample-banner')).toHaveCount(0);
+  await loadSampleFromWelcome(page);
   await expect(page.locator('.chip-sample')).toBeVisible();
   await expect(page.locator('.sample-banner')).toContainText('You are exploring sample data');
   await expect(page.locator('.grid-hcell').first()).toBeVisible();

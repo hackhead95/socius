@@ -2,35 +2,18 @@
 // 1. Inside a claude.ai Artifact viewer (sandboxed iframe): plain <a download> is blocked, so files
 //    go through the `downloads` capability; Claude can be asked via the `sample` capability.
 // 2. A normal static host (GitHub Pages, `npm run preview`, a saved file): anchor downloads work,
-//    AI features are unavailable.
+//    AI help comes from a provider the user sets up (see ./ai).
 // 3. Tests (node): nothing here is called.
 //
-// Everything that saves a file or asks Claude MUST go through this module.
+// Everything that saves a file MUST go through this module; every AI request goes through ./ai.
 
-type ClaudeUse = { use: (name: string) => Promise<any> };
-
-function claudeGlobal(): ClaudeUse | null {
-  const c = (globalThis as any).claude;
-  return c && typeof c.use === 'function' ? (c as ClaudeUse) : null;
-}
-
-const capCache = new Map<string, Promise<any>>();
-function useCapability(name: string): Promise<any> {
-  const c = claudeGlobal();
-  if (!c) return Promise.resolve(null);
-  if (!capCache.has(name)) capCache.set(name, c.use(name).catch(() => null));
-  return capCache.get(name)!;
-}
+import { isInArtifactViewer, useCapability } from './claude';
 
 /** Extensions the artifact `downloads` capability accepts. Others must be wrapped in a .zip. */
 export const ARTIFACT_SAFE_EXTENSIONS = new Set([
   'gif', 'png', 'jpg', 'jpeg', 'webp', 'mp4', 'webm', 'txt', 'json', 'md',
   'docx', 'pptx', 'epub', 'csv', 'ttf', 'html', 'svg', 'pdf', 'xlsx', 'zip',
 ]);
-
-export function isInArtifactViewer(): boolean {
-  return !!claudeGlobal() && window.parent !== window;
-}
 
 export type SaveOutcome = 'saved' | 'declined' | 'unavailable' | 'error';
 
@@ -102,60 +85,10 @@ export async function copyToClipboard(text: string, html?: string): Promise<bool
   }
 }
 
-// ---------- Ask Claude (artifact `sample` capability) ----------
+// ---------- AI assistance ----------
+// Claude (artifact `sample` capability) lives in ./claude; the provider layer (Claude, on-device,
+// Gemini, OpenAI-compatible services) lives in ./ai. Re-exported here so older imports keep working.
 
-export interface AskOptions {
-  onText?: (text: string) => void;
-  signal?: AbortSignal;
-  modelTier?: 'quick' | 'default' | 'complex';
-}
-
-export class AiUnavailableError extends Error {
-  code: string;
-  constructor(code: string, message: string) {
-    super(message);
-    this.code = code;
-  }
-}
-
-/** True if AI assistance can be offered in this view (resolves within ~10 s at worst). */
-export async function aiAvailable(): Promise<boolean> {
-  return !!(await useCapability('sample'));
-}
-
-/** Ask Claude for text. Rejects AiUnavailableError (code: not_granted, rate_limited, unavailable, cancelled, ...). */
-export async function askClaude(prompt: string, opts: AskOptions = {}): Promise<string> {
-  const sample = await useCapability('sample');
-  if (!sample) throw new AiUnavailableError('unavailable', 'AI assistance is only available when this app is opened as a Claude artifact.');
-  try {
-    const r = await sample(prompt, {
-      signal: opts.signal,
-      modelTier: opts.modelTier ?? 'default',
-      onText: opts.onText ? ({ text }: { text: string }) => opts.onText!(text) : undefined,
-    });
-    return r.text as string;
-  } catch (e: any) {
-    throw new AiUnavailableError(e?.code ?? 'unavailable', e?.message ?? 'Claude could not answer.');
-  }
-}
-
-/** Ask Claude for JSON. Describe the exact shape in the prompt; validate the fields you use. */
-export async function askClaudeJson<T = unknown>(prompt: string, opts: AskOptions = {}): Promise<T> {
-  const sample = await useCapability('sample');
-  if (!sample) throw new AiUnavailableError('unavailable', 'AI assistance is only available when this app is opened as a Claude artifact.');
-  try {
-    return (await sample.json(prompt, { signal: opts.signal, modelTier: opts.modelTier ?? 'default' })) as T;
-  } catch (e: any) {
-    throw new AiUnavailableError(e?.code ?? 'unavailable', e?.message ?? 'Claude could not answer.');
-  }
-}
-
-export function aiErrorMessage(code: string): string {
-  switch (code) {
-    case 'not_granted': return 'AI assistance was not allowed for this page. You can keep coding manually.';
-    case 'rate_limited': return 'Too many AI requests at once. Wait a moment, then try again.';
-    case 'cancelled': return 'Stopped.';
-    case 'invalid_json': return 'Claude replied in an unexpected format. Try again with fewer items.';
-    default: return 'AI assistance is not available here. It works when the app is opened as a Claude artifact.';
-  }
-}
+export { isInArtifactViewer } from './claude';
+export { AiUnavailableError, askClaude, askClaudeJson, type ClaudeAskOptions as AskOptions } from './claude';
+export { aiAvailable, aiErrorMessage, askAI, askAIJson } from './ai';

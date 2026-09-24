@@ -1,13 +1,12 @@
 // Statistics end-to-end checks on the bundled sample survey: dialogs, numbers (verified against
 // scipy/statsmodels), weighting, inline errors, and the Word export.
 import { expect, test, type Page } from '@playwright/test';
+import { loadSampleFromWelcome, openWithSample } from './helpers';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 
 async function ready(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('.grid-scroll')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.dataset-size')).toContainText('cases');
+  await openWithSample(page);
 }
 
 async function menu(page: Page, ...path: string[]) {

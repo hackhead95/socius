@@ -15,6 +15,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "0.2.85",
     "@tanstack/react-virtual": "^3.14.13",
     "docx": "^9.7.2",
     "fflate": "^0.8.3",

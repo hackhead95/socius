@@ -1,16 +1,17 @@
 // App shell: top bar + menubar, main tabs, variable sidebar, dialogs, toasts, drag-and-drop,
-// first-run sample loading, session restore and autosave.
+// session restore (else the welcome screen) and autosave.
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type MainTab } from '../core/store';
 import { OutputViewer } from '../features/output/OutputViewer';
 import { CodingWorkspace } from '../features/coding/CodingWorkspace';
 import { DataView } from '../features/data/DataView';
 import { VariableView } from '../features/data/VariableView';
-import { applyProject, currentProjectState, isModified, loadSample } from '../features/project/fileActions';
+import { applyProject, currentProjectState, isModified } from '../features/project/fileActions';
 import { loadSession, saveSession } from '../features/project/persistence';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { DialogHost } from './DialogHost';
+import { AiSettingsHost } from '../features/ai/AiSettingsDialog';
 import { BusyOverlay, ConfirmHost, DropOverlay, Toasts } from './Overlays';
 import { SampleBanner, Welcome } from './Welcome';
 import { applyTheme, useUi } from './ui-store';
@@ -37,9 +38,10 @@ function useStartup(): boolean {
           useUi.getState().setRestoredAt(rec!.savedAt);
           return;
         }
-        if (alive) await loadSample({ confirm: false, quiet: true });
+        // First visit (nothing saved): the welcome screen offers Open data file, Open project,
+        // Load sample survey and New empty dataset. The sample is loaded only when chosen.
       } catch {
-        /* storage or sample unavailable: the welcome screen covers it */
+        /* storage unavailable: the welcome screen covers it */
       } finally {
         if (alive) setReady(true);
       }
@@ -174,6 +176,7 @@ export function App() {
         </main>
       </div>
       <DialogHost />
+      <AiSettingsHost />
       <ConfirmHost />
       <Toasts />
       <BusyOverlay />

@@ -2,7 +2,10 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { useStore } from '../../core/store';
-import { askClaude, aiErrorMessage, copyToClipboard } from '../../platform/host';
+import { copyToClipboard } from '../../platform/host';
+import { aiErrorMessage, aiErrorText, aiPromptBudget, askAI } from '../../platform/ai';
+import { useAiStatus } from '../ai/hooks';
+import { AiLoadProgress, AiProviderNote } from '../ai/AiBits';
 import { attributeKeys, attributeValues, constantAttributeKeys, orderedAttributes } from '../../lib/coding/analysis';
 import { codePath, descendantIds } from '../../lib/coding/tree';
 import { originLabel, segmentTable } from '../../lib/coding/exports';
@@ -18,7 +21,8 @@ export function RetrievalView() {
   const project = useStore((s) => s.coding);
   const nodes = useOrderedCodes();
   const visible = useVisibleSegments();
-  const { selectedCodeId, set, ai } = useCodingUi();
+  const { selectedCodeId, set } = useCodingUi();
+  const ai = useAiStatus();
   const [inclSub, setInclSub] = useState(true);
   const [attrKey, setAttrKey] = useState('');
   const [attrVal, setAttrVal] = useState('');
@@ -65,13 +69,13 @@ export function RetrievalView() {
       const a = shownAttrs(d).slice(0, 3);
       return { source: `${d.name}${a.length ? `; ${a.map(([k, v]) => `${k} ${v}`).join(', ')}` : ''}`, text: quoteText(s) };
     });
-    const { prompt, used } = buildSummaryPrompt(code, quotes);
+    const { prompt, used } = buildSummaryPrompt(code, quotes, { budgetBytes: aiPromptBudget() });
     setSummary({ text: '', running: true, used });
     try {
-      const text = await askClaude(prompt, { signal: ctrl.signal, onText: (t) => setSummary((cur) => (cur ? { ...cur, text: t } : cur)) });
+      const text = await askAI(prompt, { signal: ctrl.signal, onText: (t) => setSummary((cur) => (cur ? { ...cur, text: t } : cur)) });
       setSummary({ text, running: false, used });
     } catch (e: any) {
-      setSummary((cur) => ({ text: cur?.text ?? '', running: false, error: aiErrorMessage(e?.code ?? (ctrl.signal.aborted ? 'cancelled' : 'unavailable')), used }));
+      setSummary((cur) => ({ text: cur?.text ?? '', running: false, error: ctrl.signal.aborted ? aiErrorMessage('cancelled') : aiErrorText(e), used }));
     }
   };
 
@@ -130,12 +134,13 @@ export function RetrievalView() {
               <p className="help">
                 {plural(segs.length, 'segment')} from {plural(nSources, 'source')}
               </p>
+              {ai.ready === 'yes' && segs.length && !summary ? <AiProviderNote when="When you click Summarise this code" what={`up to ${plural(Math.min(segs.length, 80), 'segment')}`} /> : null}
             </div>
             <div className="row">
               <button className="btn btn-sm" onClick={copyAll} disabled={!segs.length}>Copy quotes</button>
               <button className="btn btn-sm" disabled={!segs.length} onClick={() => { const t = exportRows(); void saveCsv(`${safeFileName(code.name)} segments.csv`, t.header, t.rows); }}>Export CSV</button>
               <button className="btn btn-sm" disabled={!segs.length} onClick={() => { const t = exportRows(); void saveXlsx(`${safeFileName(code.name)} segments.xlsx`, code.name, t.header, t.rows); }}>Export Excel</button>
-              {ai === 'yes' ? (
+              {ai.ready === 'yes' ? (
                 <button className="btn btn-sm btn-primary" disabled={!segs.length || summary?.running} onClick={summarise}>Summarise this code</button>
               ) : null}
             </div>
@@ -157,6 +162,7 @@ export function RetrievalView() {
                   </>
                 )}
               </div>
+              {summary.running && !summary.text ? <AiLoadProgress onCancel={() => abortRef.current?.abort()} /> : null}
               {summary.text ? <div className="cw-ai-text">{summary.text}</div> : summary.running ? <div className="help">Reading the segments…</div> : null}
               {summary.error ? <div className="help" style={{ color: 'var(--bad)' }}>{summary.error}</div> : null}
               <div className="help">Check every quote against the source before you use it.</div>

@@ -29,12 +29,13 @@ Menu paths are written like this: **Analyze > Descriptive Statistics > Crosstabs
 21. [Code interview transcripts](#code-interview-transcripts)
 22. [Intercoder reliability](#intercoder-reliability)
 23. [Save your project and export back to SPSS](#save-your-project-and-export-back-to-spss)
-24. [Using Socius inside Claude](#using-socius-inside-claude)
-25. [Troubleshooting and FAQ](#troubleshooting-and-faq)
+24. [AI help with coding (optional)](#ai-help-with-coding-optional)
+25. [Using Socius inside Claude](#using-socius-inside-claude)
+26. [Troubleshooting and FAQ](#troubleshooting-and-faq)
 
 ## The sample survey
 
-The "Urban Neighbourhoods and Social Trust Survey" is a synthetic teaching dataset: 640 households in Kolkata, Delhi, Mumbai, Bengaluru and Chennai. Every respondent and answer is invented. It loads automatically the first time you open Socius, and you can load it again at any time with **File > Load sample survey**.
+The "Urban Neighbourhoods and Social Trust Survey" is a synthetic teaching dataset: 640 households in Kolkata, Delhi, Mumbai, Bengaluru and Chennai. Every respondent and answer is invented. To follow along, click **Load sample survey** on the welcome screen the first time you open Socius, or use **File > Load sample survey** at any time.
 
 The variables used in this guide:
 
@@ -462,17 +463,39 @@ Socius autosaves your session in this browser, but that copy lives only in this 
 - **File > Export codebook** saves a list of variables, labels, value labels and missing values to Excel or CSV, handy as a data appendix.
 - To continue an analysis in SPSS, open the **Syntax** section under any output item and click **Copy syntax**: it contains the SPSS commands that reproduce the result, including any filter, weight and dummy variables.
 
+## AI help with coding (optional)
+
+Socius can ask an AI model to help with text coding. It is off until you set it up, and everything else works without it.
+
+**What it does.** The **AI suggestions** button in the Text coding workspace (and the Text coding menu) offers:
+
+- **Suggest a codebook:** the AI reads a sample of your excerpts and proposes codes with definitions, inclusion and exclusion criteria and example quotes. Add a research question or focus to steer it. You choose which codes to keep.
+- **Suggest codes for responses:** the AI applies your existing codebook to open-ended responses, in batches. You review every suggestion and **Accept** or **Reject** it; nothing is coded without your approval. Accepted codes are marked as AI suggestions.
+- **Summarise a code** (in Retrieve) drafts a short summary of the passages coded with one code, with representative quotes.
+
+**Choose where the AI runs.** Open **Help > AI assistant settings...** (or click **Set up free AI help** in Text coding):
+
+- **On this computer (free, private).** A small language model runs inside your browser. Nothing leaves your computer, and after a one-time download it works offline. Choose **Small and fast** (about 1 GB to download) or **Better quality** (about 1.8 GB, needs more graphics memory). Click **Download model** and wait for the progress bar; the browser keeps the model for next time. It needs WebGPU, which recent Chrome and Edge offer on Windows, Mac and ChromeOS desktops and laptops; the settings say whether your browser can run it. It is slower and less accurate than the online options, and handles fewer excerpts at a time. This is the option to use for confidential interviews.
+- **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and paste the key into the settings. Leave the model as `gemini-2.5-flash` (or try `gemini-2.5-flash-lite`, which allows more requests per day). Click **Test connection** to check it.
+- **Other service (advanced).** Any OpenAI-compatible service: Groq and OpenRouter (choose them from the list to fill in the address, then paste your key; on OpenRouter, free models end in `:free`), or a model on your own computer with Ollama or LM Studio (the service must allow requests from the Socius page; for Ollama, start it with `OLLAMA_ORIGINS` set to the site's address).
+- **Claude.** When Socius runs inside Claude, it uses Claude automatically.
+
+Keys and settings are stored in this browser only. They are never saved in project files or exports. **Forget key** removes a key (do this on a shared computer).
+
+**Research ethics.** Before anything is sent, each AI dialog says what will be sent where (for example "up to 150 excerpts will be sent to Google Gemini"), and nothing is sent until you click. Online services receive the excerpts you send. On Gemini's free tier, Google may use what you send to improve its products, and human reviewers may read it. So:
+
+- Anonymise first: remove names, places, employers and rare details that could identify someone.
+- Check that your participants' consent and your ethics approval allow sharing data with an outside service. If they do not, use the on-device option.
+- Treat suggestions as a starting point for your own reading, not as findings. Check every quote against the data. Suggested codes are part of your codebook like any other and should go through intercoder reliability in the usual way.
+- Say in your methods section that AI assistance was used, which model, and for what.
+
+**If something goes wrong.** Messages say what happened in plain words: a key that was not accepted (paste it again, or create a new one), too many requests (wait a minute; free tiers have per-minute and per-day limits), a browser that cannot run the on-device model (use Chrome or Edge, or choose Gemini), or a reply in an unexpected format (try again with fewer items; small on-device models find long lists harder).
+
 ## Using Socius inside Claude
 
 Socius can also run as a Claude artifact (the single file `socius.html`). It works the same way, with three differences.
 
-**AI suggestions.** Only inside Claude, the Text coding workspace has an **AI suggestions** button, and the Text coding menu's **Suggest a codebook with AI** and **Suggest codes for responses with AI** items work:
-
-- **Suggest a codebook:** Claude reads a sample of your excerpts (the dialog says how many will be sent) and proposes codes with definitions and example quotes. Add a research question or focus to steer it. You choose which codes to keep.
-- **Suggest codes for responses:** Claude applies your existing codebook to open-ended responses. You review every suggestion and **Accept** or **Reject** it; nothing is coded without your approval.
-- **Summarise a code** (in Retrieve) drafts a summary of the passages coded with one code.
-
-Only the excerpts shown in the dialog are sent, and only when you click. Treat suggestions as a starting point for your own reading, not as findings, and check the quotes against the data. Suggested codes are part of your codebook like any other and should go through intercoder reliability in the usual way.
+**AI suggestions.** Inside Claude, AI help uses Claude automatically, with nothing to set up (see [AI help with coding](#ai-help-with-coding-optional) for what it does). The on-device option is not available inside Claude.
 
 **Saving files.** Inside Claude, files are saved through Claude's download prompt; confirm it each time. Word, Excel, CSV, HTML, PNG, SVG and project (`.json`) files arrive as they are. SPSS `.sav` and `.zsav` files arrive **zipped** (as `.sav.zip`), because the download prompt does not accept those file types. Unzip the file before opening it in SPSS or in Socius.
 
@@ -506,7 +529,7 @@ This is a text encoding problem. Recent SPSS files state their encoding and open
 Every procedure is tested against scipy, statsmodels and other reference software, and p-values agree to at least six significant digits. If you still see a difference, copy the syntax Socius shows and run it in SPSS to compare like with like.
 
 **Where is my data stored?**
-Only in your browser, on your computer. Files you open are never uploaded. The autosaved session and the Recent projects list are kept in the browser's own storage (IndexedDB). Files you save go wherever your browser puts downloads. The only data that leaves your computer is the excerpts you choose to send to Claude with the AI suggestion features, and those exist only inside Claude.
+Only in your browser, on your computer. Files you open are never uploaded. The autosaved session and the Recent projects list are kept in the browser's own storage (IndexedDB). Files you save go wherever your browser puts downloads. The only data that can leave your computer is the excerpts you choose to send with the optional AI suggestion features, and only to the provider you chose in **Help > AI assistant settings** (with the on-device option, nothing leaves at all). AI keys are kept in the browser, never in project files.
 
 **I lost my work after clearing the browser.**
 Clearing your browser's history, cookies or site data, using a private or incognito window, or switching to another browser or computer loses the autosaved session. **File > Close data and start fresh** also clears it on purpose. The autosave is a convenience, not a backup: use **File > Save project** regularly and keep the `.socius.json` file with your other research files.
@@ -518,3 +541,5 @@ Clearing your browser's history, cookies or site data, using a private or incogn
 It is a warning, not a block. Socius suggests which levels suit each box (for example scale for a t-test outcome). Often the fix is to set the right measure in Variable View.
 
 **Keyboard shortcuts.** **Help > Keyboard shortcuts** lists them all. **Help > Getting started** gives a six-step overview.
+
+**Something is wrong, or I have a suggestion.** **Help > Send feedback or report a problem** (or **Feedback** in the top bar) opens a form on GitHub. Say what you did, what you expected and what happened; do not attach confidential data.

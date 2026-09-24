@@ -1,5 +1,7 @@
 // Help menu dialogs: Getting started, Keyboard shortcuts, About Socius.
 import { Modal } from '../ui/Modal';
+import { FEEDBACK_URL, GUIDE_URL, SITE_URL } from './links';
+import { openAiSettings } from '../features/ai/hooks';
 import { APP_VERSION } from '../features/project/projectFile';
 import { isMac } from './shortcuts';
 
@@ -20,13 +22,17 @@ export function GettingStartedDialog({ onClose }: { onClose: () => void }) {
           <strong>Run an analysis.</strong> For example, in the sample survey, Analyze &gt; Descriptive Statistics &gt; Crosstabs with gender in the rows and vote in the columns: the row percentages compare how many women and men voted. Results appear in Output with SPSS-style tables, a plain-language summary and an APA sentence.
         </li>
         <li>
-          <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group.
+          <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group. Optional AI help can suggest codes for you to review (set it up under Help &gt; AI assistant settings).
         </li>
         <li>
           <strong>Save and share.</strong> File &gt; Save project keeps data, output and codes together in one .socius.json file. Save data as SPSS .sav to continue in SPSS, and export output to Word from the Output tab.
         </li>
       </ol>
-      <p className="help" style={{ marginTop: 12 }}>Your data stays in this browser. Nothing is uploaded.</p>
+      <p className="help" style={{ marginTop: 12 }}>
+        For step-by-step instructions with pictures, open the{' '}
+        <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer">user guide</a> (also under Help &gt; User guide).
+      </p>
+      <p className="help" style={{ marginTop: 6 }}>Your data stays in this browser. Nothing is uploaded.</p>
     </Modal>
   );
 }
@@ -115,6 +121,18 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
         <section>
           <h3 className="eyebrow">Privacy</h3>
           <p>Your data stays in this browser. Files you open are read on this computer and nothing is uploaded. Your working session is kept in this browser's storage so you can pick up where you left off; clear it with File &gt; Close data and start fresh.</p>
+          <p>
+            AI help is optional and off until you set it up. It only sends what you choose, when you click, to the provider you choose. With the on-device option nothing leaves your computer.{' '}
+            <button type="button" className="linkish" onClick={openAiSettings}>AI assistant settings</button>
+          </p>
+        </section>
+        <section>
+          <h3 className="eyebrow">Help and feedback</h3>
+          <ul>
+            <li><a href={GUIDE_URL} target="_blank" rel="noopener noreferrer">User guide</a></li>
+            <li><a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">Send feedback or report a problem</a> (a form on GitHub)</li>
+            <li>Website: <a href={SITE_URL} target="_blank" rel="noopener noreferrer">{SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a></li>
+          </ul>
         </section>
         <section>
           <h3 className="eyebrow">Working with SPSS</h3>

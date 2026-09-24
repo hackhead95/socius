@@ -15,7 +15,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
   const codes = useStore((s) => s.coding.codes);
   const nodes = useOrderedCodes();
   const segments = useVisibleSegments();
-  const { selectedCodeId, collapsed, set, pending, ai } = useCodingUi();
+  const { selectedCodeId, collapsed, set, pending } = useCodingUi();
   const [filter, setFilter] = useState('');
   const [drag, setDrag] = useState<{ id: string; over: string | null; pos: 'before' | 'after' | 'inside' | 'root' } | null>(null);
   const [confirmDel, setConfirmDel] = useState<{ code: CodeDef; keepChildren: boolean } | null>(null);
@@ -109,7 +109,7 @@ export function CodebookPanel(props: { quickKeys?: boolean }) {
           items={[
             { label: 'New code with details…', onSelect: () => openLocalDialog('code-edit', {}) },
             { label: 'Auto-code with keyword rules…', onSelect: () => openLocalDialog('auto-code') },
-            ...(ai === 'yes' ? [{ label: 'Suggest a codebook with AI…', onSelect: () => openLocalDialog('ai-codebook') }] : []),
+            { label: 'Suggest a codebook with AI…', onSelect: () => openLocalDialog('ai-codebook') },
             { label: 'Import codebook (JSON, CSV)…', separator: true, onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
             { label: 'Export codebook (Word, CSV, JSON)…', onSelect: () => openLocalDialog('export', { tab: 'codebook' }) },
           ]}

@@ -1,9 +1,12 @@
 // Prompt builders and response validators for AI-assisted coding. No network calls here: the
-// feature layer sends prompts through platform/host (askClaude / askClaudeJson) on user action.
+// feature layer sends prompts through platform/ai (askAI / askAIJson) on user action.
 
 import type { CodeDef } from '../../core/coding-types';
 
-/** Keep every prompt well under the 64 KB limit of the sample capability. */
+/**
+ * Default prompt size: well under the 64 KB limit of the Claude sample capability. Smaller models
+ * (on-device, free tiers) pass a smaller `budgetBytes`; fewer excerpts are then included.
+ */
 export const PROMPT_BUDGET_BYTES = 40_000;
 const enc = new TextEncoder();
 export const byteLength = (s: string) => enc.encode(s).length;
@@ -31,7 +34,8 @@ export function spreadSample<T>(items: T[], n: number): T[] {
   return out;
 }
 
-export function buildCodebookPrompt(texts: string[], opts: { researchQuestion?: string; existing?: string[]; maxCodes?: number } = {}): { prompt: string; used: number } {
+export function buildCodebookPrompt(texts: string[], opts: { researchQuestion?: string; existing?: string[]; maxCodes?: number; budgetBytes?: number } = {}): { prompt: string; used: number } {
+  const budget = opts.budgetBytes ?? PROMPT_BUDGET_BYTES;
   const head = [
     'You are helping a sociologist do inductive thematic analysis (Braun and Clarke style) of qualitative data.',
     opts.researchQuestion?.trim() ? `Research question or focus: ${opts.researchQuestion.trim()}` : '',
@@ -46,10 +50,10 @@ export function buildCodebookPrompt(texts: string[], opts: { researchQuestion?: 
   ].filter(Boolean).join('\n');
   let prompt = head;
   let used = 0;
-  const per = Math.max(200, Math.floor((PROMPT_BUDGET_BYTES - byteLength(head)) / Math.max(1, texts.length)) - 20);
+  const per = Math.max(200, Math.floor((budget - byteLength(head)) / Math.max(1, texts.length)) - 20);
   for (const t of texts) {
     const line = `\n[${used + 1}] ${clip(t, per)}`;
-    if (byteLength(prompt + line) > PROMPT_BUDGET_BYTES) break;
+    if (byteLength(prompt + line) > budget) break;
     prompt += line;
     used++;
   }
@@ -94,7 +98,8 @@ function codebookBlock(codes: CodeDef[]): string {
  * Split responses into prompts that each stay under the budget. Each response text is clipped to
  * `maxChars` characters. Returns one prompt per batch with the ids it contains.
  */
-export function buildSuggestBatches(codes: CodeDef[], items: SuggestItem[], opts: { batchSize?: number; maxChars?: number } = {}): Array<{ prompt: string; ids: string[] }> {
+export function buildSuggestBatches(codes: CodeDef[], items: SuggestItem[], opts: { batchSize?: number; maxChars?: number; budgetBytes?: number } = {}): Array<{ prompt: string; ids: string[] }> {
+  const budget = opts.budgetBytes ?? PROMPT_BUDGET_BYTES;
   const head = [
     'You are a careful qualitative coder applying an existing codebook to open-ended survey responses.',
     'Apply only codes from this codebook, using their exact names. A response may get several codes or none.',
@@ -115,7 +120,7 @@ export function buildSuggestBatches(codes: CodeDef[], items: SuggestItem[], opts
   let ids: string[] = [];
   for (const it of items) {
     const line = `\n${JSON.stringify({ id: it.id, text: clip(it.text, maxChars) })}`;
-    if (ids.length && (ids.length >= batchSize || byteLength(cur + line) > PROMPT_BUDGET_BYTES)) {
+    if (ids.length && (ids.length >= batchSize || byteLength(cur + line) > budget)) {
       batches.push({ prompt: cur, ids });
       cur = head;
       ids = [];
@@ -145,7 +150,8 @@ export function parseCodeSuggestions(raw: unknown, ids: string[], codes: CodeDef
   return out;
 }
 
-export function buildSummaryPrompt(code: CodeDef, quotes: Array<{ source: string; text: string }>): { prompt: string; used: number } {
+export function buildSummaryPrompt(code: CodeDef, quotes: Array<{ source: string; text: string }>, opts: { budgetBytes?: number } = {}): { prompt: string; used: number } {
+  const budget = opts.budgetBytes ?? PROMPT_BUDGET_BYTES;
   const head = [
     'You are helping a sociologist write up a theme from qualitative data.',
     `Code: ${code.name}`,
@@ -160,8 +166,8 @@ export function buildSummaryPrompt(code: CodeDef, quotes: Array<{ source: string
   let prompt = head;
   let used = 0;
   for (const q of quotes) {
-    const line = `\n[${q.source}] ${clip(q.text, 900)}`;
-    if (byteLength(prompt + line) > PROMPT_BUDGET_BYTES) break;
+    const line = `\n[${q.source}] ${clip(q.text, budget < PROMPT_BUDGET_BYTES ? 400 : 900)}`;
+    if (byteLength(prompt + line) > budget) break;
     prompt += line;
     used++;
   }

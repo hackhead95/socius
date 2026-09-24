@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 import { useStore } from '../../core/store';
-import { aiAvailable } from '../../platform/host';
+import { useAiStatus, openAiSettings } from '../ai/hooks';
+import { AiSetupButton } from '../ai/AiBits';
 import { canUndo, loadWorkedExample, setActiveCoder, undoCoding } from './actions';
 import { canBuildWorkedExample } from '../../lib/coding/example';
 import { plural, toast } from './hooks';
@@ -34,17 +35,9 @@ export function CodingWorkspace() {
   const activeCoder = useStore((s) => s.coding.activeCoder);
   const coding = useStore((s) => s.coding);
   const dataset = useStore((s) => s.dataset);
-  const { view, activeDocId, dialog, ai, history, showAllCoders, set } = useCodingUi();
-
-  // Is AI help offered here? (A capability check, not a request to Claude.)
-  useEffect(() => {
-    if (ai !== 'unknown') return;
-    let alive = true;
-    void aiAvailable().then((ok) => alive && set({ ai: ok ? 'yes' : 'no' }));
-    return () => {
-      alive = false;
-    };
-  }, [ai, set]);
+  const { view, activeDocId, dialog, history, showAllCoders, set } = useCodingUi();
+  // Is AI help set up? (A settings check, not a request to any AI service.)
+  const ai = useAiStatus();
 
   const nDocuments = useMemo(() => docs.filter((d) => d.kind === 'document').length, [docs]);
   const nResponses = docs.length - nDocuments;
@@ -126,17 +119,16 @@ export function CodingWorkspace() {
           <button className="btn btn-sm" onClick={() => openLocalDialog('auto-code')} disabled={!coding.codes.length}>
             Auto-code
           </button>
-          {ai === 'yes' ? (
-            <MenuButton
-              label="AI suggestions"
-              className="btn-sm"
-              items={[
-                { label: 'Suggest a codebook…', disabled: empty, onSelect: () => openLocalDialog('ai-codebook') },
-                { label: 'Suggest codes for responses…', disabled: !nResponses || !coding.codes.length, onSelect: () => openLocalDialog('ai-suggest') },
-                { label: 'Summarise a code…', disabled: !coding.segments.length, onSelect: () => set({ view: 'retrieve' }) },
-              ]}
-            />
-          ) : null}
+          <MenuButton
+            label="AI suggestions"
+            className="btn-sm"
+            items={[
+              { label: 'Suggest a codebook…', disabled: empty, onSelect: () => openLocalDialog('ai-codebook') },
+              { label: 'Suggest codes for responses…', disabled: !nResponses || !coding.codes.length, onSelect: () => openLocalDialog('ai-suggest') },
+              { label: 'Summarise a code…', disabled: !coding.segments.length, onSelect: () => set({ view: 'retrieve' }) },
+              { label: 'AI assistant settings…', separator: true, onSelect: openAiSettings },
+            ]}
+          />
           <MenuButton
             label="Export"
             className="btn-sm"
@@ -149,8 +141,11 @@ export function CodingWorkspace() {
           />
         </div>
       </div>
-      {ai === 'no' && (view === 'responses' || view === 'retrieve') && !empty ? (
-        <div className="cw-ainote">AI suggestions are available when Socius runs as a Claude artifact.</div>
+      {ai.ready === 'no' && (view === 'responses' || view === 'retrieve') && !empty ? (
+        <div className="cw-ainote row">
+          <span>Optional: AI can draft a codebook and suggest codes for you to review.</span>
+          <AiSetupButton />
+        </div>
       ) : null}
 
       <div className="cw-main">

@@ -21,7 +21,6 @@ export function ResponsesView() {
   const segIndex = useSegmentIndex();
   const codeMap = useCodeMap();
   const quick = useQuickKeyCodes();
-  const ai = useCodingUi((s) => s.ai);
   const selectedCodeId = useCodingUi((s) => s.selectedCodeId);
   const exampleMemo = useCodingUi((s) => s.exampleNote);
   const exampleNote = useStore((s) => !!exampleMemo && s.coding.memos.some((m) => m.id === exampleMemo));
@@ -314,11 +313,9 @@ export function ResponsesView() {
               Apply “{codeMap.get(selectedCodeId)!.name}”
             </button>
           ) : null}
-          {ai === 'yes' ? (
-            <button className="btn btn-sm" onClick={() => openLocalDialog('ai-suggest', { docIds: selIds })}>
-              Suggest codes with AI…
-            </button>
-          ) : null}
+          <button className="btn btn-sm" onClick={() => openLocalDialog('ai-suggest', { docIds: selIds })}>
+            Suggest codes with AI…
+          </button>
           <span className="spacer" />
           <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>
             Clear selection

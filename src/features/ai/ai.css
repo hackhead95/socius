@@ -1,0 +1,45 @@
+/* AI assistant settings and the AI notes shown in Text coding. Tokens only. */
+
+.ai-settings { gap: var(--space-4); }
+.ai-choices, .ai-models { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.ai-choices legend, .ai-models legend { margin-bottom: var(--space-2); padding: 0; }
+.ai-models { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.ai-choice {
+  display: flex; gap: var(--space-2); align-items: flex-start; cursor: pointer;
+  padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface);
+}
+.ai-choice:hover { border-color: var(--border-strong); }
+.ai-choice.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.ai-choice input { margin-top: 3px; flex: none; }
+.ai-choice:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ai-choice-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ai-choice-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 600; color: var(--text); font-size: var(--fs-md); }
+.ai-choice-line { font-size: var(--fs-sm); color: var(--text-2); }
+.ai-choice-sm .ai-choice-title { font-size: var(--fs-sm); }
+
+.ai-section { gap: var(--space-3); }
+.ai-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+.ai-key-row { flex-wrap: nowrap; }
+.ai-key-row .input { flex: 1 1 auto; min-width: 0; }
+
+.ai-steps { font-size: var(--fs-sm); color: var(--text-2); padding: var(--space-3); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--border); }
+.ai-steps ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.ai-steps b { color: var(--text); }
+
+.ai-ok { color: var(--good); font-size: var(--fs-sm); }
+.ai-test { gap: var(--space-2); flex-wrap: wrap; }
+.ai-test-result { font-size: var(--fs-sm); min-width: 0; flex: 1 1 240px; }
+.ai-privacy { font-size: var(--fs-sm); }
+
+.ai-note { margin: 0; }
+.ai-note .linkish { font-size: inherit; }
+.ai-setup-btn { white-space: nowrap; }
+
+.ai-progress { display: flex; flex-direction: column; gap: 4px; }
+.ai-bar { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.ai-bar > span { display: block; height: 100%; background: var(--accent); transition: width 0.3s; }
+
+@media (max-width: 600px) {
+  .ai-choices, .ai-models { grid-template-columns: minmax(0, 1fr); }
+}

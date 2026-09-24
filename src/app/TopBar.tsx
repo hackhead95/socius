@@ -8,6 +8,7 @@ import { MenuBar } from './MenuBar';
 import { modKey } from './shortcuts';
 import { isModified } from '../features/project/fileActions';
 import { turnFilterOff, turnWeightOff } from '../features/transform/common';
+import { FEEDBACK_URL } from './links';
 
 const fmtN = (n: number) => n.toLocaleString('en-US');
 
@@ -45,6 +46,9 @@ export function TopBar() {
         <Mark />
         <MenuBar />
         <div className="topbar-right">
+          <a className="btn btn-sm btn-ghost topbar-feedback" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" title="Send feedback or report a problem (opens GitHub in a new tab)">
+            Feedback
+          </a>
           <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={undo} disabled={!canUndo} aria-label="Undo" title={`Undo (${mod}+Z)`}>
             <Icon name="undo" />
           </button>

@@ -7,14 +7,20 @@ the user's machine. It ships two ways:
 - **Static site** (`npm run build` -> `dist/`), for GitHub Pages or any static host.
 - **claude.ai Artifact** (`npm run build:artifact` -> `dist-artifact/socius.html`, one self-contained
   HTML file). Inside the Artifact viewer the page is sandboxed: `<a download>`, `window.print()`,
-  `alert/confirm/prompt` do not work; files are saved through `src/platform/host.ts` (`saveFile`),
-  and AI help comes from `askClaude`/`askClaudeJson` in the same module (available only there).
+  `alert/confirm/prompt` do not work; files are saved through `src/platform/host.ts` (`saveFile`).
+
+AI help goes through `src/platform/ai.ts` (`askAI` / `askAIJson`, `aiAvailable`, `aiErrorMessage`,
+status via `subscribeAi`). Providers: Claude (automatic inside the Artifact, `sample` capability in
+`claude.ts`), an on-device model (`ai-webllm.ts`, `@mlc-ai/web-llm` loaded lazily; aliased to a stub in
+the Artifact build), Google Gemini and OpenAI-compatible services (`ai-http.ts`, the user's own key).
+Settings and keys live in localStorage only. The settings dialog is `src/features/ai/`.
 
 ## Stack
 
 React 19 + TypeScript (strict) + Vite 8, zustand store, vitest, Playwright (Chromium at
 `/opt/pw-browsers/chromium`). Pre-installed libraries: `fflate` (zip/zlib), `docx` (Word export),
-`@tanstack/react-virtual` (virtualised grids), `read-excel-file` / `write-excel-file` (xlsx).
+`@tanstack/react-virtual` (virtualised grids), `read-excel-file` / `write-excel-file` (xlsx),
+`@mlc-ai/web-llm` (on-device AI, lazy chunk on the static site only).
 Do not add dependencies without the orchestrator's approval.
 
 Python "oracle" environment for verifying numerics and SPSS files: `/opt/oracle/bin/python` has
@@ -30,7 +36,9 @@ Python "oracle" environment for verifying numerics and SPSS files: `/opt/oracle/
 | `src/core/procedure.ts` | `ProcedureDef`: declarative dialog (slots + options) + pure `run()` |
 | `src/core/store.ts` | zustand store: dataset (immutable updates, undo), outputs, coding project, UI state, dialogs, toasts |
 | `src/core/coding-types.ts` | Qualitative coding project model |
-| `src/platform/host.ts` | `saveFile`, `copyToClipboard`, `askClaude`, `askClaudeJson`, `aiAvailable` |
+| `src/platform/host.ts` | `saveFile`, `copyToClipboard` (and re-exports of the AI functions below for older imports) |
+| `src/platform/ai.ts` | AI provider layer: `askAI`, `askAIJson`, `aiAvailable`, `aiErrorMessage`, `aiPromptBudget`, settings and status |
+| `src/app/links.ts` | `SITE_URL`, `GUIDE_URL`, `FEEDBACK_URL` (derived from the GitHub Pages address, with fallbacks) |
 | `src/lib/io/index.ts` | `importFile`, `exportSav`, `exportCsv`, `exportXlsx`, `codebookRows` |
 | `src/samples/index.ts` | Bundled sample survey + interview transcripts |
 | `src/styles/tokens.css`, `src/styles/base.css`, `src/ui/Modal.tsx` | Design tokens and shared primitives |
