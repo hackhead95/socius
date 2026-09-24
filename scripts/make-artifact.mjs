@@ -30,7 +30,9 @@ for (let i = firstInline; i < head.length; ) {
   const close = head.indexOf(`</${kind}>`, at);
   if (close < 0) throw new Error(`Unclosed <${kind}> in build output`);
   const block = head.slice(at, close + kind.length + 3);
-  (kind === 'script' ? scripts : styles).push(block);
+  // The artifact host rejects a literal U+FFFD (it reads as a lost character). In bundled JS it only
+  // occurs inside string/template/regex literals, where the \uFFFD escape means the same thing.
+  (kind === 'script' ? scripts : styles).push(kind === 'script' ? block.replaceAll('\uFFFD', '\\uFFFD') : block);
   i = close + kind.length + 3;
 }
 const out = [title, ...new Set(preconnects.map((l) => l.replace(/\s*\/?>$/, " />"))), ...links, ...styles, body.trim(), ...scripts].join('\n');
