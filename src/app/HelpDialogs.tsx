@@ -22,7 +22,7 @@ export function GettingStartedDialog({ onClose }: { onClose: () => void }) {
           <strong>Run an analysis.</strong> For example, in the sample survey, Analyze &gt; Descriptive Statistics &gt; Crosstabs with gender in the rows and vote in the columns: the row percentages compare how many women and men voted. Results appear in Output with SPSS-style tables, a plain-language summary and an APA sentence.
         </li>
         <li>
-          <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group. Optional AI help can suggest codes for you to review (set it up under Help &gt; AI assistant settings).
+          <strong>Code text.</strong> The Text coding menu imports interview transcripts or open-ended survey answers. Build a codebook, highlight passages, and count codes by respondent group. Optional AI help can suggest codes for you to review, and explain any result in plain language (see the AI menu).
         </li>
         <li>
           <strong>Save and share.</strong> File &gt; Save project keeps data, output and codes together in one .socius.json file. Save data as SPSS .sav to continue in SPSS, and export output to Word from the Output tab.
@@ -44,6 +44,7 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
     {
       title: 'Everywhere',
       rows: [
+        [`[${mod}+K] or [/]`, 'Search commands, variables, results and help'],
         [`[${mod}+Z]`, 'Undo the last data change'],
         [`[${mod}+Y] or [${mod}+Shift+Z]`, 'Redo'],
         [`[${mod}+O]`, 'Open a data file'],

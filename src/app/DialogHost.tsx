@@ -6,6 +6,7 @@ import { TransformDialog } from '../features/transform/TransformDialogs';
 import { CopyPropertiesDialog } from '../features/data/VarDialogs';
 import { ImportDialog, RecentProjectsDialog } from '../features/project/FileDialogs';
 import { AboutDialog, GettingStartedDialog, ShortcutsDialog } from './HelpDialogs';
+import { AiPrereqDialog, ExplainPickDialog } from '../features/ai/AiFeatureDialogs';
 
 export function DialogHost() {
   const dialog = useStore((s) => s.dialog);
@@ -29,6 +30,8 @@ export function DialogHost() {
       if (dialog.id === 'getting-started') return <GettingStartedDialog onClose={close} />;
       if (dialog.id === 'shortcuts') return <ShortcutsDialog onClose={close} />;
       if (dialog.id === 'about') return <AboutDialog onClose={close} />;
+      if (dialog.id === 'ai-prereq') return <AiPrereqDialog key={String(dialog.params?.feature)} params={dialog.params} onClose={close} />;
+      if (dialog.id === 'ai-explain-pick') return <ExplainPickDialog onClose={close} />;
       return null;
   }
 }

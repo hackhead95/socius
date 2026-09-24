@@ -13,7 +13,9 @@ AI help goes through `src/platform/ai.ts` (`askAI` / `askAIJson`, `aiAvailable`,
 status via `subscribeAi`). Providers: Claude (automatic inside the Artifact, `sample` capability in
 `claude.ts`), an on-device model (`ai-webllm.ts`, `@mlc-ai/web-llm` loaded lazily; aliased to a stub in
 the Artifact build), Google Gemini and OpenAI-compatible services (`ai-http.ts`, the user's own key).
-Settings and keys live in localStorage only. The settings dialog is `src/features/ai/`.
+Settings and keys live in localStorage only. The settings dialog is `src/features/ai/`. App-wide AI entry points (AI menu, top-bar AI chip, "AI is ready. Try it") start features through `runAiFeature` in `src/features/ai/features.ts`; "Explain with AI" on Output items builds its prompt in `explainPrompt.ts` (aggregate tables only, never case-level values).
+
+The search palette (`src/app/CommandPalette.tsx`, Ctrl+K) searches the menu model from `menus.ts` (so a command is defined once), variables, Output results, guide sections (`helpTopics.ts`, checked against `public/guide/index.html` by a test) and coded text; matching and ranking are in `src/app/search.ts`.
 
 ## Stack
 

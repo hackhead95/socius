@@ -119,9 +119,12 @@ export function CodingWorkspace() {
           <button className="btn btn-sm" onClick={() => openLocalDialog('auto-code')} disabled={!coding.codes.length}>
             Auto-code
           </button>
+          <div className="cw-ai-group" role="group" aria-label="AI help">
           <MenuButton
-            label="AI suggestions"
+            label={<><span className="ai-badge" aria-hidden="true">AI</span> AI suggestions</>}
             className="btn-sm"
+            disabled={ai.ready === 'no'}
+            title={ai.ready === 'no' ? 'AI help is not set up yet. Click Set up AI next to this button.' : 'Suggest a codebook, suggest codes, summarise a code'}
             items={[
               { label: 'Suggest a codebook…', disabled: empty, onSelect: () => openLocalDialog('ai-codebook') },
               { label: 'Suggest codes for responses…', disabled: !nResponses || !coding.codes.length, onSelect: () => openLocalDialog('ai-suggest') },
@@ -129,6 +132,10 @@ export function CodingWorkspace() {
               { label: 'AI assistant settings…', separator: true, onSelect: openAiSettings },
             ]}
           />
+          {ai.ready === 'no' ? (
+            <button type="button" className="btn btn-sm btn-ghost cw-ai-setup" onClick={() => openAiSettings()}>Set up AI</button>
+          ) : null}
+          </div>
           <MenuButton
             label="Export"
             className="btn-sm"

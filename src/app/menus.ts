@@ -1,4 +1,5 @@
-// Menubar model: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, Help.
+// Menubar model: File, Edit, View, Data, Transform, Analyze, Graphs, Text coding, AI, Help.
+// The search palette (CommandPalette) searches these same items, so every command lives here once.
 import { useStore } from '../core/store';
 import type { ProcedureMenu } from '../core/procedure';
 import { procedures } from '../procedures';
@@ -13,6 +14,7 @@ import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { modKey } from './shortcuts';
 import { FEEDBACK_URL, GUIDE_URL, openExternal } from './links';
 import { openAiSettings } from '../features/ai/hooks';
+import { AI_FEATURES, runAiFeature } from '../features/ai/features';
 
 export interface TopMenu {
   id: string;
@@ -179,6 +181,18 @@ export function useMenus(): TopMenu[] {
     },
   }));
 
+  // Every AI item works from here: set-up help when AI is not ready, "do this first" when data is missing.
+  const ai: MenuItem[] = [
+    ...AI_FEATURES.map((f, i) => ({
+      id: `ai-${f.id}`,
+      label: f.menuLabel,
+      separator: i === 1,
+      title: f.does.charAt(0).toUpperCase() + f.does.slice(1),
+      onSelect: () => void runAiFeature(f.id),
+    })),
+    { id: 'ai-settings', label: 'AI assistant settings...', separator: true, onSelect: openAiSettings },
+  ];
+
   const help: MenuItem[] = [
     { id: 'h-start', label: 'Getting started', onSelect: () => st().openDialog({ kind: 'custom', id: 'getting-started' }) },
     { id: 'h-guide', label: 'User guide', title: 'Opens the full guide in a new tab', onSelect: () => openExternal(GUIDE_URL) },
@@ -197,6 +211,7 @@ export function useMenus(): TopMenu[] {
     { id: 'analyze', label: 'Analyze', items: analyze },
     { id: 'graphs', label: 'Graphs', items: graphs },
     { id: 'coding', label: 'Text coding', items: coding },
+    { id: 'ai', label: 'AI', items: ai },
     { id: 'help', label: 'Help', items: help },
   ];
 }

@@ -14,7 +14,7 @@ export interface MenuItem {
 }
 
 /** A button that opens a small dropdown menu (keyboard: arrows, Enter, Escape). */
-export function MenuButton(props: { label: ReactNode; items: MenuItem[]; className?: string; title?: string; align?: 'left' | 'right' }) {
+export function MenuButton(props: { label: ReactNode; items: MenuItem[]; className?: string; title?: string; align?: 'left' | 'right'; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -50,6 +50,7 @@ export function MenuButton(props: { label: ReactNode; items: MenuItem[]; classNa
         aria-haspopup="menu"
         aria-expanded={open}
         title={props.title}
+        disabled={props.disabled}
         onClick={() => {
           setActive(enabled[0] ?? 0);
           setOpen((o) => !o);

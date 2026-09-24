@@ -1,0 +1,73 @@
+/* Search palette and the top-bar search field. Tokens only. */
+
+.topbar-search {
+  display: inline-flex; align-items: center; gap: 8px; height: 28px; width: 220px; min-width: 0; flex: 0 1 220px; padding: 0 6px 0 9px;
+  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); color: var(--muted);
+  font-size: var(--fs-sm); cursor: text; text-align: left;
+}
+.topbar-search:hover { border-color: var(--border-strong); color: var(--text-2); }
+.topbar-search-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-search .kbd { font-size: 10.5px; flex: none; }
+.topbar-search-btn { display: none; }
+
+.palette-backdrop { position: fixed; inset: 0; z-index: 120; background: var(--backdrop); display: flex; justify-content: center; align-items: flex-start; padding: 10vh 16px 16px; }
+.palette {
+  width: min(640px, 100%); max-height: min(560px, 80vh); display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
+}
+.palette-input-row { display: flex; align-items: center; gap: 10px; padding: 0 10px 0 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
+.palette-input {
+  flex: 1; min-width: 0; height: 48px; border: 0; outline: none; background: transparent; color: var(--text);
+  font: inherit; font-size: var(--fs-lg);
+}
+.palette-input::placeholder { color: var(--faint); }
+.palette-esc { flex: none; }
+.palette-close { display: none; }
+
+.palette-list { overflow-y: auto; flex: 1; padding: 4px 6px 8px; overscroll-behavior: contain; }
+.palette-group { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 10px 8px 4px; }
+.palette-item {
+  display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: var(--r-md); cursor: pointer; min-height: 36px; color: var(--text);
+}
+.palette-item.on { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.palette-item.is-disabled { cursor: default; }
+.palette-item.is-disabled .palette-title { color: var(--faint); }
+.palette-icon { width: 22px; display: inline-grid; place-items: center; color: var(--muted); flex: none; }
+.palette-item.on .palette-icon { color: var(--accent); }
+.palette-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.palette-title { font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-title.mono { font-size: var(--fs-sm); font-weight: 600; }
+.palette-detail { font-size: var(--fs-xs); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-reason { font-size: var(--fs-xs); color: var(--warn); }
+.palette-shortcut { flex: none; font-size: 10.5px; }
+.palette-secondary { display: inline-flex; gap: 4px; flex: none; }
+.palette-sec-btn { height: 24px; padding: 0 8px; font-size: var(--fs-xs); background: var(--surface); }
+.palette-item:not(.on) .palette-secondary { opacity: 0.55; }
+.palette-empty { padding: 18px 12px; color: var(--muted); font-size: var(--fs-sm); }
+.palette-foot {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 7px 14px; border-top: 1px solid var(--border);
+  background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs);
+}
+.palette-foot .kbd { font-size: 10px; margin-right: 3px; }
+
+@media (max-width: 1280px) {
+  .topbar-search { width: auto; flex: 0 0 auto; }
+  .topbar-search-text { display: none; }
+}
+@media (max-width: 1100px) {
+  .topbar-search { padding: 0 7px; }
+  .topbar-search .kbd { display: none; }
+}
+@media (max-width: 900px) {
+  .topbar-feedback { display: none; }
+}
+@media (max-width: 760px) {
+  .topbar-search { display: none; }
+  .topbar-search-btn { display: inline-flex; }
+  .palette-backdrop { padding: 0; }
+  .palette { width: 100%; max-height: none; height: 100%; border-radius: 0; border: 0; }
+  .palette-esc, .palette-foot { display: none; }
+  .palette-close { display: inline-flex; }
+  .palette-item { min-height: 44px; }
+  .palette-secondary { flex-direction: column; }
+}

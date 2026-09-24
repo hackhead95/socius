@@ -13,6 +13,13 @@ import { useOutputPrefs } from './viewPrefs';
 import { formatItemTime } from './reportHtml';
 import { copyItem, copyTable, copyText, exportReport, saveChartPng, saveChartSvg, saveTableXlsx, type ReportFormat } from './actions';
 import { IconChart, IconChevron, IconCopy, IconDown, IconDownload, IconOutline, IconTable, IconText, IconTrash, IconUp, IconWarn, IconX } from './icons';
+import { useUi } from '../../app/ui-store';
+import { ExplainPanel } from '../ai/ExplainPanel';
+import { isExplainable } from '../ai/explainPrompt';
+import { useExplain } from '../ai/explainStore';
+import { getAiStatus } from '../../platform/ai';
+import { openAiSettings } from '../ai/hooks';
+import '../ai/ai.css';
 import './output.css';
 
 /** Quick-start procedures for the empty state (first three that are registered). */
@@ -95,6 +102,33 @@ export function OutputViewer() {
       window.clearTimeout(t);
     };
   }, [focusOutputId, outputs.length]);
+
+  // A jump requested from elsewhere (search palette, Explain a result): expand, scroll, flash.
+  const outputTarget = useUi((s) => s.outputTarget);
+  useEffect(() => {
+    if (!outputTarget) return;
+    const { itemId, blockIndex } = outputTarget;
+    setCollapsed((prev) => {
+      if (!prev.has(itemId)) return prev;
+      const n = new Set(prev);
+      n.delete(itemId);
+      return n;
+    });
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const el = document.getElementById(blockIndex !== undefined ? blockAnchor(itemId, blockIndex) : itemAnchor(itemId));
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById(`${itemAnchor(itemId)}-t`)?.focus({ preventScroll: true });
+        setActive(itemId);
+        setFlash(itemId);
+      }),
+    );
+    const t = window.setTimeout(() => setFlash((f) => (f === itemId ? null : f)), 1800);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
+  }, [outputTarget?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll spy: the outline follows the item at the top of the document.
   useEffect(() => {
@@ -370,6 +404,7 @@ const OutputItemView = memo(function OutputItemView({ item, index, count, collap
           <button className="btn btn-ghost btn-sm" disabled={copying} onClick={async () => { setCopying(true); try { await onCopy(); } finally { setCopying(false); } }} title="Copy with formatting for Word or Google Docs">
             <IconCopy /> <span className="oi-action-label">{copying ? 'Copying…' : 'Copy'}</span>
           </button>
+          {isExplainable(item) ? <ExplainButton itemId={item.id} /> : null}
           <button className="btn btn-ghost btn-sm btn-icon" disabled={index === 0} onClick={() => onMove(-1)} aria-label="Move up" title="Move up">
             <IconUp />
           </button>
@@ -391,6 +426,7 @@ const OutputItemView = memo(function OutputItemView({ item, index, count, collap
           {prefs.showSyntax && item.syntax ? <SyntaxView syntax={item.syntax} /> : null}
         </div>
       )}
+      <ExplainPanel item={item} />
     </article>
   );
 });
@@ -448,6 +484,16 @@ function BlockView({ block, number }: { block: OutputBlock; number?: number }) {
             </p>
           </div>
         );
+      if (block.ai) {
+        const [head, ...rest] = block.text.split('\n\n');
+        return (
+          <aside className="ob-ai-note">
+            <p className="ob-label">AI-generated</p>
+            <p className="help">{head}</p>
+            <p className="ob-ai-note-text">{rest.join('\n\n')}</p>
+          </aside>
+        );
+      }
       return <p className="ob-note">{block.text}</p>;
   }
 }
@@ -519,5 +565,32 @@ function SyntaxView({ syntax }: { syntax: string }) {
         </button>
       </div>
     </details>
+  );
+}
+
+/** "Explain with AI": opens the panel under the item (or AI set-up first, then continues). */
+function ExplainButton({ itemId }: { itemId: string }) {
+  const open = useExplain((s) => !!s.panels[itemId]);
+  return (
+    <button
+      className="btn btn-ghost btn-sm oi-explain"
+      aria-expanded={open}
+      title="Explain this result in plain language with AI. You see what will be sent first."
+      onClick={() => {
+        const ex = useExplain.getState();
+        if (open) {
+          ex.close(itemId);
+          return;
+        }
+        if (getAiStatus().ready === 'no') {
+          ex.setPending(itemId);
+          openAiSettings('explain');
+          return;
+        }
+        ex.open(itemId);
+      }}
+    >
+      <span className="ai-badge" aria-hidden="true">AI</span> <span className="oi-action-label">Explain with AI</span>
+    </button>
   );
 }

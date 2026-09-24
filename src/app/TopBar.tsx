@@ -1,4 +1,5 @@
-// Top bar: product mark, dataset name and size, weight / filter / sample chips, undo/redo, theme.
+// Top bar: product mark, menus, search, AI status, dataset name and size, weight / filter / sample
+// chips, undo/redo, theme.
 import { useMemo, useState } from 'react';
 import { useStore } from '../core/store';
 import { activeCaseMask } from '../core/data';
@@ -9,6 +10,8 @@ import { modKey } from './shortcuts';
 import { isModified } from '../features/project/fileActions';
 import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { FEEDBACK_URL } from './links';
+import { openPalette } from './CommandPalette';
+import { AiChip } from '../features/ai/AiFeatureDialogs';
 
 const fmtN = (n: number) => n.toLocaleString('en-US');
 
@@ -45,7 +48,16 @@ export function TopBar() {
       <div className="topbar-row">
         <Mark />
         <MenuBar />
+        <button type="button" className="topbar-search" onClick={openPalette} aria-label="Search Socius" aria-keyshortcuts={mod === 'Cmd' ? 'Meta+K' : 'Control+K'} title={`Search commands, variables, results and help (${mod}+K)`}>
+          <Icon name="search" size={14} />
+          <span className="topbar-search-text">Search Socius</span>
+          <kbd className="kbd">{mod}+K</kbd>
+        </button>
         <div className="topbar-right">
+          <button type="button" className="btn btn-sm btn-ghost btn-icon topbar-search-btn" onClick={openPalette} aria-label="Search Socius" title="Search Socius">
+            <Icon name="search" />
+          </button>
+          <AiChip />
           <a className="btn btn-sm btn-ghost topbar-feedback" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" title="Send feedback or report a problem (opens GitHub in a new tab)">
             Feedback
           </a>

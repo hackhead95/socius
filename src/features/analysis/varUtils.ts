@@ -191,3 +191,19 @@ export function parseValue(v: Variable, text: string): number | string | null {
   }
   return t;
 }
+
+/**
+ * Put variables into a procedure's boxes before its dialog opens (e.g. "Frequencies of this variable"
+ * from the search palette). Each goes to the best-fitting box; options keep their last values.
+ */
+export function prefillProcedure(def: ProcedureDef, ds: Dataset, varIds: string[]): void {
+  const base = recall(def, ds);
+  const slots: SlotValues = Object.fromEntries(def.slots.map((s) => [s.key, [] as string[]]));
+  for (const id of varIds) {
+    const v = ds.variables.find((x) => x.id === id);
+    if (!v) continue;
+    const slot = bestSlotFor(def, slots, v);
+    if (slot && slots[slot.key].length < slot.max) slots[slot.key] = [...slots[slot.key], id];
+  }
+  remember(def.id, { slots, options: base.options });
+}

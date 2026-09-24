@@ -354,3 +354,9 @@
 @media (max-width: 640px) { .cw-suggest-row { grid-template-columns: minmax(0, 1fr); } }
 .cw-progress { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
 .cw-progress > span { display: block; height: 100%; background: var(--accent); transition: width 0.3s; }
+
+/* AI button group in the toolbar: visible even when AI is off (disabled, with a set-up link). */
+.cw-ai-group { display: inline-flex; align-items: center; gap: 2px; }
+.cw-ai-group .cw-menu-trigger { display: inline-flex; align-items: center; gap: 5px; }
+.cw-ai-group .cw-menu-trigger:disabled .ai-badge { opacity: 0.6; }
+.cw-ai-setup { color: var(--accent); }

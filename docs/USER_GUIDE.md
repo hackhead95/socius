@@ -4,6 +4,8 @@ This guide is a set of short recipes. Each one takes a common research task and 
 
 Menu paths are written like this: **Analyze > Descriptive Statistics > Crosstabs**. In the app, menu items that open a dialog end with "...".
 
+**Can't find something? Search.** Press **Ctrl+K** (**Cmd+K** on a Mac), or **/**, or click **Search Socius** in the top bar (the magnifying glass on a phone). Type what you are after in your own words, for example "chi square", "t test", "alpha", "recode" or "select cases": the search finds the menu command (with its menu path), variables in your data (by name, label or value label), results in Output, sections of the user guide and, in Text coding, your codes and a "Search in texts" action. Use the arrow keys and **Enter**, or tap a result. On a variable, **Enter** selects its column in Data View; **Shift+Enter** opens it in Variable View and **Alt+Enter** opens Frequencies with it. With an empty search box you see your recent commands and some suggestions.
+
 ## Contents
 
 1. [The sample survey](#the-sample-survey)
@@ -29,7 +31,7 @@ Menu paths are written like this: **Analyze > Descriptive Statistics > Crosstabs
 21. [Code interview transcripts](#code-interview-transcripts)
 22. [Intercoder reliability](#intercoder-reliability)
 23. [Save your project and export back to SPSS](#save-your-project-and-export-back-to-spss)
-24. [AI help with coding (optional)](#ai-help-with-coding-optional)
+24. [AI help (optional)](#ai-help-optional)
 25. [Using Socius inside Claude](#using-socius-inside-claude)
 26. [Troubleshooting and FAQ](#troubleshooting-and-faq)
 
@@ -463,22 +465,28 @@ Socius autosaves your session in this browser, but that copy lives only in this 
 - **File > Export codebook** saves a list of variables, labels, value labels and missing values to Excel or CSV, handy as a data appendix.
 - To continue an analysis in SPSS, open the **Syntax** section under any output item and click **Copy syntax**: it contains the SPSS commands that reproduce the result, including any filter, weight and dummy variables.
 
-## AI help with coding (optional)
+## AI help (optional)
 
-Socius can ask an AI model to help with text coding. It is off until you set it up, and everything else works without it.
+Socius can ask an AI model to explain results and to help with text coding. It is off until you set it up, and everything else works without it.
 
-**What it does.** The **AI suggestions** button in the Text coding workspace (and the Text coding menu) offers:
+**Where to find it.** The **AI** menu (between Text coding and Help, also in the phone menu) lists everything AI can do. The small **AI** chip in the top bar shows whether AI is ready (and which provider) or not set up; click it for the same list and the settings. If you choose an AI item before AI is set up, the settings open and say what the item will do once it is. If the item needs something first (a result to explain, answers to code), a short message says what to do, with a button that does it.
 
+- **Ask the Socius assistant:** opens the assistant, which answers questions about methods and your data (for example "Which test should I use to compare trust between three cities?").
+- **Explain a result:** every result in Output has an **Explain with AI** button next to **Copy**. It first shows which provider will receive what, with a **What will be sent** preview: the result's tables (numbers and labels), Socius's own summary, the APA sentence and any warnings. Individual answers are never sent: scatter plot points, outlier values and tables that list single cases are left out. Click **Explain** and the answer appears under the result, in five parts: what was tested, what the numbers mean, whether the assumptions and warnings matter, how to report it, and cautions (such as association is not causation). **Stop** ends it, **Copy** copies it, and **Add to output** keeps it in the output as a note labelled AI-generated. **Discuss with the assistant** continues in the assistant. The explanation can be wrong: check every number against the tables.
 - **Suggest a codebook:** the AI reads a sample of your excerpts and proposes codes with definitions, inclusion and exclusion criteria and example quotes. Add a research question or focus to steer it. You choose which codes to keep.
 - **Suggest codes for responses:** the AI applies your existing codebook to open-ended responses, in batches. You review every suggestion and **Accept** or **Reject** it; nothing is coded without your approval. Accepted codes are marked as AI suggestions.
 - **Summarise a code** (in Retrieve) drafts a short summary of the passages coded with one code, with representative quotes.
 
-**Choose where the AI runs.** Open **Help > AI assistant settings...** (or click **Set up free AI help** in Text coding):
+In the Text coding workspace these are also under the **AI suggestions** button. When AI is not set up the button is shown greyed out with a **Set up AI** link next to it.
+
+**Choose where the AI runs.** Open **AI > AI assistant settings...** (also under **Help**, or click the AI chip in the top bar):
 
 - **On this computer (free, private).** A small language model runs inside your browser. Nothing leaves your computer, and after a one-time download it works offline. Choose **Small and fast** (about 1 GB to download) or **Better quality** (about 1.8 GB, needs more graphics memory). Click **Download model** and wait for the progress bar; the browser keeps the model for next time. It needs WebGPU, which recent Chrome and Edge offer on Windows, Mac and ChromeOS desktops and laptops; the settings say whether your browser can run it. It is slower and less accurate than the online options, and handles fewer excerpts at a time. This is the option to use for confidential interviews.
-- **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and paste the key into the settings. Leave the model as `gemini-2.5-flash` (or try `gemini-2.5-flash-lite`, which allows more requests per day). Click **Test connection** to check it.
+- **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and paste the key into the settings. Leave the model empty: Socius then picks the newest free Flash model your key can use. Click **Test connection** to check it.
 - **Other service (advanced).** Any OpenAI-compatible service: Groq and OpenRouter (choose them from the list to fill in the address, then paste your key; on OpenRouter, free models end in `:free`), or a model on your own computer with Ollama or LM Studio (the service must allow requests from the Socius page; for Ollama, start it with `OLLAMA_ORIGINS` set to the site's address).
 - **Claude.** When Socius runs inside Claude, it uses Claude automatically.
+
+After a successful **Test connection**, an **AI is ready. Try it:** panel offers a button for each AI feature; it closes the settings and takes you there.
 
 Keys and settings are stored in this browser only. They are never saved in project files or exports. **Forget key** removes a key (do this on a shared computer).
 
@@ -495,7 +503,7 @@ Keys and settings are stored in this browser only. They are never saved in proje
 
 Socius can also run as a Claude artifact (the single file `socius.html`). It works the same way, with three differences.
 
-**AI suggestions.** Inside Claude, AI help uses Claude automatically, with nothing to set up (see [AI help with coding](#ai-help-with-coding-optional) for what it does). The on-device option is not available inside Claude.
+**AI suggestions.** Inside Claude, AI help uses Claude automatically, with nothing to set up (see [AI help](#ai-help-optional) for what it does). The on-device option is not available inside Claude.
 
 **Saving files.** Inside Claude, files are saved through Claude's download prompt; confirm it each time. Word, Excel, CSV, HTML, PNG, SVG and project (`.json`) files arrive as they are. SPSS `.sav` and `.zsav` files arrive **zipped** (as `.sav.zip`), because the download prompt does not accept those file types. Unzip the file before opening it in SPSS or in Socius.
 

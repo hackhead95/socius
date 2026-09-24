@@ -153,6 +153,8 @@ export type OutputBlock =
        */
       style: 'interpretation' | 'apa' | 'note' | 'warning';
       text: string;
+      /** Written by an AI service at the user's request (shown with an "AI-generated" label). */
+      ai?: boolean;
     }
   | { kind: 'heading'; text: string };
 

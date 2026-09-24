@@ -54,6 +54,12 @@ interface UiState {
   /** Show the "Restored your last session" notice (with a Start fresh action). */
   restoredAt: number | null;
   setRestoredAt: (t: number | null) => void;
+  /** Search palette (Ctrl+K). */
+  paletteOpen: boolean;
+  setPaletteOpen: (b: boolean) => void;
+  /** Ask the Output view to scroll to an item (and optionally one of its blocks). */
+  outputTarget: { itemId: string; blockIndex?: number; seq: number } | null;
+  focusOutput: (itemId: string, blockIndex?: number) => void;
 }
 
 let seq = 0;
@@ -104,6 +110,10 @@ export const useUi = create<UiState>((set, get) => ({
   requestGoto: () => set({ gotoSeq: get().gotoSeq + 1 }),
   restoredAt: null,
   setRestoredAt: (t) => set({ restoredAt: t }),
+  paletteOpen: false,
+  setPaletteOpen: (b) => set({ paletteOpen: b }),
+  outputTarget: null,
+  focusOutput: (itemId, blockIndex) => set({ outputTarget: { itemId, blockIndex, seq: ++seq } }),
 }));
 
 export function applyTheme(t: ThemePref) {

@@ -13,6 +13,8 @@ import { WEBLLM_IN_BUILD, WEBLLM_MODELS, deleteWebLlmModel, detectWebGpu, prepar
 import { lastResolvedGeminiModel, normaliseBaseUrl } from '../../platform/ai-http';
 import { AiPrivacyNotice } from './AiBits';
 import { useAiSettingsDialog, useAiStatus, useWebLlmState } from './hooks';
+import { AI_FEATURES, aiFeature, isAiFeatureId, runAiFeature, type AiFeatureId } from './features';
+import { useExplain } from './explainStore';
 import './ai.css';
 
 interface Choice {
@@ -36,13 +38,14 @@ function choices(): Choice[] {
 
 export function AiSettingsHost() {
   const open = useAiSettingsDialog((s) => s.open);
+  const intent = useAiSettingsDialog((s) => s.intent);
   const set = useAiSettingsDialog((s) => s.set);
-  return open ? <AiSettingsDialog onClose={() => set(false)} /> : null;
+  return open ? <AiSettingsDialog intent={isAiFeatureId(intent) ? intent : null} onClose={() => set(false)} /> : null;
 }
 
 type TestState = { phase: 'idle' } | { phase: 'running' } | { phase: 'ok'; reply: string } | { phase: 'error'; message: string };
 
-export function AiSettingsDialog({ onClose }: { onClose: () => void }) {
+export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => void; intent?: AiFeatureId | null }) {
   const settings = useSyncExternalStore(subscribeAiSettings, getAiSettings, getAiSettings);
   const status = useAiStatus();
   const provider = effectiveProvider(settings);
@@ -78,7 +81,7 @@ export function AiSettingsDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal
       title="AI assistant"
-      subtitle="Optional help with coding text: suggest a codebook, suggest codes for responses, summarise a code. Nothing is sent until you click a button that asks the AI."
+      subtitle="Optional help: ask the Socius assistant, explain a result in plain language, suggest a codebook, suggest codes for open-ended answers, summarise a code. Nothing is sent until you click a button that asks the AI."
       size="wide"
       onClose={() => {
         testAbort.current?.abort();
@@ -93,6 +96,11 @@ export function AiSettingsDialog({ onClose }: { onClose: () => void }) {
       }
     >
       <div className="stack ai-settings">
+        {intent ? (
+          <div className="callout callout-info ai-intent" role="note">
+            <b>{aiFeature(intent).label}</b> needs AI help, which is not set up yet. Once it is, {aiFeature(intent).label} {aiFeature(intent).does} Choose an option below, then click Test connection.
+          </div>
+        ) : null}
         <fieldset className="ai-choices">
           <legend className="eyebrow">Where should the AI run?</legend>
           {list.map((c) => (
@@ -135,11 +143,40 @@ export function AiSettingsDialog({ onClose }: { onClose: () => void }) {
             </span>
           </div>
         ) : null}
+        {test.phase === 'ok' ? <ReadyPanel intent={intent} onClose={onClose} /> : null}
         <p className="help">
           AI suggestions are a starting point for your own reading, not findings. Check every suggested code and quote against the data, and report in your methods section that AI assistance was used and how.
         </p>
       </div>
     </Modal>
+  );
+}
+
+/** After a successful test: one button per AI feature that closes settings and starts it. */
+function ReadyPanel({ intent, onClose }: { intent: AiFeatureId | null; onClose: () => void }) {
+  const list = intent ? [aiFeature(intent), ...AI_FEATURES.filter((f) => f.id !== intent)] : AI_FEATURES;
+  return (
+    <section className="ai-ready" aria-label="AI is ready">
+      <span className="ai-ready-title">AI is ready. Try it:</span>
+      <div className="ai-ready-actions">
+        {list.map((f, i) => (
+          <button
+            key={f.id}
+            type="button"
+            className={`btn btn-sm ${i === 0 ? 'btn-primary' : ''}`}
+            title={f.does.charAt(0).toUpperCase() + f.does.slice(1)}
+            onClick={() => {
+              if (f.id !== 'explain') useExplain.getState().setPending(null);
+              onClose();
+              void runAiFeature(f.id);
+            }}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <span className="help">Each one shows what will be sent before anything goes to the AI.</span>
+    </section>
   );
 }
 

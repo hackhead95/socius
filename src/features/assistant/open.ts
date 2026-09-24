@@ -31,3 +31,21 @@ export const useAssistantUi = create<AssistantUi>((set, get) => ({
 export function openAssistant(req?: AssistantRequest): void {
   useAssistantUi.setState({ open: true, request: req ?? null });
 }
+
+export function closeAssistant(): void {
+  useAssistantUi.setState({ open: false });
+}
+
+/** Open or close the panel (Ctrl+J / Cmd+J). */
+export function toggleAssistant(): void {
+  useAssistantUi.setState({ open: !useAssistantUi.getState().open });
+}
+
+/** Keyboard shortcut for the assistant, for menus and help text ("Ctrl+J", or "Cmd+J" on a Mac). */
+export function assistantShortcutLabel(): string {
+  try {
+    return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Cmd+J' : 'Ctrl+J';
+  } catch {
+    return 'Ctrl+J';
+  }
+}

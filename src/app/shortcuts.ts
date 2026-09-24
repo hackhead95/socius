@@ -28,10 +28,18 @@ function inTextField(el: Element | null): boolean {
 
 export function handleGlobalKey(e: KeyboardEvent): void {
   const mod = e.ctrlKey || e.metaKey;
-  if (!mod || e.altKey) return;
   const key = e.key.toLowerCase();
-  const st = useStore.getState();
   const modalOpen = !!document.querySelector('.modal');
+  // Search palette: Ctrl/Cmd+K anywhere, "/" when not typing.
+  if ((mod && !e.altKey && !e.shiftKey && key === 'k') || (!mod && !e.altKey && e.key === '/' && !inTextField(document.activeElement))) {
+    if (e.defaultPrevented || modalOpen || document.querySelector('.menu-sheet, .menu-dropdown')) return;
+    e.preventDefault();
+    const ui = useUi.getState();
+    ui.setPaletteOpen(!ui.paletteOpen);
+    return;
+  }
+  if (!mod || e.altKey) return;
+  const st = useStore.getState();
   if (key === 's') {
     e.preventDefault();
     if (!modalOpen) void saveProject();

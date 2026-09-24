@@ -17,12 +17,19 @@ export function useWebLlmState(): WebLlmState {
 
 interface AiDialogState {
   open: boolean;
+  /** The AI feature the user tried to use before AI was set up (explained at the top of the dialog). */
+  intent: string | null;
   set: (open: boolean) => void;
 }
 
 /** The AI assistant settings dialog, rendered once by the app shell above every other dialog. */
-export const useAiSettingsDialog = create<AiDialogState>((set) => ({ open: false, set: (open) => set({ open }) }));
+export const useAiSettingsDialog = create<AiDialogState>((set) => ({ open: false, intent: null, set: (open) => set(open ? { open } : { open, intent: null }) }));
 
-export function openAiSettings(): void {
-  useAiSettingsDialog.getState().set(true);
+/**
+ * Open AI assistant settings. `intent` names the AI feature the user was trying to use (see
+ * features.ts), so the dialog can say what it will do once set up. Safe as an onClick handler (a
+ * click event is ignored).
+ */
+export function openAiSettings(intent?: unknown): void {
+  useAiSettingsDialog.setState({ open: true, intent: typeof intent === 'string' ? intent : null });
 }

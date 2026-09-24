@@ -323,8 +323,11 @@ test('outside the artifact, AI items lead to free set-up instead of disappearing
   await importChallenge(page);
   await expect(page.locator('.cw-ainote')).toContainText('Optional: AI can draft a codebook');
   await expect(page.locator('.cw-ainote button', { hasText: 'Set up free AI help' })).toBeVisible();
-  await page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' }).click();
-  await page.locator('.cw-menu-list [role=menuitem]', { hasText: 'Suggest a codebook' }).click();
+  // The toolbar's AI group stays visible, disabled, with a set-up link next to it.
+  await expect(page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' })).toBeDisabled();
+  await expect(page.locator('.cw-ai-group').getByRole('button', { name: 'Set up AI' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Suggest a codebook with AI…' }).click();
   const gate = page.getByRole('dialog', { name: 'AI suggestions' });
   await expect(gate).toContainText('not set up yet');
   await gate.getByRole('button', { name: 'Set up free AI help' }).click();

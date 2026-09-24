@@ -2,7 +2,7 @@
 
 Socius is a research workbench for sociologists that runs entirely in your web browser. It opens SPSS `.sav` files with their variable labels, value labels and missing values, runs the statistics used in survey research (crosstabs, t-tests, ANOVA, correlation, linear, logistic and ordinal regression, reliability, factor analysis), and codes qualitative text such as interview transcripts and open-ended survey answers. Every result comes with SPSS-style tables, the equivalent SPSS syntax, a plain-language reading and an APA-style results sentence. Coded text can be turned into ordinary variables, so you can crosstab what people wrote against who they are.
 
-**Privacy.** Your data stays in your browser. Files you open are read on your own computer and nothing is uploaded to any server. Your working session is autosaved in the browser's own storage (IndexedDB) on your computer so you can pick up where you left off. The only exception is the optional AI help for text coding, which is off until you set it up and only sends what you choose, when you click, to the provider you choose. With the on-device option nothing leaves your computer at all. Keys and AI settings are kept in your browser only, never in project files.
+**Privacy.** Your data stays in your browser. Files you open are read on your own computer and nothing is uploaded to any server. Your working session is autosaved in the browser's own storage (IndexedDB) on your computer so you can pick up where you left off. The only exception is the optional AI help, which is off until you set it up and only sends what you choose, when you click, to the provider you choose. With the on-device option nothing leaves your computer at all. Keys and AI settings are kept in your browser only, never in project files.
 
 A step-by-step guide with worked examples on the bundled sample survey is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
@@ -50,7 +50,11 @@ The **Graphs** menu has Bar Chart (counts, percentages or means with 95% confide
 - **Mixed-methods bridge:** Export codes to dataset turns each code into a 0/1 variable (1 = mentioned, 0 = not mentioned, missing = no answer), so you can run Crosstabs, t-tests or regression on what people wrote.
 - **Intercoder reliability:** several coders can code the same sources independently, then compare with Cohen's kappa, Krippendorff's alpha and percent agreement per code, and review the disagreements in context.
 - Export coded segments (Excel, CSV), a qualitative report (Word, HTML) and the codebook (Word table, CSV, JSON; codebooks can be imported into another project).
-- **AI suggestions (optional, free options):** Suggest a codebook, Suggest codes for responses and Summarise a code. You review and accept every suggestion. Set up under **Help > AI assistant settings** (see [AI help](#ai-help) below).
+- **AI suggestions (optional, free options):** Suggest a codebook, Suggest codes for responses and Summarise a code. You review and accept every suggestion. Set up under **AI > AI assistant settings** (see [AI help](#ai-help) below).
+
+### Finding things
+
+- **Search** (Ctrl+K / Cmd+K, **/**, or **Search Socius** in the top bar; a magnifying glass on phones) finds menu commands in your own words ("chi square", "t test", "alpha", "select cases"), variables, results in Output, user-guide sections and coded text. Disabled commands say why.
 
 ### Output and export
 
@@ -67,7 +71,7 @@ Open the link in a recent version of Chrome, Edge, Firefox or Safari. The first 
 
 ### AI help
 
-AI help is optional. Choose where it runs in **Help > AI assistant settings**:
+AI help is optional. The **AI** menu and the **AI** chip in the top bar list what it can do: ask the Socius assistant, **Explain a result** (an **Explain with AI** button on every Output item: what was tested, what the numbers mean, whether warnings matter, how to report it; only tables, summaries and warnings are sent, never individual answers), and the text-coding helpers. Choose where it runs in **AI > AI assistant settings** (also under Help):
 
 | Option | Cost | Where your excerpts go | Notes |
 |---|---|---|---|
@@ -76,7 +80,7 @@ AI help is optional. Choose where it runs in **Help > AI assistant settings**:
 | **Other service** | Depends | That service | Any OpenAI-compatible service: Groq, OpenRouter (free models end in `:free`), or Ollama / LM Studio on your own computer. |
 | **Claude** | Your Claude plan | Anthropic | Used automatically when Socius runs as a Claude artifact. |
 
-Every AI dialog says which provider will receive what before anything is sent, and nothing is sent until you click. Report AI assistance in your methods section.
+Every AI dialog says which provider will receive what before anything is sent (Explain with AI also shows the exact text), and nothing is sent until you click. Report AI assistance in your methods section.
 
 ### Feedback
 
@@ -146,7 +150,7 @@ A second workflow, `.github/workflows/ci.yml`, runs on every pull request and pu
 
 | Path | What is there |
 |---|---|
-| `src/app/` | App shell: menu bar (`menus.ts`), tabs, welcome screen, help dialogs, keyboard shortcuts |
+| `src/app/` | App shell: menu bar (`menus.ts`), search palette (`CommandPalette.tsx`, ranking in `search.ts`, guide sections in `helpTopics.ts`), tabs, welcome screen, help dialogs, keyboard shortcuts |
 | `src/core/` | Shared contracts: dataset and variable types, missing-value and weighting rules, output model, procedure definitions, the app store |
 | `src/platform/host.ts` | Saving files, with the differences between a normal browser and the Claude artifact |
 | `src/platform/ai.ts` | AI provider layer (`askAI`, `askAIJson`, settings, status): Claude in the artifact (`claude.ts`), on-device WebLLM (`ai-webllm.ts`), Gemini and OpenAI-compatible services (`ai-http.ts`) |
@@ -156,7 +160,7 @@ A second workflow, `.github/workflows/ci.yml`, runs on every pull request and pu
 | `src/lib/transform/` | Compute expressions, recode, binning, scales, select and weight cases, merge, aggregate |
 | `src/lib/coding/` | Text coding: importers, segments, keyword rules, analysis, reliability, exports, code-to-variable conversion |
 | `src/procedures/` | The Analyze and Graphs procedures (`core/`, `models/`, `graphs/`): dialog definitions and output |
-| `src/features/` | Screens and dialogs: `data/` (Data View, Variable View), `transform/`, `analysis/` (procedure dialog), `output/` (viewer and exports), `charts/`, `coding/`, `ai/` (AI assistant settings), `project/` (open, save, autosave) |
+| `src/features/` | Screens and dialogs: `data/` (Data View, Variable View), `transform/`, `analysis/` (procedure dialog), `output/` (viewer and exports), `charts/`, `coding/`, `ai/` (AI settings, the AI menu features, Explain with AI), `project/` (open, save, autosave) |
 | `src/ui/`, `src/styles/` | Shared components and design tokens |
 | `src/samples/` | Bundled sample survey (`urban_trust_survey.sav`) and three interview transcripts |
 | `tests/` | Unit tests (vitest) with committed reference fixtures |
