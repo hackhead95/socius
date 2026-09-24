@@ -10,7 +10,8 @@
 // exports). Components follow changes through subscribeAi / getAiStatus.
 
 import { AiUnavailableError, askClaude, askClaudeJson, claudeGlobal, claudeSampleAvailable } from './claude';
-import { askGemini, askOpenAiCompatible, lastResolvedGeminiModel, normaliseBaseUrl } from './ai-http';
+import { askGemini, askOpenAiCompatible, geminiModelName, geminiPreference, lastResolvedGeminiModel, normaliseBaseUrl, sanitizeApiKey } from './ai-http';
+import { logError } from './errorlog';
 import {
   DEFAULT_WEBLLM_MODEL, WEBLLM_IN_BUILD, WEBLLM_MAX_TOKENS, WEBLLM_PROMPT_BUDGET_BYTES, askWebLlm, detectWebGpu, isWebLlmCached, webLlmChoice, type WebGpuStatus,
 } from './ai-webllm';
@@ -28,8 +29,12 @@ export interface AiSettings {
   webllm: { model: string };
 }
 
-/** Empty = pick the newest Flash model the key can use (see resolveGeminiModel). */
+/**
+ * Empty = choose automatically, favouring the newest Flash-Lite model the key can use (more free
+ * requests per day); 'auto-flash' = automatic, favouring Flash for single requests. See ai-http.
+ */
 export const DEFAULT_GEMINI_MODEL = '';
+export const GEMINI_AUTO_FLASH = 'auto-flash';
 /** Model names that earlier versions saved as defaults; treated as "automatic" so retired names don't stick. */
 const OLD_DEFAULT_GEMINI_MODELS = new Set(['gemini-2.5-flash']);
 export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
@@ -67,14 +72,14 @@ export const OPENAI_PRESETS: Record<OpenAiPreset, OpenAiPresetInfo> = {
     label: 'Ollama on this computer',
     baseUrl: 'http://localhost:11434/v1',
     model: 'llama3.2',
-    note: 'Runs on your own computer. Start Ollama with OLLAMA_ORIGINS set to this site\'s address so the page may talk to it.',
+    note: 'Runs on your own computer. Ollama must allow this website (OLLAMA_ORIGINS) and have the model downloaded: Test connection checks each step and shows how.',
     budget: 10_000,
   },
   lmstudio: {
     label: 'LM Studio on this computer',
     baseUrl: 'http://localhost:1234/v1',
     model: '',
-    note: 'Runs on your own computer. Turn on the local server and CORS in LM Studio, then type the loaded model\'s name.',
+    note: 'Runs on your own computer. In LM Studio\'s Developer tab, start the server and turn on Enable CORS. Test connection lists the loaded models.',
     budget: 10_000,
   },
   custom: {
@@ -214,8 +219,10 @@ export function providerLabel(p: AiProviderId | null, s: AiSettings = settings):
       return 'Claude';
     case 'webllm':
       return `the on-device model (${webLlmChoice(s.webllm.model).label.toLowerCase()})`;
-    case 'gemini':
-      return `Google Gemini (${s.gemini.model || lastResolvedGeminiModel(s.gemini.apiKey) || 'newest Flash model'})`;
+    case 'gemini': {
+      const pref = geminiPreference(s.gemini.model);
+      return `Google Gemini (${geminiModelName(s.gemini.model) || lastResolvedGeminiModel(s.gemini.apiKey, pref) || (pref === 'flash' ? 'automatic, Flash' : 'automatic, Flash-Lite')})`;
+    }
     case 'openai': {
       const preset = s.openai.preset !== 'custom' ? OPENAI_PRESETS[s.openai.preset].label : isLocalUrl(s.openai.baseUrl) ? 'a service on this computer' : hostOf(s.openai.baseUrl) || 'an OpenAI-compatible service';
       return s.openai.model ? `${preset} (${s.openai.model})` : preset;
@@ -261,7 +268,7 @@ async function providerReady(p: AiProviderId | null, s: AiSettings): Promise<boo
     case 'claude':
       return claudeSampleAvailable();
     case 'gemini':
-      return !!s.gemini.apiKey.trim();
+      return !!sanitizeApiKey(s.gemini.apiKey);
     case 'openai':
       return !!normaliseBaseUrl(s.openai.baseUrl) && !!s.openai.model.trim();
     case 'webllm':
@@ -390,18 +397,29 @@ export async function askAI(prompt: string, opts: AiAskOptions = {}): Promise<st
           signal: opts.signal,
           json: opts.json,
           maxTokens: opts.maxTokens,
+          // JSON requests are batches (coding suggestions): keep to Flash-Lite's larger free allowance.
+          prefer: opts.json ? 'lite' : geminiPreference(s.gemini.model),
           // The saved model was retired or mistyped and another answered: switch the setting to automatic.
-          onModelFallback: () => saveAiSettings({ gemini: { ...settings.gemini, model: DEFAULT_GEMINI_MODEL } }),
+          // (Not for a busy or rate-limited model: that one may work again later.)
+          onModelFallback: (_model, reason) => {
+            if (reason === 'bad_model') saveAiSettings({ gemini: { ...settings.gemini, model: DEFAULT_GEMINI_MODEL } });
+          },
         });
       case 'openai':
-        return stripThinking(await askOpenAiCompatible({ baseUrl: s.openai.baseUrl, apiKey: s.openai.apiKey, model: s.openai.model }, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens }));
+        try {
+          return stripThinking(await askOpenAiCompatible({ baseUrl: s.openai.baseUrl, apiKey: s.openai.apiKey, model: s.openai.model }, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens }));
+        } catch (e) {
+          // A program on this computer: point to the guided check instead of "check your internet".
+          if (e instanceof AiUnavailableError && e.code === 'network' && isLocalUrl(s.openai.baseUrl) && !opts.signal?.aborted) throw new AiUnavailableError('local_unreachable', e.message, e.detail);
+          throw e;
+        }
       case 'webllm':
         return stripThinking(await askWebLlm(s.webllm.model, prompt, { onText, signal: opts.signal, json: opts.json, maxTokens: opts.maxTokens ?? WEBLLM_MAX_TOKENS }));
       default:
         throw new AiUnavailableError('not_configured', 'AI help is not set up.');
     }
   } catch (e) {
-    throw wrapError(e, opts.signal);
+    throw logError('ai', wrapError(e, opts.signal), { op: 'ask' });
   }
 }
 
@@ -446,7 +464,7 @@ export async function askAIJson<T = unknown>(prompt: string, opts: AiAskOptions 
     try {
       return await askClaudeJson<T>(prompt, { signal: opts.signal, modelTier: opts.modelTier });
     } catch (e) {
-      throw wrapError(e, opts.signal);
+      throw logError('ai', wrapError(e, opts.signal), { op: 'ask-json' });
     }
   }
   const text = await askAI(prompt, { ...opts, json: true });
@@ -472,19 +490,67 @@ export function aiErrorMessage(code: string): string {
     case 'not_granted':
       return 'AI assistance was not allowed for this page. You can keep coding manually.';
     case 'invalid_key':
-      return `The AI service did not accept the key. Check that you pasted the whole key in ${SETTINGS_HINT}, or create a new one.`;
+      return `The AI service did not accept the key. Copy the whole key again into ${SETTINGS_HINT}, or create a new one.`;
     case 'rate_limited':
       return 'Too many AI requests at once, or the free allowance is used up for now. Wait a minute, then try again.';
     case 'network':
-      return 'Could not reach the AI service. Check your internet connection. For a service on your own computer, check that it is running and accepts requests from this page.';
+      return 'Could not reach the AI service, although this computer seems to be online. Something may be blocking it: an ad or privacy blocker, antivirus web protection, a company or university firewall, or a VPN. Turn these off for this site or try another network. For a service on your own computer, check that it is running and accepts requests from this page.';
+    case 'offline':
+      return 'This computer is offline. Connect to the internet, then try again.';
+    case 'timeout':
+      return 'The AI service did not answer in time. It may be busy, or the connection is slow. Try again in a minute.';
+    case 'overloaded':
+      return 'The AI service is overloaded right now (too many users). Socius already tried again once. Wait a minute and try again.';
+    case 'region':
+      return 'Google does not offer the free Gemini API where your internet connection appears to be (it said "User location is not supported"). If you use a VPN or proxy, turn it off or choose a server in your own country, then test again. Otherwise choose the on-device option or another service.';
+    case 'api_disabled':
+      return 'This key belongs to a Google Cloud project where the Gemini API (the Generative Language API) is turned off. Easiest fix: create a new key in Google AI Studio (aistudio.google.com/apikey) rather than the Cloud Console. Or turn on the Generative Language API for that project, wait a few minutes, and test again.';
+    case 'referrer_blocked':
+      return `This key has website restrictions that do not include Socius. In Google Cloud Console, open APIs & Services > Credentials, click the key, and under Website restrictions add ${siteRestriction()} (or set Application restrictions to None). Or create a new key in Google AI Studio.`;
+    case 'key_restricted':
+      return 'This key is restricted so that it cannot use the Gemini API from this browser (API or IP address restrictions). In Google Cloud Console > APIs & Services > Credentials, allow the Generative Language API for the key, or create a new key in Google AI Studio.';
+    case 'key_suspended':
+      return 'Google has suspended this key or its project. Create a new key in Google AI Studio, or check the project in Google Cloud Console.';
+    case 'key_not_accepted':
+      return 'Google did not accept this key. Check that you copied the whole key (use the copy button in AI Studio). If the key is new, wait a few minutes and test again; otherwise create a new key in Google AI Studio. Some new Google accounts have a known problem with keys that start with "AQ.": if it persists, try a key from a different Google Cloud project.';
+    case 'bad_key_format':
+      return `The key contains characters that cannot be sent (for example curly quotes or hidden characters copied from a document). Paste it again into ${SETTINGS_HINT}, copied straight from Google AI Studio.`;
+    case 'permission':
+      return `The service did not let this key use the model. Set Model to Automatic in ${SETTINGS_HINT} so Socius picks a model your key may use, or create a new key.`;
+    case 'no_free_quota':
+      return `Your key has no free allowance for the Gemini models Socius tried (Google set their free limit to 0, which happens for Pro and preview models and in some countries). Set Model to Automatic in ${SETTINGS_HINT} so Socius can pick a free model, or turn on billing for the key in Google AI Studio.`;
+    case 'payment_required':
+      return 'The service says the account has no credit for this model. Choose a free model (on OpenRouter, one whose name ends in ":free") or add credit with the service.';
+    case 'max_tokens':
+      return 'The AI used up its answer length (probably on thinking) before writing any text. Try again, or with fewer items at once.';
+    case 'empty_reply':
+      return `The AI sent an empty answer. Try again. If it keeps happening, set Model to Automatic in ${SETTINGS_HINT} so Socius picks another model.`;
+    case 'recitation':
+      return 'The AI stopped because its answer repeated published text too closely (a copyright filter). Try again, or rephrase the request.';
+    case 'malformed_call':
+      return 'The AI sent an instruction Socius could not read. Try again.';
+    case 'endpoint_missing':
+    case 'field_unsupported':
+    case 'thinking_unsupported':
+      return `Google's AI service did not accept the request format. Socius may need an update: in ${SETTINGS_HINT}, click Test connection, then Copy details, and send the report with Help > Send feedback.`;
     case 'cancelled':
       return 'Stopped.';
     case 'invalid_json':
       return 'The AI replied in an unexpected format. Try again, or with fewer items.';
     case 'webgpu_unavailable':
-      return 'This browser cannot run the on-device model, because it needs WebGPU. Use a recent Chrome or Edge on a desktop or laptop, or choose Google Gemini in AI assistant settings.';
+      return `This browser cannot run the on-device model: it needs WebGPU and a usable graphics chip (a recent Chrome or Edge on a desktop or laptop). ${SETTINGS_HINT} explains what is missing on this computer, or choose Google Gemini there.`;
     case 'model_download_failed':
-      return 'The on-device model could not be downloaded. Check your internet connection and free disk space, then try again.';
+      return 'Could not download the model: check your connection, or a firewall/extension may block huggingface.co (the model files) or raw.githubusercontent.com (the model program). Then try again: finished parts are kept.';
+    case 'model_storage_full':
+      return 'Not enough free disk space for the browser to keep the model. Free some space (or choose the Small and fast model), then try again.';
+    case 'webgpu_out_of_memory':
+      return 'The graphics chip ran out of memory while loading the model. Choose the Small and fast model, close other tabs and programs, then try again.';
+    case 'webgpu_f16':
+      return 'The graphics chip could not run this version of the model. Try again: Socius switches to a compatible version.';
+    case 'local_forbidden':
+      return `The AI program on this computer refused requests from this website. Allow the website in it (for Ollama, add this site's address to OLLAMA_ORIGINS; in LM Studio, turn on Enable CORS), then open ${SETTINGS_HINT} and click Test connection.`;
+    case 'local_unreachable':
+      return `Could not reach the AI program on this computer (such as Ollama or LM Studio). Open ${SETTINGS_HINT} and click Test connection: it checks each step and shows how to fix it.`;
     case 'too_large':
       return 'The request was too long for this AI model. Try fewer items, or a model that accepts more text.';
     case 'bad_model':
@@ -498,12 +564,35 @@ export function aiErrorMessage(code: string): string {
   }
 }
 
+/** The pattern to add to a Google key's website restrictions for this site. */
+function siteRestriction(): string {
+  try {
+    if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname)) return `${location.origin}/*`;
+  } catch {
+    /* no location */
+  }
+  return 'https://hackhead95.github.io/*';
+}
+
 /** Message for a caught error, with the service's own words when they help. */
 export function aiErrorText(e: unknown): string {
-  const err = e as { code?: string; detail?: string } | null;
+  const err = e as { code?: string; detail?: string; daily?: boolean; perMinute?: boolean; retryAfterMs?: number; tried?: string[]; host?: string; keyKind?: string; api?: string } | null;
   const code = err?.code ?? 'unavailable';
-  const base = aiErrorMessage(code);
+  let base = aiErrorMessage(code);
   const detail = err?.detail?.trim();
-  if (detail && ['bad_request', 'bad_model', 'unavailable', 'model_download_failed', 'too_large'].includes(code)) return `${base} The service said: ${detail}`;
+  // Google's daily limits reset at midnight Pacific time; say so only for Gemini.
+  const google = !!err?.keyKind || !!err?.api || /googleapis\.com$/.test(err?.host ?? '') || (!err?.host && effectiveProvider() === 'gemini');
+  if (code === 'rate_limited' && err?.daily)
+    base = google
+      ? `The free daily allowance for this key is used up. It starts again at midnight Pacific time (morning in Europe, early afternoon in India). Try again then, or choose another option in ${SETTINGS_HINT}.`
+      : `The service's free daily allowance is used up. Try again tomorrow, or choose another model or option in ${SETTINGS_HINT}.`;
+  else if (code === 'rate_limited' && err?.perMinute) base = 'The free per-minute limit was reached. Wait a minute, then try again.';
+  if (code === 'rate_limited' && !err?.daily && err?.retryAfterMs) base += ` The service asked to wait ${Math.ceil(err.retryAfterMs / 1000)} seconds.`;
+  if (code === 'network' && err?.host) base += ` (Address: ${err.host}.)`;
+  if (err?.keyKind === 'aiza' && ['invalid_key', 'key_not_accepted', 'permission', 'key_restricted', 'api_disabled'].includes(code))
+    base += ' Note: Google is retiring older keys that start with "AIza" during September 2026. A new key from Google AI Studio (it starts with "AQ.") usually fixes this.';
+  if (err?.tried && err.tried.length > 1 && ['bad_model', 'permission', 'no_free_quota', 'rate_limited', 'overloaded', 'unavailable'].includes(code)) base += ` Models tried: ${err.tried.join(', ')}.`;
+  if (detail && ['model_download_failed', 'model_storage_full', 'webgpu_out_of_memory'].includes(code)) return `${base} (Details: ${detail})`;
+  if (detail && ['bad_request', 'bad_model', 'unavailable', 'too_large', 'permission', 'blocked', 'endpoint_missing', 'field_unsupported', 'thinking_unsupported'].includes(code)) return `${base} The service said: ${detail}`;
   return base;
 }

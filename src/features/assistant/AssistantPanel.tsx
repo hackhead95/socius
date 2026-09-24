@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from '../../core/store';
 import { openAiSettings, useAiStatus } from '../ai/hooks';
-import { AI_SETTINGS_LABEL, SET_UP_AI } from '../ai/AiBits';
+import { AI_SETTINGS_LABEL, AiErrorDetails, SET_UP_AI } from '../ai/AiBits';
 import type { Proposal, TraceStep } from '../../lib/assistant/types';
 import { useAssistantChat, type ArtifactEntry, type ChatEntry } from './chat-store';
 import { copyAnswer, dismissArtifact, retryLast, runArtifact, sendMessage, stopAssistant, appSnapshot } from './controller';
@@ -275,6 +275,7 @@ function AssistantMessage({ entry, last }: { entry: ChatEntry; last: boolean }) 
       {entry.status === 'error' ? (
         <div className="callout callout-bad as-error" role="alert">
           <span>{entry.error}</span>
+          <AiErrorDetails report={entry.errorReport} />
           <span className="as-actions">
             <button type="button" className="btn btn-sm" onClick={() => void retryLast()}>
               <AsIcon name="retry" size={14} /> Retry

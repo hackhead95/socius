@@ -4,9 +4,12 @@ import { ProcedureDialog } from '../features/analysis/ProcedureDialog';
 import { CodingDialog } from '../features/coding/CodingDialog';
 import { TransformDialog } from '../features/transform/TransformDialogs';
 import { CopyPropertiesDialog } from '../features/data/VarDialogs';
+import { DefinePropertiesDialog } from '../features/data/DefineProperties';
 import { ImportDialog, RecentProjectsDialog } from '../features/project/FileDialogs';
 import { AboutDialog, GettingStartedDialog, ShortcutsDialog } from './HelpDialogs';
 import { AiPrereqDialog, ExplainPickDialog } from '../features/ai/AiFeatureDialogs';
+import { ErrorLogDialog } from '../features/errorlog/ErrorLogDialog';
+import { FeedbackDialog } from '../features/errorlog/FeedbackDialog';
 
 export function DialogHost() {
   const dialog = useStore((s) => s.dialog);
@@ -19,6 +22,8 @@ export function DialogHost() {
     case 'coding':
       return <CodingDialog key={dialog.id} id={dialog.id} params={dialog.params} onClose={close} />;
     case 'transform':
+      if (dialog.id === 'define-properties')
+        return ds ? <DefinePropertiesDialog ds={ds} initialIds={Array.isArray(dialog.params?.varIds) ? (dialog.params.varIds as string[]) : undefined} onClose={close} /> : null;
       if (dialog.id === 'copy-properties')
         return ds ? <CopyPropertiesDialog ds={ds} sourceId={typeof dialog.params?.sourceId === 'string' ? dialog.params.sourceId : null} onClose={close} /> : null;
       return <TransformDialog key={dialog.id} id={dialog.id} params={dialog.params} onClose={close} />;
@@ -30,6 +35,8 @@ export function DialogHost() {
       if (dialog.id === 'getting-started') return <GettingStartedDialog onClose={close} />;
       if (dialog.id === 'shortcuts') return <ShortcutsDialog onClose={close} />;
       if (dialog.id === 'about') return <AboutDialog onClose={close} />;
+      if (dialog.id === 'error-log') return <ErrorLogDialog onClose={close} />;
+      if (dialog.id === 'feedback') return <FeedbackDialog onClose={close} />;
       if (dialog.id === 'ai-prereq') return <AiPrereqDialog key={String(dialog.params?.feature)} params={dialog.params} onClose={close} />;
       if (dialog.id === 'ai-explain-pick') return <ExplainPickDialog onClose={close} />;
       return null;

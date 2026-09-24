@@ -10,6 +10,7 @@ import { itemToText, reportToText } from './exportText';
 import { tableToHtml, tableToText } from './tableRender';
 import { useOutputPrefs } from './viewPrefs';
 import { useUi } from '../../app/ui-store';
+import { logFailure } from '../../platform/errorlog';
 
 const MIME = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -77,6 +78,7 @@ export async function saveTableXlsx(table: OutputTable, style: TableStyle): Prom
     const name = `${fileStem(table.title)}.xlsx`;
     report(await saveFile(name, blob, MIME.xlsx), name);
   } catch (e) {
+    logFailure('export', e, { op: 'table xlsx' });
     toast(`Excel export failed: ${(e as Error).message}`, 'error');
   }
 }
@@ -87,6 +89,7 @@ export async function saveChartPng(spec: ChartSpec): Promise<void> {
     const name = `${fileStem(spec.title)}.png`;
     report(await saveFile(name, png.blob, MIME.png), name);
   } catch (e) {
+    logFailure('export', e, { op: 'chart png' });
     toast(`Could not create the image: ${(e as Error).message}`, 'error');
   }
 }
@@ -97,6 +100,7 @@ export async function saveChartSvg(spec: ChartSpec): Promise<void> {
     const name = `${fileStem(spec.title)}.svg`;
     report(await saveFile(name, svg, MIME.svg), name);
   } catch (e) {
+    logFailure('export', e, { op: 'chart svg' });
     toast(`Could not create the image: ${(e as Error).message}`, 'error');
   }
 }
@@ -144,6 +148,7 @@ export async function exportReport(items: OutputItem[], format: ReportFormat, op
     }
     report(await saveFile(filename, data, MIME[format]), filename);
   } catch (e) {
+    logFailure('export', e, { op: `report ${format}` });
     toast(`Export failed: ${(e as Error).message}`, 'error');
   }
 }

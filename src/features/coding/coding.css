@@ -77,7 +77,8 @@
 .cw-menu-list { position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 220px; max-width: min(340px, 92vw); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-2); padding: 4px; }
 .cw-menu-left { left: 0; right: auto; }
 .cw-menu-item { display: flex; width: 100%; align-items: center; gap: 8px; padding: 7px 10px; border: 0; background: none; border-radius: var(--r-sm); font-size: var(--fs-sm); text-align: left; cursor: pointer; color: var(--text); }
-.cw-menu-item:hover:not(:disabled), .cw-menu-item:focus-visible { background: var(--accent-soft); outline: none; }
+.cw-menu-item:focus:not(:disabled), .cw-menu-item:focus-visible { background: var(--accent-soft); outline: none; }
+@media (hover: hover) { .cw-menu-item:hover:not(:disabled) { background: var(--accent-soft); } }
 .cw-menu-item:disabled { color: var(--faint); cursor: default; }
 .cw-menu-hint { margin-left: auto; color: var(--faint); font-size: var(--fs-xs); }
 .cw-menu-sep { height: 1px; background: var(--border); margin: 4px 2px; }

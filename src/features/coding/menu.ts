@@ -16,7 +16,7 @@ export interface CodingMenuItem {
 export const codingMenuItems: CodingMenuItem[] = [
   { id: 'import', label: 'Import documents...' },
   { id: 'import-survey', label: 'Import open-ended answers from dataset...' },
-  { id: 'load-samples', label: 'Load sample interviews' },
+  { id: 'load-samples', label: 'Load sample interviews...' },
   { id: 'view:responses', label: 'Code open-ended responses', separator: true },
   { id: 'auto-code', label: 'Auto-code with keyword rules...' },
   { id: 'view:retrieve', label: 'Retrieve coded segments', separator: true },

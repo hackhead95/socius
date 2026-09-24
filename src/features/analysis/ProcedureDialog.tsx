@@ -6,6 +6,7 @@ import type { Dataset, Variable } from '../../core/types';
 import type { OptionDef, OptionValues, ProcedureDef, SlotValues, VarSlot } from '../../core/procedure';
 import { categoryLabel, distinctValues } from '../../core/data';
 import { getProcedure } from '../../procedures';
+import { logFailure, logSlow } from '../../platform/errorlog';
 import { Modal } from '../../ui/Modal';
 import { copyText } from '../output/actions';
 import { IconArrowLeft, IconArrowRight, IconCopy, IconDown, IconSearch, IconUp, IconWarn, IconX } from '../output/icons';
@@ -334,11 +335,14 @@ function DialogBody({ def, ds, onClose }: { def: ProcedureDef; ds: Dataset; onCl
       window.setTimeout(() => {
         try {
           const cur = useStore.getState().dataset ?? ds;
+          const t0 = performance.now();
           const item = def.run(cur, snapshot.slots, snapshot.options);
+          logSlow('analysis', def.id, performance.now() - t0);
           remember(def.id, { ...snapshot, syntax: item.syntax });
           addOutput(item);
           onClose();
         } catch (e) {
+          logFailure('analysis', e, { op: def.id });
           remember(def.id, snapshot);
           const msg = e instanceof Error ? e.message : String(e);
           setError(msg || 'The analysis could not be completed.');

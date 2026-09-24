@@ -2,6 +2,27 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+// Build information for Help > About and error reports (read through src/platform/buildInfo.ts):
+// the package.json version, the short git commit when building in a checkout, and the build date.
+function buildInfo(): { version: string; commit: string; date: string } {
+  let version = '0.0.0';
+  let commit = '';
+  try {
+    version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version ?? version;
+  } catch {
+    /* keep the fallback */
+  }
+  try {
+    commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    commit = (process.env.GITHUB_SHA ?? '').slice(0, 7);
+  }
+  return { version, commit, date: new Date().toISOString().slice(0, 10) };
+}
+const build = buildInfo();
 
 // `--mode artifact` inlines every asset into one HTML file (for claude.ai Artifact hosting).
 // The default build is a normal static site (GitHub Pages, any static host), with relative paths.
@@ -9,6 +30,11 @@ import { fileURLToPath } from 'node:url';
 // replaced by a tiny stub in the artifact build, which does not offer on-device AI.
 export default defineConfig(({ mode }) => ({
   base: './',
+  define: {
+    __APP_VERSION__: JSON.stringify(build.version),
+    __APP_COMMIT__: JSON.stringify(build.commit),
+    __APP_BUILD_DATE__: JSON.stringify(build.date),
+  },
   plugins: [react(), ...(mode === 'artifact' ? [viteSingleFile()] : [])],
   resolve: {
     alias: {

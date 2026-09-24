@@ -60,6 +60,9 @@ vi.mock('../../src/features/transform/common', async (importOriginal) => {
 });
 
 import { useStore } from '../../src/core/store';
+import { emptyCodingProject } from '../../src/core/coding-types';
+import { useCodingUi } from '../../src/features/coding/uiStore';
+import { createCode } from '../../src/features/coding/actions';
 import { makeDataset, makeVariable } from '../../src/core/types';
 import { procedures } from '../../src/procedures';
 import { useMenus, type TopMenu } from '../../src/app/menus';
@@ -114,10 +117,17 @@ interface Node {
   leaf: boolean;
 }
 
+/**
+ * Items whose label says what they will do right now ("Undo rename of age", "Redo code passage") are
+ * compared under their plain name, so the audit sees one Edit > Undo whatever the history holds.
+ */
+const STABLE_LABEL: Record<string, string> = { undo: 'Undo', redo: 'Redo' };
+
 function nodes(menus: TopMenu[]): Node[] {
   const out: Node[] = [];
   const walk = (items: MenuItem[], path: string[]) => {
-    for (const it of items) {
+    for (const raw of items) {
+      const it = path[0] === 'Edit' && STABLE_LABEL[raw.id] ? { ...raw, label: STABLE_LABEL[raw.id] } : raw;
       out.push({ path, item: it, leaf: !it.children });
       if (it.children) walk(it.children, [...path, it.label]);
     }
@@ -162,6 +172,8 @@ function concept(sig: string): string {
   let s = sig.replace(/^setTab\(\["coding"\]\) (?=openDialog)/, '');
   const coding = (id: string) => `openDialog([{"kind":"coding","id":"${id}"}])`;
   s = s.replace(coding('ai-codebook'), 'ai(codebook)').replace(coding('ai-suggest'), 'ai(suggest)').replace(coding('ai-settings'), 'aiSettings()');
+  // Help > Send feedback now opens a small dialog (copy the error report, then open the form on GitHub).
+  s = s.replace('openDialog([{"kind":"custom","id":"feedback"}])', 'url(FEEDBACK_URL)');
   return s;
 }
 
@@ -305,11 +317,19 @@ describe('nothing became unreachable', () => {
       'File > Export output report > Web page (.html)': 'Same.',
       'File > Export output report > Excel workbook (.xlsx)': 'Same.',
       'File > Export output report > Plain text (.txt)': 'Same.',
+      // The old item of this name only switched to Variable View (that action lives at View > Variable
+      // View, see MOVED); the new one opens a real wizard.
+      'Data > Define variable properties': 'Owner asked for a real Define Variable Properties feature',
+      'Help > Error log': 'Owner asked for error logs to fix future issues: the log of problems, to copy into a report.',
     };
     const known = new Set(mapping.map(([, h]) => h));
     expect(after.filter((a) => !known.has(a.path) && !(a.path in ADDED)).map((a) => a.path)).toEqual([]);
-    // The removed items are exactly the ones listed in MOVED.
-    expect(before.filter((b) => !after.some((a) => a.path === b.path)).map((b) => b.path).sort()).toEqual(Object.keys(MOVED).sort());
+    // The removed items are exactly the ones listed in MOVED (except a path reused by a new command in ADDED).
+    expect(before.filter((b) => !after.some((a) => a.path === b.path)).map((b) => b.path).sort()).toEqual(Object.keys(MOVED).filter((p) => !(p in ADDED)).sort());
+    for (const p of Object.keys(MOVED).filter((k) => k in ADDED)) {
+      const now = after.find((a) => a.path === p)!;
+      expect(concept(now.signature), `${p} is a new command, not the old one back`).not.toBe(concept(before.find((b) => b.path === p)!.signature));
+    }
   });
 });
 
@@ -323,7 +343,7 @@ describe('search palette', () => {
     const c = commands();
     const sig = new Map<CommandEntry, string>();
     for (const e of c) sig.set(e, concept(await signature(() => e.item.onSelect?.())));
-    for (const q of ['ai settings', 'ai assistant settings', 'settings', 'gemini key', 'api key', 'set up ai', 'suggest a codebook', 'suggest codes', 'codebook', 'explain', 'variable properties', 'coding workspace', 'value labels', 'import', 'export', 'theme', 'feedback']) {
+    for (const q of ['ai settings', 'ai assistant settings', 'settings', 'gemini key', 'api key', 'set up ai', 'suggest a codebook', 'suggest codes', 'codebook', 'explain', 'variable properties', 'define properties', 'coding workspace', 'value labels', 'label values', 'missing values', 'import', 'export', 'theme', 'feedback']) {
       const found = searchEntries(q, c, { commands: 50 }).flatMap((g) => g.items);
       expect(duplicateGroups(found, (e) => sig.get(e)!).map((g) => g.map((e) => e.detail + ' > ' + e.title)), q).toEqual([]);
     }
@@ -333,7 +353,8 @@ describe('search palette', () => {
     const c = commands();
     const top = (q: string) => searchEntries(q, c)[0]?.items[0];
     for (const q of ['ai settings', 'AI assistant settings', 'gemini key', 'api key', 'set up ai']) expect([top(q)?.detail, top(q)?.title], q).toEqual(['AI', 'AI assistant settings']);
-    expect([top('define variable properties')?.detail, top('define variable properties')?.title]).toEqual(['View', 'Variable View']);
+    expect([top('define variable properties')?.detail, top('define variable properties')?.title]).toEqual(['Data', 'Define variable properties']);
+    for (const q of ['value labels', 'define properties', 'label values', 'missing values']) expect([top(q)?.detail, top(q)?.title], q).toEqual(['Data', 'Define variable properties']);
     expect([top('open coding workspace')?.detail, top('open coding workspace')?.title]).toEqual(['View', 'Text coding']);
     expect([top('suggest a codebook')?.detail, top('suggest a codebook')?.title]).toEqual(['AI', 'Suggest a codebook']);
   });
@@ -354,7 +375,7 @@ describe('contextual shortcuts use the menu wording', () => {
       }
     };
     walk(join(__dirname, '../../src'));
-    const banned = [/Set up free AI/, /Set up AI help/, /Open AI assistant settings/, />AI settings</, /Help > AI assistant settings/, /Help &gt; AI assistant settings/, /Text coding > Suggest/, /Text coding > AI/, /Open coding workspace/, /Define variable properties/];
+    const banned = [/Set up free AI/, /Set up AI help/, /Open AI assistant settings/, />AI settings</, /Help > AI assistant settings/, /Help &gt; AI assistant settings/, /Text coding > Suggest/, /Text coding > AI/, /Open coding workspace/];
     const hits: string[] = [];
     for (const f of files) {
       const text = readFileSync(f, 'utf8');
@@ -390,5 +411,94 @@ describe('keyboard shortcuts', () => {
       expect(got, `${x.shortcut} does nothing`).not.toBe('');
       for (const call of got.split(' ')) expect(x.signature, `${x.shortcut} vs ${x.path}`).toContain(call);
     }
+  });
+});
+
+describe('Undo and Redo follow the tab (owner decision, September 2026)', () => {
+  const menuItem = (id: 'undo' | 'redo') => buildMenus().find((m) => m.id === 'edit')!.items.find((i) => i.id === id)!;
+  const key = (k: string, extra: Partial<KeyboardEventInit> = {}) =>
+    handleGlobalKey(new KeyboardEvent('keydown', { key: k, ctrlKey: true, cancelable: true, ...extra }));
+
+  function dataWithRename() {
+    const ds = richDataset();
+    const g = ds.variables[2];
+    const renamed = { ...ds, variables: ds.variables.map((v) => (v.id === g.id ? { ...v, name: 'Gender' } : v)), version: ds.version + 1 };
+    useStore.setState({ dataset: renamed, past: [ds], future: [], outputs: [], outputUndo: [], outputRedo: [], tab: 'data', dialog: null });
+    return { ds, renamed };
+  }
+
+  afterEach(() => {
+    useCodingUi.setState({ history: [], future: [] });
+    useStore.setState({ coding: emptyCodingProject(), outputUndo: [], outputRedo: [] });
+  });
+
+  it('in Data View and Variable View, Edit > Undo undoes the data change and names it', () => {
+    const { ds } = dataWithRename();
+    for (const tab of ['data', 'variables'] as const) {
+      useStore.setState({ tab });
+      const it = menuItem('undo');
+      expect(it.disabled).toBeFalsy();
+      expect(it.label).toBe('Undo rename of gender');
+    }
+    menuItem('undo').onSelect!();
+    expect(useStore.getState().dataset).toBe(ds);
+    expect(menuItem('redo').label).toBe('Redo rename of gender');
+  });
+
+  it('in Text coding, Edit > Undo, Redo and Ctrl+Z / Ctrl+Y act on coding changes only', () => {
+    const { renamed } = dataWithRename();
+    useStore.setState({ tab: 'coding' });
+    // Nothing coded yet: Undo is off here even though the data has a change to undo.
+    expect(menuItem('undo').disabled).toBe(true);
+    expect(menuItem('undo').title).toMatch(/Text coding/);
+    const code = createCode('Poverty');
+    expect(menuItem('undo').label).toBe('Undo create code "Poverty"');
+    key('z');
+    expect(useStore.getState().coding.codes.find((c) => c.id === code.id)).toBeUndefined();
+    expect(useStore.getState().dataset).toBe(renamed); // the data is untouched
+    expect(menuItem('redo').label).toBe('Redo create code "Poverty"');
+    key('y');
+    expect(useStore.getState().coding.codes.some((c) => c.id === code.id)).toBe(true);
+    menuItem('undo').onSelect!();
+    expect(useStore.getState().coding.codes.some((c) => c.id === code.id)).toBe(false);
+    key('z', { shiftKey: true }); // Ctrl+Shift+Z is Redo too
+    expect(useStore.getState().coding.codes.some((c) => c.id === code.id)).toBe(true);
+  });
+
+  it('in Output, Undo brings back the last deleted result first, then undoes data changes', () => {
+    const { ds } = dataWithRename();
+    const a = { id: 'a', title: 'Frequencies', createdAt: 0, blocks: [] } as never;
+    const b = { id: 'b', title: 'Crosstabs', createdAt: 0, blocks: [] } as never;
+    useStore.setState({ outputs: [a, b], tab: 'output' });
+    useStore.getState().removeOutput('a');
+    expect(menuItem('undo').label).toBe('Undo deleting Frequencies');
+    key('z');
+    expect(useStore.getState().outputs.map((o) => o.id)).toEqual(['a', 'b']);
+    expect(menuItem('redo').label).toBe('Redo deleting Frequencies');
+    expect(menuItem('undo').label).toBe('Undo rename of gender');
+    key('z');
+    expect(useStore.getState().dataset).toBe(ds);
+    // Elsewhere, a deleted result is not what Undo takes back.
+    useStore.getState().removeOutput('b');
+    useStore.setState({ tab: 'data' });
+    expect(menuItem('undo').disabled).toBe(true);
+  });
+
+  it('does not fire while typing in a box (the box keeps its own undo)', () => {
+    const { renamed } = dataWithRename();
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+    key('z');
+    expect(useStore.getState().dataset).toBe(renamed);
+    input.remove();
+  });
+
+  it('Help > Keyboard shortcuts explains that Undo follows the tab', () => {
+    const { container } = render(<ShortcutsDialog onClose={() => undefined} />);
+    const row = Array.from(container.querySelectorAll('tr')).find((r) => r.textContent?.includes('Undo'));
+    expect(row?.textContent).toMatch(/Text coding/);
+    expect(row?.textContent).toMatch(/Output/);
+    expect(row?.textContent).toMatch(/Edit > Undo names what it will undo/);
   });
 });

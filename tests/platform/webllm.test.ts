@@ -3,9 +3,10 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  WEBLLM_MODELS, __setWebLlmLoader, askWebLlm, deleteWebLlmModel, detectWebGpu, getWebLlmState, isWebLlmCached, prepareWebLlm, resolveModelId, subscribeWebLlm,
+  WEBLLM_MODELS, __setWebLlmLoader, askWebLlm, deleteWebLlmModel, describeWebLlmProgress, detectWebGpu, getWebLlmState, isWebLlmCached, loadErrorCode, prepareWebLlm, resolveModelId,
+  storageFreeMB, subscribeWebLlm, suggestSmallerModel,
 } from '../../src/platform/ai-webllm';
-import { __reloadAiSettings, askAIJson, refreshAiStatus, saveAiSettings } from '../../src/platform/ai';
+import { __reloadAiSettings, aiErrorText, askAIJson, refreshAiStatus, saveAiSettings } from '../../src/platform/ai';
 import { memoryStorage } from './helpers';
 
 const F16 = { ok: true, reason: null, f16: true } as const;
@@ -104,6 +105,40 @@ describe('WebGPU detection', () => {
     expect(await resolveModelId(WEBLLM_MODELS[1].id)).toBe('Llama-3.2-3B-Instruct-q4f32_1-MLC');
   });
 
+  it('explains the exact state: insecure page, too-limited chip, software-only adapter, failing request', async () => {
+    __setWebLlmLoader(null);
+    vi.stubGlobal('isSecureContext', false);
+    vi.stubGlobal('navigator', {});
+    expect(await detectWebGpu()).toMatchObject({ ok: false, reason: 'insecure' });
+    vi.stubGlobal('isSecureContext', true);
+    const good = { maxBufferSize: 1 << 30, maxStorageBufferBindingSize: 1 << 30, maxComputeWorkgroupStorageSize: 32768, maxStorageBuffersPerShaderStage: 10 };
+    const opts: any[] = [];
+    __setWebLlmLoader(null);
+    vi.stubGlobal('navigator', { gpu: { requestAdapter: async (o: any) => (opts.push(o), { features: new Set(), limits: { ...good, maxStorageBuffersPerShaderStage: 8 } }) } });
+    expect(await detectWebGpu()).toMatchObject({ ok: false, reason: 'limits', detail: 'storage buffers per shader 8 < 10' });
+    expect(opts[0]).toEqual({ powerPreference: 'high-performance' });
+    __setWebLlmLoader(null);
+    vi.stubGlobal('navigator', { gpu: { requestAdapter: async () => ({ features: new Set(), limits: good, info: { vendor: 'google', architecture: 'swiftshader', isFallbackAdapter: true } }) } });
+    expect(await detectWebGpu()).toEqual({ ok: true, reason: null, f16: false, software: true, adapter: 'google swiftshader' });
+    __setWebLlmLoader(null);
+    vi.stubGlobal('navigator', { gpu: { requestAdapter: async () => { throw new Error('WebGPU is disabled by policy'); } } });
+    expect(await detectWebGpu()).toMatchObject({ ok: false, reason: 'error', detail: 'WebGPU is disabled by policy' });
+  });
+
+  it('reads the storage the browser will give this site', async () => {
+    vi.stubGlobal('navigator', { storage: { estimate: async () => ({ quota: 3e9, usage: 1e9 }) } });
+    expect(await storageFreeMB()).toBe(2000);
+    vi.stubGlobal('navigator', {});
+    expect(await storageFreeMB()).toBeNull();
+  });
+
+  it('suggests the smaller model on computers that report little memory', () => {
+    expect(suggestSmallerModel(WEBLLM_MODELS[1].id, 4)).toBe(true);
+    expect(suggestSmallerModel(WEBLLM_MODELS[1].id, 8)).toBe(false);
+    expect(suggestSmallerModel(WEBLLM_MODELS[0].id, 2)).toBe(false);
+    expect(suggestSmallerModel(WEBLLM_MODELS[1].id, null)).toBe(false);
+  });
+
   it('without WebGPU, asking fails with webgpu_unavailable and the package is never loaded', async () => {
     const loader = vi.fn(async () => mockModule().mod);
     __setWebLlmLoader(loader, { ok: false, reason: 'no_api', f16: false });
@@ -153,6 +188,42 @@ describe('engine', () => {
     __setWebLlmLoader(async () => m.mod, F16);
     await expect(askWebLlm(WEBLLM_MODELS[0].id, 'hi')).rejects.toMatchObject({ code: 'model_download_failed' });
     expect(getWebLlmState().phase).toBe('error');
+  });
+
+  it('maps the package\'s load errors to clear messages', () => {
+    expect(loadErrorCode(new TypeError('Failed to fetch'))).toBe('model_download_failed');
+    expect(loadErrorCode(new Error("Failed to execute 'add' on 'Cache': Request failed"))).toBe('model_download_failed');
+    expect(loadErrorCode(new Error('Cannot fetch https://huggingface.co/mlc-ai/x/resolve/main/mlc-chat-config.json'))).toBe('model_download_failed');
+    expect(loadErrorCode(Object.assign(new Error('The WebGPU device was lost while loading the model. This issue often occurs due to running out of memory (OOM).'), { name: 'DeviceLostError' }))).toBe('webgpu_out_of_memory');
+    expect(loadErrorCode(Object.assign(new Error('Quota exceeded.'), { name: 'QuotaExceededError' }))).toBe('model_storage_full');
+    expect(loadErrorCode(Object.assign(new Error('This model requires WebGPU extension shader-f16'), { name: 'ShaderF16SupportError' }))).toBe('webgpu_f16');
+    expect(loadErrorCode(new Error('Unable to find a compatible GPU.'))).toBe('webgpu_unavailable');
+    expect(loadErrorCode(Object.assign(new Error('Cannot find WebGPU in the environment'), { name: 'WebGPUNotFoundError' }))).toBe('webgpu_unavailable');
+    expect(aiErrorText({ code: 'model_download_failed', detail: 'TypeError: Failed to fetch' })).toMatch(/^Could not download the model: check your connection, or a firewall\/extension may block huggingface\.co/);
+  });
+
+  it('retries with the 32-bit model files when 16-bit shaders turn out to be missing', async () => {
+    const m = mockModule();
+    const orig = m.mod.MLCEngine.prototype.reload;
+    m.mod.MLCEngine.prototype.reload = async function (this: any, id: string) {
+      if (id.includes('q4f16')) {
+        m.log.push(`reload:${id}`);
+        throw Object.assign(new Error('This model requires WebGPU extension shader-f16, which is not enabled in this browser.'), { name: 'ShaderF16SupportError' });
+      }
+      return orig.call(this, id);
+    };
+    __setWebLlmLoader(async () => m.mod, F16);
+    await prepareWebLlm(WEBLLM_MODELS[0].id);
+    expect(m.log.filter((l) => l.startsWith('reload'))).toEqual(['reload:Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'reload:Qwen2.5-1.5B-Instruct-q4f32_1-MLC']);
+    expect(getWebLlmState()).toMatchObject({ phase: 'ready', modelId: 'Qwen2.5-1.5B-Instruct-q4f32_1-MLC' });
+    expect((await detectWebGpu()).f16).toBe(false);
+  });
+
+  it('describes download progress in plain words', () => {
+    expect(describeWebLlmProgress({ progress: 0, text: '' })).toMatch(/^Starting/);
+    expect(describeWebLlmProgress({ progress: 0.3, text: 'Fetching param cache[3/40]: 512MB fetched. 30% completed, 12 secs elapsed.' })).toBe('Downloading the model: 30% (512 MB so far)');
+    expect(describeWebLlmProgress({ progress: 0.5, text: 'Loading model from cache[20/40]: 800MB loaded.' })).toBe("Loading the model from this browser's storage: 50%");
+    expect(describeWebLlmProgress({ progress: 0.9, text: 'Loading GPU shader modules[90/100]: 90% completed' })).toBe('Preparing the graphics chip: 90%');
   });
 
   it('stopping generation interrupts the engine', async () => {

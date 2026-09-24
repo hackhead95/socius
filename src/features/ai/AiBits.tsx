@@ -1,7 +1,9 @@
 // Small pieces shown wherever AI help is offered: the set-up button ("Set up AI", the one wording for
 // every set-up prompt; it opens the same AI assistant settings dialog as AI > AI assistant settings), the "what will be sent where" note,
 // the privacy notice and the on-device download progress.
+import { useState } from 'react';
 import { getAiSettings, providerPrivacy, type AiPrivacy, type AiProviderId, type AiStatus } from '../../platform/ai';
+import { copyToClipboard } from '../../platform/host';
 import { webLlmChoice } from '../../platform/ai-webllm';
 import { openAiSettings, useAiStatus, useWebLlmState } from './hooks';
 import './ai.css';
@@ -78,6 +80,31 @@ export function AiPrivacyNotice({ provider, host }: { provider: AiProviderId | n
     <div className="callout callout-warn ai-privacy" data-privacy="third-party">
       <b>The excerpts you send go to {host || 'the service you choose'}.</b> Check its terms on how it uses and keeps data before sending interview material. Anonymise excerpts first, and make sure your consent forms and ethics approval allow sharing with an outside service.
     </div>
+  );
+}
+
+/**
+ * A "Details" link under an AI error message: shows the diagnostic report (see aiErrorReport in
+ * platform/ai-diagnose.ts; it never contains a key) with a Copy details button, for asking for help.
+ */
+export function AiErrorDetails({ report }: { report?: string }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState<'idle' | 'ok' | 'fail'>('idle');
+  if (!report) return null;
+  return (
+    <span className="ai-err-details">
+      <button type="button" className="linkish" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {open ? 'Hide details' : 'Details'}
+      </button>
+      {open ? (
+        <span className="ai-err-details-box">
+          <pre className="ai-preview-text">{report}</pre>
+          <button type="button" className="btn btn-sm" onClick={async () => setCopied((await copyToClipboard(report)) ? 'ok' : 'fail')}>
+            {copied === 'ok' ? 'Copied' : copied === 'fail' ? 'Could not copy: select the text instead' : 'Copy details'}
+          </button>
+        </span>
+      ) : null}
+    </span>
   );
 }
 

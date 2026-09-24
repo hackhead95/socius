@@ -10,6 +10,7 @@ import { useUi } from '../../app/ui-store';
 import { VarPicker } from '../../ui/VarPicker';
 import { Icon } from '../../ui/Icon';
 import { applyTransform, ExpressionField, ExpressionHelper, insertAtCursor, NumField, TextField, TransformModal, tryRun, VarSelect } from './common';
+import { logFailure } from '../../platform/errorlog';
 
 const isNumeric = (v: Variable) => v.type === 'numeric';
 const fmtN = (n: number) => n.toLocaleString('en-US');
@@ -169,6 +170,7 @@ export function SelectCasesDialog({ ds, onClose }: { ds: Dataset; onClose: () =>
     try {
       res = selectCasesTransform(ds, method, method.kind === 'all' || method.kind === 'variable' ? 'filter' : output);
     } catch (e) {
+      logFailure('transform', e, { op: 'select-cases' });
       return setError(e instanceof Error ? e.message : String(e));
     }
     if (output === 'delete' && method.kind !== 'all' && method.kind !== 'variable') {

@@ -1,0 +1,42 @@
+/* AI assistant settings: set-up and connection check for a program on this computer, and the
+   on-device model section. Tokens only. */
+
+.ai-local { gap: var(--space-3); }
+.ai-local-steps summary { cursor: pointer; }
+.ai-local-steps code, .ai-origins code, .ai-local .ai-check code { font-family: var(--font-mono); font-size: 0.92em; background: var(--surface-3); padding: 0 3px; border-radius: 3px; overflow-wrap: anywhere; }
+.ai-local-actions { gap: var(--space-2); }
+
+.ai-copy { display: flex; align-items: flex-start; gap: 6px; margin: 4px 0 2px; min-width: 0; }
+.ai-copy-text {
+  flex: 1 1 auto; min-width: 0; display: block; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+.ai-local .ai-check { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+.ai-local .ai-check-step { display: flex; gap: var(--space-2); padding: 8px var(--space-3); border-top: 1px solid var(--border); }
+.ai-local .ai-check-step:first-child { border-top: 0; }
+.ai-local .ai-check-icon { flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--faint); display: grid; place-items: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.ai-local .ai-check-step[data-status='running'] .ai-check-icon { border-color: var(--accent); border-style: dashed; animation: ai-spin 1.2s linear infinite; }
+.ai-local .ai-check-step[data-status='ok'] .ai-check-icon { background: var(--good); border-color: var(--good); color: var(--surface); }
+.ai-local .ai-check-step[data-status='ok'] .ai-check-icon::after { content: '\2713'; }
+.ai-local .ai-check-step[data-status='fail'] .ai-check-icon { background: var(--bad); border-color: var(--bad); color: var(--surface); }
+.ai-local .ai-check-step[data-status='fail'] .ai-check-icon::after { content: '\00d7'; }
+.ai-local .ai-check-step[data-status='warn'] .ai-check-icon { background: var(--warn); border-color: var(--warn); color: var(--surface); }
+.ai-local .ai-check-step[data-status='warn'] .ai-check-icon::after { content: '!'; }
+.ai-local .ai-check-step[data-status='skip'] { opacity: 0.6; }
+.ai-local .ai-check-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.ai-local .ai-check-title { font-weight: 600; font-size: var(--fs-sm); color: var(--text); }
+.ai-local .ai-check-detail { font-size: var(--fs-sm); color: var(--text-2); overflow-wrap: anywhere; }
+.ai-local .ai-check-step[data-status='fail'] .ai-check-detail { color: var(--text); }
+.ai-local .ai-fix { margin: 4px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); color: var(--text-2); }
+.ai-local-pick { max-width: 360px; margin-top: 4px; }
+
+.ai-origins { margin-top: 4px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); }
+.ai-origins-lead { margin: 0; color: var(--text); }
+.ai-os { display: flex; flex-wrap: wrap; gap: 4px; }
+.ai-os .btn.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+
+.ai-gpu-facts { margin: 4px 0 0; padding-left: 20px; font-size: var(--fs-sm); color: var(--text-2); }
+
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ai-local .ai-check-step[data-status='running'] .ai-check-icon { animation: none; } }

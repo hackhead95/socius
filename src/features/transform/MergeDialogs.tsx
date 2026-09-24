@@ -9,6 +9,7 @@ import { DATA_ACCEPT, pickFile } from '../project/fileActions';
 import { VarPicker } from '../../ui/VarPicker';
 import { Icon } from '../../ui/Icon';
 import { applyTransform, TextField, TransformModal, tryRun, VarSelect } from './common';
+import { logFailure } from '../../platform/errorlog';
 
 const fmtN = (n: number) => n.toLocaleString('en-US');
 
@@ -25,6 +26,7 @@ function useOtherFile() {
       const res = await importFile(f.name, new Uint8Array(await f.arrayBuffer()));
       setOther({ ds: res.dataset, name: f.name, warnings: res.warnings });
     } catch (e) {
+      logFailure('import', e, { file: f.name, op: 'merge: open file' });
       setErr(e instanceof Error ? e.message : `Could not open ${f.name}.`);
     } finally {
       setLoading(false);
@@ -183,6 +185,7 @@ export function AggregateDialog({ ds, onClose }: { ds: Dataset; onClose: () => v
     try {
       res = aggregate(ds, { breakIds: breaks, items, output, newName });
     } catch (e) {
+      logFailure('transform', e, { op: 'aggregate' });
       return setError(e instanceof Error ? e.message : String(e));
     }
     if (output === 'new' && res.newDataset) {

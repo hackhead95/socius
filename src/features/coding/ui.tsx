@@ -20,11 +20,18 @@ export function MenuButton(props: { label: ReactNode; items: MenuItem[]; classNa
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => {
+    // Capture-phase pointerdown: closes on any press elsewhere (a tab, the menu bar), even where the
+    // page stops the event or suppresses mouse events.
+    const onDown = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    const away = () => setOpen(false);
+    window.addEventListener('pointerdown', onDown, true);
+    window.addEventListener('blur', away);
+    return () => {
+      window.removeEventListener('pointerdown', onDown, true);
+      window.removeEventListener('blur', away);
+    };
   }, [open]);
   useEffect(() => {
     if (open) ref.current?.querySelectorAll<HTMLButtonElement>('.cw-menu-item')[active]?.focus();

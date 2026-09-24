@@ -213,10 +213,10 @@ function DataViewInner({ ds }: { ds: Dataset }) {
     if (col >= nVars) return;
     setStats({ col, summary: summarizeColumn(ds, col) });
   };
-  const openProps = (col = sel.c) => {
+  const openProps = (col = sel.c, editName = false) => {
     const v = ds.variables[col];
     if (!v) return;
-    focusVariableView(v.id);
+    focusVariableView(v.id, { editName });
     setTab('variables');
   };
   const copySelection = async () => {
@@ -344,7 +344,7 @@ function DataViewInner({ ds }: { ds: Dataset }) {
           onCopy={copyText}
           onPaste={onPaste}
           onContextMenu={(kind, x, y) => setMenu({ x, y, items: menuFor(kind) })}
-          onHeaderDoubleClick={(c) => (c < nVars ? openProps(c) : insertVariable())}
+          onHeaderDoubleClick={(c) => (c < nVars ? openProps(c, true) : insertVariable())}
           onFind={() => setFindOpen(true)}
           focusSeq={focusSeq}
         />

@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { useStore } from '../../core/store';
 import type { OutputItem } from '../../core/output';
 import { aiErrorMessage, aiErrorText, aiPromptBudget, askAI, getAiStatus } from '../../platform/ai';
+import { aiErrorReport } from '../../platform/ai-diagnose';
 import { buildExplainPrompt, plainText } from './explainPrompt';
 
 export type ExplainPhase = 'confirm' | 'running' | 'done' | 'error';
@@ -12,6 +13,8 @@ export interface ExplainPanelState {
   phase: ExplainPhase;
   text: string;
   error?: string;
+  /** Diagnostic report for the error ("Details"; never contains a key). */
+  errorReport?: string;
   /** Provider that answered ("Google Gemini (gemini-3.6-flash)"). */
   provider?: string;
 }
@@ -66,7 +69,7 @@ export const useExplain = create<ExplainStore>((set, get) => {
         const cur = get().panels[item.id];
         // Stopped with some text: keep what arrived.
         if (stopped && cur?.text) patch(item.id, { phase: 'done', error: aiErrorMessage('cancelled') });
-        else patch(item.id, { phase: 'error', error: stopped ? aiErrorMessage('cancelled') : aiErrorText(e) });
+        else patch(item.id, { phase: 'error', error: stopped ? aiErrorMessage('cancelled') : aiErrorText(e), errorReport: stopped ? undefined : aiErrorReport(e, 'Explain with AI') });
       } finally {
         if (controllers.get(item.id) === ctrl) controllers.delete(item.id);
       }

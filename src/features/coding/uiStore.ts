@@ -37,6 +37,8 @@ interface CodingUiState {
   /** Text selected in the reader, waiting for a code. */
   pending: PendingSelection | null;
   history: HistoryEntry[];
+  /** Coding changes undone, newest last, for Redo. */
+  future: HistoryEntry[];
   dialog: LocalDialog | null;
   /** Source list filters. */
   docSearch: string;
@@ -62,6 +64,7 @@ export const useCodingUi = create<CodingUiState>((set) => ({
   jump: null,
   pending: null,
   history: [],
+  future: [],
   dialog: null,
   docSearch: '',
   docFilter: 'all',

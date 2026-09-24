@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Socius: page not found</title>
+<style>
+  body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f7f7f5; color: #1f2328; }
+  main { max-width: 32rem; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  a { color: #0b6e6e; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { body { background: #161718; color: #e8e8e6; } a { color: #5cc6c6; } }
+</style>
+<script>
+  // GitHub Pages shows this page for any address it does not know (a mistyped link, an old
+  // bookmark, "/socius/Guide"). Socius is one page with no other addresses, so go to the start of
+  // the app (or of the guide) instead. Works for a project site (owner.github.io/socius/) and for a
+  // site at the root of a domain, and never redirects to the address that is already open.
+  (function () {
+    var parts = location.pathname.split('/').filter(Boolean);
+    var onGithubProject = /\.github\.io$/i.test(location.hostname) && parts.length > 0;
+    var root = onGithubProject ? '/' + parts[0] + '/' : '/';
+    var rest = onGithubProject ? parts.slice(1) : parts;
+    var target = rest.length && /^guide$/i.test(rest[0]) ? root + 'guide/' : root;
+    window.__sociusHome = target;
+    if (target !== location.pathname) location.replace(target + location.hash);
+  })();
+</script>
+</head>
+<body>
+<main>
+  <h1>This page does not exist</h1>
+  <p>Socius is taking you to the start of the app. If nothing happens, <a id="home" href="/">open Socius</a>.</p>
+  <p>Your data is safe: it is kept in this browser, not at this address.</p>
+</main>
+<script>
+  if (window.__sociusHome) document.getElementById('home').setAttribute('href', window.__sociusHome);
+</script>
+</body>
+</html>

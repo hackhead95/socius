@@ -246,7 +246,9 @@ export const SYNONYMS: Record<string, { words: string[]; boost?: number }> = {
   'd-select': { words: ['filter', 'select cases', 'select if', 'subset', 'exclude cases'], boost: 2 },
   'd-filter-off': { words: ['filter', 'all cases', 'remove filter'] },
   'd-sort': { words: ['sort', 'order'] },
-  'd-copy': { words: ['copy labels', 'value labels'] },
+  // Data > Define variable properties... (a real wizard since September 2026; it used to only switch to Variable View).
+  'd-define': { words: ['define variable properties', 'define properties', 'variable properties', 'value labels', 'label values', 'labels', 'missing values', 'missing codes', 'measurement level', 'measure', 'likert labels'], boost: 3 },
+  'd-copy': { words: ['copy labels', 'copy value labels'] },
   'd-agg': { words: ['aggregate', 'group by', 'collapse', 'summarise by group'] },
   'm-cases': { words: ['merge', 'append', 'add cases', 'combine files', 'stack'] },
   'm-vars': { words: ['merge', 'join', 'add variables', 'match files'] },
@@ -263,6 +265,7 @@ export const SYNONYMS: Record<string, { words: string[]; boost?: number }> = {
   'h-start': { words: ['help', 'tutorial', 'introduction', 'beginner'] },
   'h-keys': { words: ['shortcuts', 'keys', 'hotkeys', 'keyboard'] },
   'h-feedback': { words: ['bug', 'report', 'issue', 'feedback', 'problem'] },
+  'h-errorlog': { words: ['error log', 'errors', 'error report', 'report a problem', 'diagnostics', 'crash', 'log', 'something went wrong', 'bug report'], boost: 2 },
   'c-view:reliability': { words: ['kappa', 'cohens kappa', 'krippendorff', 'agreement', 'intercoder', 'inter rater', 'interrater'], boost: 6 },
   'c-export-codebook': { words: ['codebook', 'code list'], boost: 1 },
   'c-view:kwic': { words: ['kwic', 'keyword', 'concordance', 'search text'] },
@@ -277,9 +280,8 @@ export const SYNONYMS: Record<string, { words: string[]; boost?: number }> = {
   'ai-summarise': { words: ['summary', 'summarize', 'ai'] },
   // The one home of AI set-up (it used to be in Help and Text coding too): old words still find it.
   'ai-settings': { words: ['ai', 'ai settings', 'ai assistant settings', 'set up ai', 'gemini', 'gemini key', 'api key', 'settings', 'preferences', 'llm', 'chatgpt', 'openai', 'groq', 'ollama', 'on device model', 'provider'], boost: 2 },
-  // Views: the one home of switching tabs (Data > Define variable properties and Text coding > Open
-  // coding workspace did the same and were removed).
-  'v-vars': { words: ['define variable properties', 'variable properties', 'labels', 'value labels', 'missing values', 'measurement level', 'measure'] },
+  // Views: the one home of switching tabs (Text coding > Open coding workspace did the same and was removed).
+  'v-vars': { words: ['dictionary', 'edit variables', 'variable names'] },
   'v-code': { words: ['open coding workspace', 'coding workspace', 'qualitative', 'code text'] },
   'v-labels': { words: ['show value labels', 'labels instead of codes'] },
 };

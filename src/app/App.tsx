@@ -18,6 +18,7 @@ import { BusyOverlay, ConfirmHost, DropOverlay, Toasts } from './Overlays';
 import { SampleBanner, Welcome } from './Welcome';
 import { applyTheme, useUi } from './ui-store';
 import { handleGlobalKey } from './shortcuts';
+import { GuardedDialogs, PanelBoundary, QuietBoundary } from './ErrorBoundary';
 import './app.css';
 import '../features/data/data.css';
 import '../features/transform/transform.css';
@@ -106,8 +107,17 @@ export function App() {
   const setTab = useStore((s) => s.setTab);
   const hasData = useStore((s) => !!s.dataset);
   const nOut = useStore((s) => s.outputs.length);
+  // Home (the Socius logo) shows the start screen over open work until you pick a tab or open something.
+  const home = useUi((s) => s.home);
 
   useEffect(() => applyTheme(theme), [theme]);
+  useEffect(
+    () =>
+      useStore.subscribe((s, p) => {
+        if (s.tab !== p.tab || s.dataset !== p.dataset || s.coding !== p.coding || s.outputs !== p.outputs) useUi.getState().setHome(false);
+      }),
+    [],
+  );
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
@@ -149,7 +159,10 @@ export function App() {
               tabIndex={tab === t.id ? 0 : -1}
               disabled={t.needsData && !hasData}
               title={t.needsData && !hasData ? 'Open or create a dataset first' : undefined}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                useUi.getState().setHome(false);
+                setTab(t.id);
+              }}
               onKeyDown={(e) => onTabKey(e, i)}
             >
               {t.label}
@@ -158,11 +171,14 @@ export function App() {
           ))}
         </div>
       </nav>
-      <div className={`workspace ${dataTab && hasData ? 'with-sidebar' : ''}`}>
-        {dataTab && hasData ? <Sidebar /> : null}
+      <div className={`workspace ${dataTab && hasData && !home ? 'with-sidebar' : ''}`}>
+        {dataTab && hasData && !home ? <Sidebar /> : null}
         <main id="main" className="main" role="tabpanel" aria-labelledby={`tab-${tab}`}>
+          <PanelBoundary name={tab}>
           {!ready ? (
             <div className="empty"><span className="spinner" aria-hidden="true" /> Loading...</div>
+          ) : home ? (
+            <Welcome />
           ) : tab === 'output' ? (
             <div className="pane"><OutputViewer /></div>
           ) : tab === 'coding' ? (
@@ -175,11 +191,12 @@ export function App() {
               {tab === 'variables' ? <VariableView /> : <DataView />}
             </div>
           )}
+          </PanelBoundary>
         </main>
       </div>
-      <DialogHost />
+      <GuardedDialogs><DialogHost /></GuardedDialogs>
       <CommandPaletteHost />
-      <AssistantRoot />
+      <QuietBoundary op="assistant" message="The Socius assistant stopped working because of an error. Reload the page to use it again. Details are in Help > Error log."><AssistantRoot /></QuietBoundary>
       <AiSettingsHost />
       <ConfirmHost />
       <Toasts />

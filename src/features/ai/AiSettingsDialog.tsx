@@ -6,13 +6,18 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal } from '../../ui/Modal';
 import {
-  GEMINI_KEY_URL, OPENAI_PRESETS, aiErrorText, claudePresent, effectiveProvider, forgetAiKey, getAiSettings, refreshAiStatus, saveAiSettings, subscribeAiSettings, testAiConnection,
+  GEMINI_AUTO_FLASH, GEMINI_KEY_URL, OPENAI_PRESETS, claudePresent, effectiveProvider, forgetAiKey, getAiSettings, refreshAiStatus, saveAiSettings, subscribeAiSettings,
   type AiProviderId, type OpenAiPreset,
 } from '../../platform/ai';
-import { WEBLLM_IN_BUILD, WEBLLM_MODELS, deleteWebLlmModel, detectWebGpu, prepareWebLlm, type WebGpuStatus } from '../../platform/ai-webllm';
-import { lastResolvedGeminiModel, normaliseBaseUrl } from '../../platform/ai-http';
+import { runConnectionCheck, type ConnectionCheck } from '../../platform/ai-diagnose';
+import { WEBLLM_IN_BUILD } from '../../platform/ai-webllm';
+import { isLocalServiceUrl } from '../../platform/ai-local';
+import { geminiKeyWarning, geminiModelName, geminiPreference, lastResolvedGeminiModel, normaliseBaseUrl, sanitizeApiKey } from '../../platform/ai-http';
+import { ConnectionChecklist } from './ConnectionChecklist';
 import { AiPrivacyNotice } from './AiBits';
-import { useAiSettingsDialog, useAiStatus, useWebLlmState } from './hooks';
+import { useAiSettingsDialog, useAiStatus } from './hooks';
+import { LocalSetup } from './LocalSetup';
+import { WebLlmSetup } from './WebLlmSetup';
 import { AI_FEATURES, aiFeature, isAiFeatureId, runAiFeature, type AiFeatureId } from './features';
 import { useExplain } from './explainStore';
 import './ai.css';
@@ -43,7 +48,9 @@ export function AiSettingsHost() {
   return open ? <AiSettingsDialog intent={isAiFeatureId(intent) ? intent : null} onClose={() => set(false)} /> : null;
 }
 
-type TestState = { phase: 'idle' } | { phase: 'running' } | { phase: 'ok'; reply: string } | { phase: 'error'; message: string };
+// 'running' / 'done': the step-by-step check (ConnectionChecklist); 'ok': a program on this computer
+// answered its own guided check (LocalSetup).
+type TestState = { phase: 'idle' } | { phase: 'running'; check: ConnectionCheck | null } | { phase: 'done'; check: ConnectionCheck } | { phase: 'ok'; reply: string };
 
 export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => void; intent?: AiFeatureId | null }) {
   const settings = useSyncExternalStore(subscribeAiSettings, getAiSettings, getAiSettings);
@@ -58,7 +65,17 @@ export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => vo
   // Clear an old test result when the set-up changes (but not when the model switches to automatic
   // on its own after a retired model name, which happens during a successful test).
   const setupKey = JSON.stringify({ ...settings, gemini: { apiKey: settings.gemini.apiKey } });
-  useEffect(() => setTest({ phase: 'idle' }), [setupKey]);
+  // Set when a change should be tested at once (a model chosen from the service's list).
+  const retestOnChange = useRef(false);
+  useEffect(() => {
+    if (retestOnChange.current) {
+      retestOnChange.current = false;
+      void runTest();
+    } else {
+      testAbort.current?.abort();
+      setTest({ phase: 'idle' });
+    }
+  }, [setupKey]);
 
   const choose = (id: AiProviderId) => saveAiSettings({ provider: id });
 
@@ -66,17 +83,23 @@ export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => vo
     testAbort.current?.abort();
     const ctrl = new AbortController();
     testAbort.current = ctrl;
-    setTest({ phase: 'running' });
-    try {
-      const reply = await testAiConnection(ctrl.signal);
-      setTest({ phase: 'ok', reply });
-      void refreshAiStatus();
-    } catch (e) {
-      setTest({ phase: 'error', message: aiErrorText(e) });
-    }
+    setTest({ phase: 'running', check: null });
+    const check = await runConnectionCheck({ signal: ctrl.signal, onUpdate: (c) => testAbort.current === ctrl && setTest({ phase: 'running', check: c }) });
+    if (testAbort.current !== ctrl) return;
+    setTest({ phase: 'done', check });
+    if (check.ok) void refreshAiStatus();
+  };
+
+  const useModel = (model: string) => {
+    retestOnChange.current = true;
+    saveAiSettings({ openai: { ...getAiSettings().openai, model } });
   };
 
   const canTest = status.ready === 'yes';
+  const check = test.phase === 'running' || test.phase === 'done' ? test.check : null;
+  const connected = test.phase === 'ok' || (test.phase === 'done' && test.check.ok);
+  // A program on this computer has its own step-by-step Test connection (LocalSetup).
+  const localService = provider === 'openai' && isLocalServiceUrl(settings.openai.baseUrl);
 
   return (
     <Modal
@@ -119,31 +142,36 @@ export function AiSettingsDialog({ onClose, intent = null }: { onClose: () => vo
         </fieldset>
 
         {provider === 'claude' ? <p className="help">No set-up needed. Claude's usage limits for your account apply.</p> : null}
-        {provider === 'webllm' ? <WebLlmSection /> : null}
-        {provider === 'gemini' ? <GeminiSection /> : null}
-        {provider === 'openai' ? <OpenAiSection /> : null}
+        {provider === 'webllm' ? <WebLlmSetup /> : null}
+        {provider === 'gemini' ? <GeminiSection onChoiceChange={() => setTest({ phase: 'idle' })} /> : null}
+        {provider === 'openai' ? <OpenAiSection onLocalConnected={(reply) => setTest({ phase: 'ok', reply })} /> : null}
         {!provider ? <p className="help">Choose an option above. Everything else in Socius works without AI.</p> : null}
 
         <AiPrivacyNotice provider={provider} host={provider === 'openai' ? hostLabel(settings.openai.baseUrl) : undefined} />
 
-        {provider ? (
+        {provider && !localService ? (
           <div className="ai-test row">
             <button className="btn" disabled={!canTest || test.phase === 'running'} onClick={runTest} title={canTest ? 'Send a one-word test message' : 'Finish the set-up above first'}>
               {test.phase === 'running' ? 'Testing…' : 'Test connection'}
             </button>
             {test.phase === 'running' ? <button className="btn btn-ghost btn-sm" onClick={() => testAbort.current?.abort()}>Stop</button> : null}
             <span className="ai-test-result" role="status" aria-live="polite">
-              {test.phase === 'ok' ? (
+              {test.phase === 'running' ? <span className="help">Checking step by step…</span> : null}
+              {test.phase === 'ok' ? <span className="ai-ok">Connected. The AI answered{test.reply ? `: "${test.reply.slice(0, 40)}"` : ''}.</span> : null}
+              {test.phase === 'done' && test.check.ok ? (
                 <span className="ai-ok">
-                  Connected{provider === 'gemini' ? ` to ${settings.gemini.model || lastResolvedGeminiModel(settings.gemini.apiKey) || 'Gemini'}` : ''}. The AI answered{test.reply ? `: "${test.reply.slice(0, 40)}"` : ''}.
+                  Connected{test.check.model ? ` to ${test.check.model}` : ''}. The AI answered{test.check.reply ? `: "${test.check.reply.slice(0, 40)}"` : ''}.
                 </span>
               ) : null}
-              {test.phase === 'error' ? <span className="text-bad">{test.message}</span> : null}
+              {test.phase === 'done' && !test.check.ok ? (
+                <span className="text-bad">{test.check.error?.code === 'cancelled' ? 'Stopped.' : 'Not connected. The steps below show where it failed and what to do.'}</span>
+              ) : null}
               {test.phase === 'idle' && !canTest && status.ready === 'no' ? <span className="help">Finish the set-up above, then test it.</span> : null}
             </span>
           </div>
         ) : null}
-        {test.phase === 'ok' ? <ReadyPanel intent={intent} onClose={onClose} /> : null}
+        {check && !localService ? <ConnectionChecklist check={check} onUseModel={provider === 'openai' ? useModel : undefined} /> : null}
+        {connected ? <ReadyPanel intent={intent} onClose={onClose} /> : null}
         <p className="help">
           AI suggestions are a starting point for your own reading, not findings. Check every suggested code and quote against the data, and report in your methods section that AI assistance was used and how.
         </p>
@@ -212,8 +240,20 @@ function KeyField({ id, value, onChange, placeholder, optional }: { id: string; 
   );
 }
 
-function GeminiSection() {
+type GeminiChoice = '' | 'auto-flash' | 'custom';
+
+function GeminiSection({ onChoiceChange }: { onChoiceChange?: () => void }) {
   const s = getAiSettings();
+  const explicit = geminiModelName(s.gemini.model);
+  const [customOpen, setCustomOpen] = useState(!!explicit);
+  const choice: GeminiChoice = explicit || customOpen ? 'custom' : geminiPreference(s.gemini.model) === 'flash' ? 'auto-flash' : '';
+  const warning = geminiKeyWarning(s.gemini.apiKey);
+  const now = lastResolvedGeminiModel(s.gemini.apiKey, geminiPreference(s.gemini.model));
+  const setChoice = (c: GeminiChoice) => {
+    setCustomOpen(c === 'custom');
+    if (c !== 'custom') saveAiSettings({ gemini: { ...s.gemini, model: c === 'auto-flash' ? GEMINI_AUTO_FLASH : '' } });
+    onChoiceChange?.();
+  };
   return (
     <section className="stack ai-section" aria-label="Google Gemini set-up">
       <div className="ai-steps">
@@ -225,17 +265,28 @@ function GeminiSection() {
             and sign in with a Google account.
           </li>
           <li>Click <b>Create API key</b> (accept the terms if asked).</li>
-          <li>Copy the key and paste it below. It stays in this browser.</li>
+          <li>Copy the key with its copy button (new keys start with <span className="mono">AQ.</span>) and paste it below. It stays in this browser.</li>
         </ol>
       </div>
       <div className="ai-grid">
-        <KeyField id="ai-gemini-key" value={s.gemini.apiKey} onChange={(v) => saveAiSettings({ gemini: { ...s.gemini, apiKey: v } })} placeholder="Paste your key" />
+        <div className="stack" style={{ gap: 4 }}>
+          <KeyField id="ai-gemini-key" value={s.gemini.apiKey} onChange={(v) => saveAiSettings({ gemini: { ...s.gemini, apiKey: sanitizeApiKey(v) } })} placeholder="Paste your key" />
+          {warning ? <span className="help ai-key-warn" role="note">{warning}</span> : null}
+        </div>
         <div className="field">
-          <label htmlFor="ai-gemini-model">Model</label>
-          <input id="ai-gemini-model" className="input mono" value={s.gemini.model} placeholder="Automatic" onChange={(e) => saveAiSettings({ gemini: { ...s.gemini, model: e.target.value.trim() } })} spellCheck={false} />
+          <label htmlFor="ai-gemini-choice">Model</label>
+          <select id="ai-gemini-choice" className="select" value={choice} onChange={(e) => setChoice(e.target.value as GeminiChoice)}>
+            <option value="">Automatic: Flash-Lite (most free requests per day)</option>
+            <option value="auto-flash">Automatic: Flash (better answers, fewer free requests)</option>
+            <option value="custom">A model I type…</option>
+          </select>
+          {choice === 'custom' ? (
+            <input id="ai-gemini-model" className="input mono" aria-label="Gemini model name" value={explicit} placeholder="for example gemini-3.8-flash" onChange={(e) => saveAiSettings({ gemini: { ...s.gemini, model: e.target.value.trim() } })} spellCheck={false} />
+          ) : null}
           <span className="help">
-            Leave empty and Socius picks the newest free Flash model your key can use
-            {lastResolvedGeminiModel(s.gemini.apiKey) ? ` (now ${lastResolvedGeminiModel(s.gemini.apiKey)})` : ''}. Google retires old model names, so only type one if you need a specific model.
+            {choice === 'custom'
+              ? 'Google retires old model names; if this one stops working, Socius switches to automatic.'
+              : `Socius picks the newest ${choice === 'auto-flash' ? 'Flash' : 'Flash-Lite'} model your key can use${now ? ` (now ${now})` : ''}, and another if that one is not available. Flash-Lite allows many more free requests per day; the Socius assistant and coding suggestions always use it.`}
           </span>
         </div>
       </div>
@@ -249,7 +300,7 @@ function GeminiSection() {
   );
 }
 
-function OpenAiSection() {
+function OpenAiSection({ onLocalConnected }: { onLocalConnected?: (reply: string) => void }) {
   const s = getAiSettings();
   const o = s.openai;
   const preset = OPENAI_PRESETS[o.preset];
@@ -257,7 +308,7 @@ function OpenAiSection() {
     const info = OPENAI_PRESETS[p];
     saveAiSettings({ openai: { ...o, preset: p, baseUrl: info.baseUrl || o.baseUrl, model: info.model || (p === 'custom' ? o.model : '') } });
   };
-  const local = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(o.baseUrl);
+  const local = isLocalServiceUrl(o.baseUrl);
   return (
     <section className="stack ai-section" aria-label="Other service set-up">
       <div className="ai-grid">
@@ -287,116 +338,7 @@ function OpenAiSection() {
           <span className="help">Removes the key from this browser.</span>
         </div>
       ) : null}
-    </section>
-  );
-}
-
-function WebLlmSection() {
-  const s = getAiSettings();
-  const status = useAiStatus();
-  const load = useWebLlmState();
-  const [gpu, setGpu] = useState<WebGpuStatus | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const abort = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    void detectWebGpu().then((g) => alive && setGpu(g));
-    return () => {
-      alive = false;
-    };
-  }, []);
-  useEffect(() => () => abort.current?.abort(), []);
-
-  const download = async () => {
-    abort.current?.abort();
-    const ctrl = new AbortController();
-    abort.current = ctrl;
-    setErr(null);
-    try {
-      await prepareWebLlm(s.webllm.model, ctrl.signal);
-    } catch (e: any) {
-      if (e?.code !== 'cancelled') setErr(aiErrorText(e));
-    } finally {
-      void refreshAiStatus();
-    }
-  };
-
-  const remove = async () => {
-    setErr(null);
-    try {
-      await deleteWebLlmModel(s.webllm.model);
-    } catch (e) {
-      setErr(aiErrorText(e));
-    }
-    void refreshAiStatus();
-  };
-
-  const loading = load.phase === 'loading';
-  const pct = Math.round(load.progress * 100);
-  const chosen = WEBLLM_MODELS.find((m) => m.id === s.webllm.model) ?? WEBLLM_MODELS[0];
-
-  return (
-    <section className="stack ai-section" aria-label="On-device model set-up">
-      <div className="ai-gpu" data-ok={gpu ? String(gpu.ok) : 'unknown'}>
-        {!gpu ? (
-          <span className="help">Checking whether this browser can run a model…</span>
-        ) : gpu.ok ? (
-          <span className="ai-ok">This browser supports WebGPU, so it can run the model.</span>
-        ) : (
-          <div className="callout callout-warn">
-            <b>This browser cannot run the on-device model.</b>{' '}
-            {gpu.reason === 'no_adapter'
-              ? 'It has WebGPU, but no usable graphics chip was found (it may be turned off, or the computer is too old).'
-              : 'It needs WebGPU, which this browser does not offer.'}{' '}
-            Use a recent Chrome or Edge on a Windows, Mac or ChromeOS desktop or laptop (Safari and Firefox support is still limited, and phones usually lack the memory). Or choose <b>Google Gemini</b> above, with anonymised excerpts.
-          </div>
-        )}
-      </div>
-      <fieldset className="ai-models">
-        <legend className="eyebrow">Model</legend>
-        {WEBLLM_MODELS.map((m) => (
-          <label key={m.id} className={`ai-choice ai-choice-sm ${s.webllm.model === m.id ? 'is-on' : ''}`}>
-            <input type="radio" name="ai-webllm-model" checked={s.webllm.model === m.id} disabled={loading} onChange={() => saveAiSettings({ webllm: { model: m.id } })} />
-            <span className="ai-choice-body">
-              <span className="ai-choice-title">{m.label} <span className="badge">download {m.download}</span></span>
-              <span className="ai-choice-line">{m.detail} Needs about {Math.round(m.vramMB / 100) / 10} GB of graphics memory.</span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
-      {gpu?.ok ? (
-        <div className="stack" style={{ gap: 6 }}>
-          <div className="row">
-            {status.modelCached ? (
-              <>
-                <span className="ai-ok">Downloaded. The model loads from this browser's cache.</span>
-                <span className="spacer" />
-                <button className="btn btn-sm btn-ghost" disabled={loading} onClick={remove}>Remove downloaded model</button>
-              </>
-            ) : (
-              <>
-                <button className="btn" disabled={loading} onClick={download}>Download model ({chosen.download})</button>
-                <span className="help">One time only. The browser keeps it for next time. You can also skip this: the first AI request downloads it.</span>
-              </>
-            )}
-          </div>
-          {loading ? (
-            <div className="ai-progress" aria-live="polite">
-              <div className="row">
-                <span className="help">{pct < 100 ? `Downloading and preparing: ${pct}%` : 'Almost ready…'}</span>
-                <span className="spacer" />
-                <button className="btn btn-sm" onClick={() => abort.current?.abort()} disabled={!abort.current}>Cancel</button>
-              </div>
-              <div className="ai-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Model download">
-                <span style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          ) : null}
-          {load.phase === 'ready' && load.modelId ? <span className="help">The model is loaded and ready.</span> : null}
-          {err ? <div className="callout callout-bad">{err}</div> : null}
-        </div>
-      ) : null}
+      {local ? <LocalSetup onConnected={onLocalConnected} /> : null}
     </section>
   );
 }

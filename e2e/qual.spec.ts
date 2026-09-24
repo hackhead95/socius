@@ -255,7 +255,8 @@ test('intercoder reliability reports sources only one coder coded', async ({ pag
 test('interviews: code by selecting text, overlap, memo, retrieve, merge and delete', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await ready(page);
-  await menu(page, 'Text coding', 'Load sample interviews');
+  await menu(page, 'Text coding', 'Load sample interviews...');
+  await page.locator('.modal').getByRole('button', { name: /^Load 3 interviews$/ }).click();
   await expect(page.locator('.cw-docitem')).toHaveCount(3);
   // Constant attributes (study title) are not what the source list shows.
   await expect(page.locator('.cw-docmeta').first()).not.toContainText('Belonging, migration');

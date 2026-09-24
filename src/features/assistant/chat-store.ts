@@ -18,6 +18,8 @@ export interface ChatEntry {
   text: string;
   status: 'pending' | 'streaming' | 'done' | 'error' | 'stopped';
   error?: string;
+  /** Diagnostic report for the error ("Details"; never contains a key). */
+  errorReport?: string;
   steps: TraceStep[];
   artifacts: ArtifactEntry[];
   /** For user messages: what it was about, e.g. an output item's title. */

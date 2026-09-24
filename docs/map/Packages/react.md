@@ -1,0 +1,86 @@
+---
+id: "package:react"
+type: package
+---
+
+# react
+
+*npm package*
+
+## Imported by
+- [[App.tsx]] · value
+- [[CommandPalette.tsx]] · value
+- [[ErrorBoundary.tsx]] · value
+- [[MenuBar.tsx]] · value
+- [[Overlays.tsx]] · value
+- [[Sidebar.tsx]] · value
+- [[TopBar.tsx]] · value
+- [[Welcome.tsx]] · value
+- [[AiBits.tsx]] · value
+- [[AiFeatureDialogs.tsx]] · value
+- [[AiSettingsDialog.tsx]] · value
+- [[AiText.tsx]] · type-only
+- [[ConnectionChecklist.tsx]] · value
+- [[ExplainPanel.tsx]] · value
+- [[ai/hooks.ts]] · value
+- [[LocalSetup.tsx]] · value
+- [[WebLlmSetup.tsx]] · value
+- [[ProcedureDialog.tsx]] · value
+- [[AssistantPanel.tsx]] · value
+- [[AssistantRoot.tsx]] · value
+- [[Markdown.tsx]] · value
+- [[BarChart.tsx]] · value
+- [[BoxChart.tsx]] · value
+- [[Chart.tsx]] · value
+- [[charts/common.tsx]] · value
+- [[export.ts]] · value
+- [[HeatmapChart.tsx]] · value
+- [[HistogramChart.tsx]] · value
+- [[LineChart.tsx]] · value
+- [[PieChart.tsx]] · value
+- [[PyramidChart.tsx]] · value
+- [[ScatterChart.tsx]] · value
+- [[AnalyseView.tsx]] · value
+- [[CodebookPanel.tsx]] · value
+- [[CodingDialog.tsx]] · value
+- [[CodingWorkspace.tsx]] · value
+- [[AiDialogs.tsx]] · value
+- [[AutoCodeDialog.tsx]] · value
+- [[ExportDialogs.tsx]] · value
+- [[ImportDialog.tsx]] · value
+- [[SmallDialogs.tsx]] · value
+- [[coding/hooks.ts]] · value
+- [[MemosView.tsx]] · value
+- [[QuickCode.tsx]] · value
+- [[Reader.tsx]] · value
+- [[ReliabilityView.tsx]] · value
+- [[ResponsesView.tsx]] · value
+- [[RetrievalView.tsx]] · value
+- [[SourcesPanel.tsx]] · value
+- [[ui.tsx]] · value
+- [[DataGrid.tsx]] · value
+- [[DataView.tsx]] · value
+- [[DefineProperties.tsx]] · value
+- [[VarDialogs.tsx]] · value
+- [[VariableView.tsx]] · value
+- [[errorlog/actions.ts]] · value
+- [[ErrorLogDialog.tsx]] · value
+- [[FeedbackDialog.tsx]] · value
+- [[output/icons.tsx]] · type-only
+- [[OutputTableView.tsx]] · value
+- [[OutputViewer.tsx]] · value
+- [[FileDialogs.tsx]] · value
+- [[CasesDialogs.tsx]] · value
+- [[transform/common.tsx]] · value
+- [[ComputeDialog.tsx]] · value
+- [[DeriveDialogs.tsx]] · value
+- [[MergeDialogs.tsx]] · value
+- [[RecodeDialog.tsx]] · value
+- [[TransformDialogs.tsx]] · type-only
+- [[main.tsx]] · value
+- [[Icon.tsx]] · type-only
+- [[Menu.tsx]] · value
+- [[Modal.tsx]] · value
+- [[VarPicker.tsx]] · value
+- [[error-boundary.test.tsx]] · value
+- [[invariants.ts]] · value

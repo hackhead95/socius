@@ -1,14 +1,10 @@
 // The Socius assistant end to end: floating button and Ctrl+J, the panel on every tab, Gemini
-// function calling against a mocked API (tool calls run on the live data, results go back as
-// functionResponse parts), Add to Output, a proposed recode applied only on click and undone, Stop,
+// function calling against a mocked Interactions API (tool calls run on the live data, results go back
+// as function_result steps, with the model's thought signatures replayed), Add to Output, a proposed recode applied only on click and undone, Stop,
 // the phone layout, and opening it from search.
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { openWithSample } from './helpers';
-
-const GEMINI = 'https://generativelanguage.googleapis.com/**';
-const cors = { 'Access-Control-Allow-Origin': '*' };
-
-type Part = Record<string, unknown>;
+import { GEMINI, fulfil, interactionReply, legacyBody, modelsReply, type Part } from './gemini-mock';
 interface Seen {
   body: any;
 }
@@ -19,21 +15,20 @@ async function withGemini(page: Page) {
 }
 
 /**
- * Mock Gemini: `script(body, round)` returns the model parts for each generateContent request.
- * Replies are sent as one server-sent event (the assistant streams).
+ * Mock Gemini (Interactions API): `script(body, round)` returns the model parts for each request; the
+ * request is shown to it in generateContent terms (contents, systemInstruction; see gemini-mock.ts)
+ * and the parts go back as Interactions steps, streamed (the assistant streams).
  */
 async function mockGemini(page: Page, script: (body: any, round: number) => Part[] | Promise<Part[]>, opts: { delayMs?: number } = {}): Promise<Seen[]> {
   const seen: Seen[] = [];
   await page.route(GEMINI, async (route: Route) => {
     const req = route.request();
-    if (req.method() === 'GET')
-      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ models: [{ name: 'models/gemini-3.6-flash', supportedGenerationMethods: ['generateContent'] }] }) });
-    const body = req.postDataJSON();
+    if (req.method() === 'GET') return route.fulfill(modelsReply(['gemini-3.6-flash']));
+    const body = legacyBody(req.postDataJSON());
     seen.push({ body });
     if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs));
     const parts = await script(body, seen.length - 1);
-    const sse = `data: ${JSON.stringify({ candidates: [{ content: { role: 'model', parts }, finishReason: 'STOP' }] })}\r\n\r\n`;
-    return route.fulfill({ status: 200, headers: { ...cors, 'Content-Type': 'text/event-stream' }, body: sse }).catch(() => undefined);
+    return fulfil(route, interactionReply(parts, body.stream));
   });
   return seen;
 }
@@ -96,7 +91,10 @@ test('Gemini function calling: tools run on the live data, results go back, Add 
   // What was sent: tools, system instruction, then both results with the model's parts replayed.
   expect(seen).toHaveLength(2);
   const first = seen[0].body;
-  expect(first.tools[0].functionDeclarations.map((d: any) => d.name)).toEqual(expect.arrayContaining(['get_dataset_overview', 'run_analysis', 'propose_transform', 'search_help', 'get_cases']));
+  // Interactions API function tools (type "function"), sent again on every round; nothing stored at Google.
+  expect(first.tools.map((d: any) => d.name)).toEqual(expect.arrayContaining(['get_dataset_overview', 'run_analysis', 'propose_transform', 'search_help', 'get_cases']));
+  expect(first.tools.every((d: any) => d.type === 'function')).toBe(true);
+  expect(first.store).toBe(false);
   expect(first.systemInstruction.parts[0].text).toContain('Never invent numbers');
   expect(first.systemInstruction.parts[0].text).toContain('individual cases OFF');
   const second = seen[1].body;

@@ -1,5 +1,6 @@
 // Global keyboard shortcuts (undo/redo/open/save) and platform helpers.
 import { useStore } from '../core/store';
+import { redoStep, runRedo, runUndo, undoStep } from './undo';
 import { openDataFile, saveProject } from '../features/project/fileActions';
 import { useUi } from './ui-store';
 
@@ -56,13 +57,14 @@ export function handleGlobalKey(e: KeyboardEvent): void {
     useUi.getState().requestFind();
     return;
   }
+  // Undo / Redo follow the tab you are in (src/app/undo.ts). Text fields keep their own undo (above).
   if (key === 'z' && !e.shiftKey) {
-    if (!st.past.length) return;
+    if (!undoStep()) return;
     e.preventDefault();
-    st.undo();
+    runUndo();
   } else if ((key === 'z' && e.shiftKey) || key === 'y') {
-    if (!st.future.length) return;
+    if (!redoStep()) return;
     e.preventDefault();
-    st.redo();
+    runRedo();
   }
 }

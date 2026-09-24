@@ -140,6 +140,7 @@
 .vv-error {
   position: absolute; top: calc(100% + 1px); left: 0; z-index: 6; width: max-content; max-width: 320px; padding: 6px 8px; background: var(--bad-soft);
   color: var(--bad); border: 1px solid var(--bad); border-radius: var(--r-sm); font-size: var(--fs-xs); white-space: normal;
+  pointer-events: none; box-shadow: var(--shadow-2);
 }
 .vv-ghost .vv-cell { color: var(--accent); cursor: pointer; background: var(--surface-2); font-weight: 500; }
 .vv-ghost .vv-num { background: var(--surface-2); cursor: default; }

@@ -4,6 +4,7 @@ import type { Dataset } from '../../core/types';
 import { getVariable } from '../../core/data';
 import { ComputeError, computeVariable, previewCompute, type ComputeSpec } from '../../lib/transform';
 import { applyTransform, ExpressionField, ExpressionHelper, insertAtCursor, TransformModal, TextField } from './common';
+import { logFailure } from '../../platform/errorlog';
 
 export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: () => void; params?: Record<string, unknown> }) {
   const [target, setTarget] = useState(typeof params?.target === 'string' ? params.target : '');
@@ -48,6 +49,7 @@ export function ComputeDialog({ ds, onClose, params }: { ds: Dataset; onClose: (
       applyTransform(computeVariable(ds, spec));
       onClose();
     } catch (e) {
+      logFailure('transform', e, { op: 'compute' });
       setRunError(e instanceof Error ? e.message : String(e));
     }
   };

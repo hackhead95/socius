@@ -782,11 +782,17 @@ tbody th code { white-space: nowrap; }
   </main>
 </div>
 <script>
-// Show the real address of the app next to "../" links, and highlight the current chapter in the contents.
+// "Open Socius" links ("../") lead to the app, one folder up. Make them work when this page is opened
+// without the final slash (".../guide") or from a file on disk (where a folder does not open its
+// index.html), show the real address of the app, and highlight the current chapter in the contents.
 (function () {
   try {
+    var app = '../';
+    if (location.protocol === 'file:') app = '../index.html';
+    else if (!/\/$/.test(location.pathname) && !/\.html?$/i.test(location.pathname)) app = './';
+    if (app !== '../') document.querySelectorAll('a[href="../"]').forEach(function (a) { a.setAttribute('href', app); });
     if (/^https?:$/.test(location.protocol)) {
-      var abs = new URL('../', location.href).href;
+      var abs = new URL(app, location.href).href;
       document.querySelectorAll('a.applink').forEach(function (a) { a.textContent = abs; });
     }
   } catch (e) {}

@@ -16,9 +16,11 @@ import {
 import { samples } from '../samples';
 import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { modKey } from './shortcuts';
-import { FEEDBACK_URL, GUIDE_URL, openExternal } from './links';
+import { nothingTo, runRedo, runUndo, useUndoRedo } from './undo';
+import { GUIDE_URL, openExternal } from './links';
 import { openAiSettings } from '../features/ai/hooks';
 import { AI_FEATURES, runAiFeature } from '../features/ai/features';
+import { openErrorLog, openFeedback, useUnseenErrors } from '../features/errorlog/actions';
 import { REPORT_FORMATS, confirmAndClearOutputs, exportAllOutput } from '../features/output/actions';
 
 export interface TopMenu {
@@ -34,14 +36,15 @@ const ANALYZE_ORDER: ProcedureMenu[] = ['Descriptive Statistics', 'Compare Means
 export function useMenus(): TopMenu[] {
   const hasData = useStore((s) => !!s.dataset);
   const hasCases = useStore((s) => (s.dataset?.nCases ?? 0) > 0);
-  const canUndo = useStore((s) => s.past.length > 0);
-  const canRedo = useStore((s) => s.future.length > 0);
+  // Undo and Redo follow the tab (Text coding: coding changes; Output: deleted results, then data).
+  const { undo, redo } = useUndoRedo();
   const filterOn = useStore((s) => !!s.dataset?.filterVarId);
   const weightOn = useStore((s) => !!s.dataset?.weightVarId);
   const showLabels = useStore((s) => s.showValueLabels);
   const tab = useStore((s) => s.tab);
   const nOutputs = useStore((s) => s.outputs.length);
   const theme = useUi((s) => s.theme);
+  const unseenErrors = useUnseenErrors();
   const sidebarOpen = useUi((s) => s.sidebarOpen);
   const currentVarId = useUi((s) => s.currentVarId);
   const st = useStore.getState;
@@ -105,8 +108,8 @@ export function useMenus(): TopMenu[] {
   ].filter(Boolean) as MenuItem[];
 
   const edit: MenuItem[] = [
-    { id: 'undo', label: 'Undo', shortcut: `${mod}+Z`, disabled: !canUndo, title: canUndo ? undefined : 'Nothing to undo', onSelect: () => st().undo() },
-    { id: 'redo', label: 'Redo', shortcut: `${mod}+Y`, disabled: !canRedo, title: canRedo ? undefined : 'Nothing to redo', onSelect: () => st().redo() },
+    { id: 'undo', label: undo?.label ?? 'Undo', shortcut: `${mod}+Z`, disabled: !undo, title: undo ? undefined : nothingTo('undo', tab), onSelect: () => void runUndo() },
+    { id: 'redo', label: redo?.label ?? 'Redo', shortcut: `${mod}+Y`, disabled: !redo, title: redo ? undefined : nothingTo('redo', tab), onSelect: () => void runRedo() },
     needData({ id: 'find', label: 'Find in data...', shortcut: `${mod}+F`, separator: true, onSelect: () => { toData(); useUi.getState().requestFind(); } }),
     hasCases ? { id: 'goto', label: 'Go to case...', onSelect: () => { toData(); useUi.getState().requestGoto(); } } : { id: 'goto', label: 'Go to case...', disabled: true, title: hasData ? 'There are no cases yet' : NEED_DATA },
     {
@@ -131,6 +134,7 @@ export function useMenus(): TopMenu[] {
   ];
 
   const data: MenuItem[] = [
+    needData({ id: 'd-define', label: 'Define variable properties...', title: 'Scan the values of variables, label them, mark missing codes and set the measurement level', onSelect: openT('define-properties') }),
     needData({ id: 'd-copy', label: 'Copy variable properties...', onSelect: openT('copy-properties', { sourceId: currentVarId }) }),
     needData({ id: 'd-sort', label: 'Sort cases...', separator: true, onSelect: openT('sort') }),
     needData({ id: 'd-select', label: 'Select cases...', onSelect: openT('select') }),
@@ -208,7 +212,8 @@ export function useMenus(): TopMenu[] {
     { id: 'h-start', label: 'Getting started', onSelect: () => st().openDialog({ kind: 'custom', id: 'getting-started' }) },
     { id: 'h-guide', label: 'User guide', title: 'Opens the full guide in a new tab', onSelect: () => openExternal(GUIDE_URL) },
     { id: 'h-keys', label: 'Keyboard shortcuts', onSelect: () => st().openDialog({ kind: 'custom', id: 'shortcuts' }) },
-    { id: 'h-feedback', label: 'Send feedback or report a problem', separator: true, title: 'Opens a form on GitHub in a new tab', onSelect: () => openExternal(FEEDBACK_URL) },
+    { id: 'h-feedback', label: 'Send feedback or report a problem', separator: true, title: 'Offers to include the error report, then opens a form on GitHub in a new tab', onSelect: openFeedback },
+    { id: 'h-errorlog', label: 'Error log...', title: unseenErrors ? 'New problems were logged in this session' : 'Problems Socius noticed, to copy into a report', onSelect: openErrorLog },
     { id: 'h-about', label: 'About Socius', separator: true, onSelect: () => st().openDialog({ kind: 'custom', id: 'about' }) },
   ];
 

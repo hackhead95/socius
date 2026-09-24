@@ -7,29 +7,41 @@ import { Icon } from '../ui/Icon';
 import { useUi, type ThemePref } from './ui-store';
 import { MenuBar } from './MenuBar';
 import { modKey } from './shortcuts';
+import { nothingTo, runRedo, runUndo, useUndoRedo } from './undo';
 import { isModified } from '../features/project/fileActions';
 import { turnFilterOff, turnWeightOff } from '../features/transform/common';
 import { FEEDBACK_URL } from './links';
+import { openFeedback } from '../features/errorlog/actions';
 import { openPalette } from './CommandPalette';
 import { AiChip } from '../features/ai/AiFeatureDialogs';
 
 const fmtN = (n: number) => n.toLocaleString('en-US');
 
+/**
+ * The Socius logo is the Home button: it shows the start screen (open a file, recent projects,
+ * getting started) over whatever is open; "Back to your data" there (or any tab) returns.
+ */
 export function Mark() {
+  const home = useUi((s) => s.home);
   return (
-    <span className="mark" aria-label="Socius">
+    <button
+      type="button"
+      className="mark"
+      aria-label="Socius home: start screen and recent projects"
+      aria-pressed={home}
+      title="Home: start screen and recent projects"
+      onClick={() => useUi.getState().setHome(true)}
+    >
       <span className="mark-glyph" aria-hidden="true">S</span>
       <span className="mark-word">Socius</span>
-    </span>
+    </button>
   );
 }
 
 export function TopBar() {
   const ds = useStore((s) => s.dataset);
-  const canUndo = useStore((s) => s.past.length > 0);
-  const canRedo = useStore((s) => s.future.length > 0);
-  const undo = useStore((s) => s.undo);
-  const redo = useStore((s) => s.redo);
+  // Same as Edit > Undo / Redo: they follow the tab you are in.
+  const { undo, redo, tab } = useUndoRedo();
   const openDialog = useStore((s) => s.openDialog);
   const theme = useUi((s) => s.theme);
   const setTheme = useUi((s) => s.setTheme);
@@ -59,13 +71,13 @@ export function TopBar() {
             <Icon name="search" />
           </button>
           <AiChip />
-          <a className="btn btn-sm btn-ghost topbar-feedback" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" title="Send feedback or report a problem (opens GitHub in a new tab; also Help > Send feedback or report a problem)">
+          <a className="btn btn-sm btn-ghost topbar-feedback" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); openFeedback(); }} title="Send feedback or report a problem (offers to include the error report, then opens GitHub; also Help > Send feedback or report a problem)">
             Feedback
           </a>
-          <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={undo} disabled={!canUndo} aria-label="Undo" title={`Undo (${mod}+Z)`}>
+          <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => runUndo()} disabled={!undo} aria-label="Undo" title={undo ? `${undo.label} (${mod}+Z)` : nothingTo('undo', tab)}>
             <Icon name="undo" />
           </button>
-          <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={redo} disabled={!canRedo} aria-label="Redo" title={`Redo (${mod}+Y)`}>
+          <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => runRedo()} disabled={!redo} aria-label="Redo" title={redo ? `${redo.label} (${mod}+Y)` : nothingTo('redo', tab)}>
             <Icon name="redo" />
           </button>
           <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => setTheme(nextTheme[theme])} aria-label={themeLabel[theme]} title={`${themeLabel[theme]}. Click to change.`}>

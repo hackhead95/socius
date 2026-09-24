@@ -14,6 +14,7 @@ import { addDocs } from '../actions';
 import { plural, toast } from '../hooks';
 import { useCodingUi } from '../uiStore';
 import { Segmented } from '../ui';
+import { logFailure } from '../../../platform/errorlog';
 
 type Tab = 'files' | 'paste' | 'samples' | 'survey';
 
@@ -51,15 +52,16 @@ export function ImportDialog(props: { onClose: () => void; initialTab?: Tab }) {
   );
 }
 
-function finish(docs: TextDoc[], onDone: () => void) {
+function finish(docs: TextDoc[], onDone: () => void, samples = false) {
   if (!docs.length) return;
-  addDocs(docs);
+  addDocs(docs, samples ? 'Load sample interviews' : undefined);
   const nDocs = docs.filter((d) => d.kind === 'document').length;
   const nResp = docs.length - nDocs;
   const ui = useCodingUi.getState();
   if (nDocs) ui.set({ view: 'documents', activeDocId: docs.find((d) => d.kind === 'document')!.id });
   else ui.set({ view: 'responses' });
-  toast(`Imported ${[nDocs ? plural(nDocs, 'document') : '', nResp ? plural(nResp, 'response') : ''].filter(Boolean).join(' and ')}.`, 'success');
+  if (samples) toast(`Loaded ${plural(nDocs, 'sample interview')}.`, 'success');
+  else toast(`Imported ${[nDocs ? plural(nDocs, 'document') : '', nResp ? plural(nResp, 'response') : ''].filter(Boolean).join(' and ')}.`, 'success');
   onDone();
 }
 
@@ -99,6 +101,7 @@ function FilesTab({ onDone }: { onDone: () => void }) {
           errs.push(`${f.name}: PDF text cannot be read here. Copy the text into Paste text, or save it as .docx or .txt.`);
         } else errs.push(`${f.name}: this file type is not supported. Use .docx, .txt, .md, .csv or .xlsx.`);
       } catch (e: any) {
+        logFailure('coding', e, { file: f.name, op: 'import document' });
         errs.push(`${f.name}: ${e?.message ?? 'could not be read'}`);
       }
     }
@@ -350,16 +353,25 @@ function PasteTab({ onDone }: { onDone: () => void }) {
   );
 }
 
+/** Sample interviews not loaded yet (by name): ticked when the chooser opens. */
+export function samplesToTick(docs: TextDoc[]): number[] {
+  const already = new Set(docs.filter((d) => d.kind === 'document').map((d) => d.name));
+  return sampleTranscripts.map((t, i) => (already.has(t.name) ? -1 : i)).filter((i) => i >= 0);
+}
+
 function SamplesTab({ onDone }: { onDone: () => void }) {
   const existing = useStore((s) => s.coding.docs);
-  const [chosen, setChosen] = useState<Set<number>>(() => new Set(sampleTranscripts.map((_, i) => i)));
+  // Every interview that is not loaded yet starts ticked, so "Load" is one click.
+  const [chosen, setChosen] = useState<Set<number>>(() => new Set(samplesToTick(useStore.getState().coding.docs)));
   if (!sampleTranscripts.length) {
     return <div className="cw-empty-small help">No sample interviews are bundled in this build. Import your own transcripts from Files or Paste text.</div>;
   }
   const already = new Set(existing.filter((d) => d.kind === 'document').map((d) => d.name));
+  const allLoaded = sampleTranscripts.every((t) => already.has(t.name));
   return (
     <div className="stack">
       <p className="help">Practice transcripts bundled with Socius. They are fictional and safe to experiment with.</p>
+      {allLoaded ? <div className="callout">All the sample interviews are already loaded. Tick one to load another copy.</div> : null}
       <div className="cw-sample-list">
         {sampleTranscripts.map((t, i) => (
           <label key={i} className="cw-sample">
@@ -397,6 +409,7 @@ function SamplesTab({ onDone }: { onDone: () => void }) {
             finish(
               [...chosen].sort((a, b) => a - b).map((i, k) => ({ id: newId('doc'), name: sampleTranscripts[i].name, kind: 'document' as const, text: normaliseText(sampleTranscripts[i].text), attributes: { ...sampleTranscripts[i].attributes }, createdAt: now + k })),
               onDone,
+              true,
             );
           }}
         >

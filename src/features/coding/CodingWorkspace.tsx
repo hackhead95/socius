@@ -19,6 +19,7 @@ import { ReliabilityView } from './ReliabilityView';
 import { MemosView } from './MemosView';
 import { CodingDialog } from './CodingDialog';
 import { MenuButton } from './ui';
+import { modKey } from '../../app/shortcuts';
 import './coding.css';
 
 const VIEWS: Array<{ id: CodingView; label: string }> = [
@@ -59,22 +60,7 @@ export function CodingWorkspace() {
     const l = undoCoding();
     toast(l ? `Undone: ${l}` : 'Nothing to undo in Text coding.', 'info');
   }, []);
-
-  // Ctrl/Cmd+Z undoes the last coding change while this tab is open (text fields keep their own undo).
-  // When Text coding has nothing to undo, the key passes through to the app (dataset undo).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return;
-      const t = e.target as HTMLElement | null;
-      if (t?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
-      if (!canUndo()) return;
-      e.preventDefault();
-      e.stopPropagation();
-      doUndo();
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [doUndo]);
+  // Ctrl/Cmd+Z and Edit > Undo follow the tab: here they undo coding changes (src/app/undo.ts).
 
   const closeLocal = useCallback(() => set({ dialog: null }), [set]);
   const empty = docs.length === 0;
@@ -106,7 +92,7 @@ export function CodingWorkspace() {
               { label: 'Coders...', onSelect: () => openLocalDialog('coders') },
             ]}
           />
-          <button className="btn btn-sm" disabled={!undoable} onClick={doUndo} title={undoable ? `Undo: ${undoLabel} (Ctrl+Z)` : 'Nothing to undo'}>
+          <button className="btn btn-sm" disabled={!undoable} onClick={doUndo} title={undoable ? `Undo: ${undoLabel} (${modKey()}+Z, or Edit > Undo)` : 'Nothing to undo in Text coding'}>
             Undo
           </button>
           <MenuButton
@@ -116,7 +102,7 @@ export function CodingWorkspace() {
               { label: 'Import documents...', onSelect: () => openLocalDialog('import', { tab: 'files' }) },
               { label: 'Paste text...', onSelect: () => openLocalDialog('import', { tab: 'paste' }) },
               { label: 'Import open-ended answers from dataset...', disabled: !dataset, onSelect: () => openLocalDialog('import', { tab: 'survey' }) },
-              { label: 'Sample interviews...', onSelect: () => openLocalDialog('import', { tab: 'samples' }) },
+              { label: 'Load sample interviews...', onSelect: () => openLocalDialog('load-samples') },
             ]}
           />
           <button className="btn btn-sm" onClick={() => openLocalDialog('auto-code')} disabled={!coding.codes.length} title={coding.codes.length ? 'Auto-code with keyword rules' : 'Auto-code with keyword rules: create a code first'}>
@@ -231,8 +217,8 @@ function Welcome({ hasDataset, offerExample }: { hasDataset: boolean; offerExamp
           <b>Open-ended answers</b>
           <span>{hasDataset ? 'One response per respondent from a string variable in your dataset, with their characteristics.' : 'Open a dataset first, then bring in the answers to an open question.'}</span>
         </button>
-        <button className="cw-welcome-card" onClick={() => openLocalDialog('import', { tab: 'samples' })}>
-          <b>Sample interviews</b>
+        <button className="cw-welcome-card" onClick={() => openLocalDialog('load-samples')}>
+          <b>Load sample interviews</b>
           <span>Practice on bundled fictional transcripts.</span>
         </button>
         <button className="cw-welcome-card" onClick={() => openLocalDialog('import', { tab: 'paste' })}>

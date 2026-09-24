@@ -124,3 +124,31 @@
 }
 .ai-pick-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .ai-pick-item { border: 1px solid var(--border); }
+
+/* Test connection: step-by-step checklist (ConnectionChecklist.tsx) */
+.ai-check { display: flex; flex-direction: column; gap: var(--space-2); }
+.ai-check-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ai-check-step { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--fs-sm); color: var(--text-2); }
+.ai-check-icon { flex: none; margin-top: 2px; color: var(--faint); }
+.ai-check-step[data-state='ok'] .ai-check-icon { color: var(--good); }
+.ai-check-step[data-state='fail'] .ai-check-icon { color: var(--bad); }
+.ai-check-step[data-state='warn'] .ai-check-icon { color: var(--warn); }
+.ai-check-step[data-state='running'] .ai-check-icon { color: var(--accent); }
+.ai-check-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ai-check-label { font-weight: 600; color: var(--text); }
+.ai-check-step[data-state='skip'] .ai-check-label, .ai-check-step[data-state='pending'] .ai-check-label { color: var(--muted); font-weight: 500; }
+.ai-check-detail { overflow-wrap: anywhere; }
+.ai-check-spin { animation: ai-check-spin 0.9s linear infinite; }
+@keyframes ai-check-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ai-check-spin { animation: none; } }
+.ai-check-error { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--fs-sm); }
+.ai-check-reason { margin: 0; color: var(--text); }
+.ai-check-actions, .ai-check-models { gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+.ai-check-models .select { max-width: 100%; min-width: 0; flex: 1 1 220px; }
+.ai-check-details .btn { margin-top: 6px; }
+.ai-key-warn { color: var(--warn); }
+
+/* "Details" link under an AI error (explanations, the assistant) */
+.ai-err-details { display: inline-flex; flex-direction: column; gap: 6px; align-items: flex-start; max-width: 100%; }
+.ai-err-details-box { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; width: 100%; }
+.ai-err-details-box .ai-preview-text { width: 100%; box-sizing: border-box; margin: 0; }

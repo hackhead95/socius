@@ -13,6 +13,7 @@ import { descendantIds } from '../../../lib/coding/tree';
 import { replaceCodebook } from '../actions';
 import { useOrderedCodes, saveAndReport, saveCsv, saveXlsx, toast, plural } from '../hooks';
 import { Segmented, Swatch } from '../ui';
+import { logFailure } from '../../../platform/errorlog';
 
 type Tab = 'segments' | 'report' | 'codebook';
 
@@ -35,6 +36,7 @@ export function ExportDialog(props: { onClose: () => void; initialTab?: Tab }) {
     try {
       await fn();
     } catch (e: any) {
+      logFailure('coding', e, { op: 'coding export' });
       toast(`Export failed: ${e?.message ?? 'unknown error'}`, 'error');
     } finally {
       setBusy(false);
@@ -187,7 +189,7 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
     if (updated.length) parts.push(`Updated ${plural(updated.length, 'existing variable')} (${listNames(updated)})`);
     if (added.length) parts.push(`${updated.length ? 'added' : 'Added'} ${plural(added.length, 'variable')} (${listNames(added)}) after ${ds.variables.find((v) => v.id === question)?.name}`);
     toast(
-      `${parts.join(' and ')}. 1 = mentioned, 0 = not mentioned, blank = no answer. Compare groups with Crosstabs (chi-square). Undo in the Edit menu reverts this.`,
+      `${parts.join(' and ')}. 1 = mentioned, 0 = not mentioned, blank = no answer. Compare groups with Crosstabs (chi-square). To take this back, go to Data View and use Edit > Undo.`,
       'success',
     );
     props.onClose();

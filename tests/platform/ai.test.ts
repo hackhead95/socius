@@ -6,6 +6,7 @@ import {
   stripThinking, subscribeAi, subscribeAiSettings, testAiConnection,
 } from '../../src/platform/ai';
 import { __resetCapabilityCache } from '../../src/platform/claude';
+import { __resetGeminiState } from '../../src/platform/ai-http';
 import * as host from '../../src/platform/host';
 import { WEBLLM_PROMPT_BUDGET_BYTES, __setWebLlmLoader } from '../../src/platform/ai-webllm';
 import { jsonResponse, memoryStorage } from './helpers';
@@ -13,6 +14,7 @@ import { jsonResponse, memoryStorage } from './helpers';
 let store: ReturnType<typeof memoryStorage>;
 
 beforeEach(() => {
+  __resetGeminiState();
   store = memoryStorage();
   vi.stubGlobal('localStorage', store);
   __resetCapabilityCache();
@@ -162,16 +164,37 @@ describe('asking', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('routes to Gemini with JSON mode and parses a fenced JSON reply', async () => {
-    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AIzaKEY', model: 'gemini-3.6-flash' } });
-    const f = vi.fn(async (_url: string, _init: RequestInit) => jsonResponse({ candidates: [{ content: { parts: [{ text: '```json\n{"codes":[{"name":"Water"}]}\n```' }] } }] }));
+  it('routes to Gemini (Interactions API) with JSON mode and parses a fenced JSON reply', async () => {
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: ' AQ.Ab8RN6Lkey-for-tests_0123456789abcdefghij\n', model: 'gemini-3.6-flash' } });
+    const reply = { id: 'x', status: 'completed', steps: [{ type: 'thought', signature: 's' }, { type: 'model_output', content: [{ type: 'text', text: '```json\n{"codes":[{"name":"Water"}]}\n```' }] }] };
+    const f = vi.fn(async (_url: string, _init: RequestInit) => jsonResponse(reply));
     vi.stubGlobal('fetch', f);
     const out = await askAIJson<{ codes: Array<{ name: string }> }>('propose a codebook');
     expect(out.codes[0].name).toBe('Water');
     const [url, init] = f.mock.calls[0];
-    expect(url).toContain('/models/gemini-3.6-flash:generateContent');
-    expect((init.headers as Record<string, string>)['x-goog-api-key']).toBe('AIzaKEY');
-    expect(JSON.parse(init.body as string).generationConfig.responseMimeType).toBe('application/json');
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/interactions');
+    // The pasted key was cleaned (space and line break removed).
+    expect((init.headers as Record<string, string>)['x-goog-api-key']).toBe('AQ.Ab8RN6Lkey-for-tests_0123456789abcdefghij');
+    const body = JSON.parse(init.body as string);
+    expect(body).toMatchObject({ model: 'gemini-3.6-flash', input: 'propose a codebook', store: false, response_format: { mime_type: 'application/json' } });
+  });
+
+  it('Gemini automatic choice: Flash-Lite by default, Flash when preferred (not for JSON batches)', async () => {
+    const models = { models: ['gemini-3.8-flash', 'gemini-3.5-flash-lite'].map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) };
+    const sent: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      if (url.includes('/models?')) return jsonResponse(models);
+      sent.push(JSON.parse(init.body as string).model);
+      return jsonResponse({ id: 'x', status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: '{"ok":true}' }] }] });
+    }));
+    saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'AQ.pref-test-key-0123456789abcdefghijklmnop', model: '' } });
+    await askAI('explain');
+    expect(providerLabel('gemini')).toBe('Google Gemini (gemini-3.5-flash-lite)');
+    saveAiSettings({ gemini: { apiKey: 'AQ.pref-test-key-0123456789abcdefghijklmnop', model: 'auto-flash' } });
+    await askAI('explain');
+    await askAIJson('batch');
+    expect(sent).toEqual(['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']);
+    expect(providerLabel('gemini')).toBe('Google Gemini (gemini-3.8-flash)');
   });
 
   it('routes to an OpenAI-compatible service and strips thinking from text', async () => {
@@ -184,7 +207,7 @@ describe('asking', () => {
 
   it('invalid JSON from a provider becomes invalid_json', async () => {
     saveAiSettings({ provider: 'gemini', gemini: { apiKey: 'k', model: 'gemini-3.6-flash' } });
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ candidates: [{ content: { parts: [{ text: 'Sorry, no.' }] } }] })));
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ id: 'x', status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: 'Sorry, no.' }] }] })));
     await expect(askAIJson('x')).rejects.toMatchObject({ code: 'invalid_json' });
   });
 });
@@ -234,7 +257,11 @@ describe('Claude artifact path (unchanged)', () => {
 
 describe('messages', () => {
   it('has a plain-language message for every stable code, with no em-dashes', () => {
-    const codes = ['not_configured', 'invalid_key', 'rate_limited', 'network', 'cancelled', 'invalid_json', 'webgpu_unavailable', 'model_download_failed', 'unavailable', 'not_granted', 'too_large', 'bad_model', 'bad_request', 'blocked'];
+    const codes = [
+      'not_configured', 'invalid_key', 'rate_limited', 'network', 'cancelled', 'invalid_json', 'webgpu_unavailable', 'model_download_failed', 'unavailable', 'not_granted', 'too_large', 'bad_model', 'bad_request', 'blocked',
+      'offline', 'timeout', 'overloaded', 'region', 'api_disabled', 'referrer_blocked', 'key_restricted', 'key_suspended', 'key_not_accepted', 'bad_key_format', 'permission', 'no_free_quota', 'payment_required', 'max_tokens',
+      'empty_reply', 'recitation', 'malformed_call', 'endpoint_missing',
+    ];
     const msgs = codes.map(aiErrorMessage);
     expect(new Set(msgs).size).toBe(codes.length);
     for (const m of msgs) expect(m).not.toMatch(/—/);
@@ -242,5 +269,16 @@ describe('messages', () => {
     expect(aiErrorMessage('webgpu_unavailable')).toMatch(/Chrome or Edge/);
     expect(aiErrorText({ code: 'bad_model', detail: 'model x not found' })).toContain('The service said: model x not found');
     expect(aiErrorText({ code: 'invalid_key', detail: 'secret' })).not.toContain('secret');
+    // Gemini specifics: the website pattern, daily vs per-minute limits, models tried, old AIza keys.
+    expect(aiErrorMessage('referrer_blocked')).toContain('https://hackhead95.github.io/*');
+    expect(aiErrorMessage('region')).toContain('User location is not supported');
+    expect(aiErrorMessage('api_disabled')).toContain('Google AI Studio');
+    expect(aiErrorText({ code: 'rate_limited', daily: true, keyKind: 'aq' })).toMatch(/daily allowance.*midnight Pacific time/);
+    expect(aiErrorText({ code: 'rate_limited', daily: true, host: 'openrouter.ai' })).not.toMatch(/Pacific|Google/);
+    expect(aiErrorMessage('local_forbidden')).toContain('OLLAMA_ORIGINS');
+    expect(aiErrorText({ code: 'rate_limited', perMinute: true, retryAfterMs: 21_000 })).toBe('The free per-minute limit was reached. Wait a minute, then try again. The service asked to wait 21 seconds.');
+    expect(aiErrorText({ code: 'no_free_quota', tried: ['gemini-3.8-flash', 'gemini-3.5-flash-lite'] })).toContain('Models tried: gemini-3.8-flash, gemini-3.5-flash-lite.');
+    expect(aiErrorText({ code: 'invalid_key', keyKind: 'aiza' })).toContain('retiring older keys');
+    expect(aiErrorText({ code: 'network', host: 'generativelanguage.googleapis.com' })).toContain('(Address: generativelanguage.googleapis.com.)');
   });
 });

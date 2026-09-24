@@ -6,6 +6,7 @@ import { selectCasesTransform, transformLogItem, weightCases, type TransformResu
 import { Modal } from '../../ui/Modal';
 import { VarMeasureIcon } from '../../ui/MeasureIcon';
 import { Icon } from '../../ui/Icon';
+import { logFailure } from '../../platform/errorlog';
 
 /** Apply a transformation: undoable dataset change + quiet log entry + summary toast. */
 export function applyTransform(res: TransformResult) {
@@ -70,6 +71,7 @@ export function tryRun(fn: () => void, setError: (s: string | null) => void): bo
     setError(null);
     return true;
   } catch (e) {
+    logFailure('transform', e);
     setError(e instanceof Error ? e.message : String(e));
     return false;
   }

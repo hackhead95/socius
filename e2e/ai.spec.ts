@@ -4,8 +4,7 @@
 // supported" path is exercised here.)
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { loadSampleFromWelcome, openWithSample } from './helpers';
-
-const GEMINI = 'https://generativelanguage.googleapis.com/**';
+import { GEMINI, googleErrorReply, interactionReply, modelsReply, promptOf } from './gemini-mock';
 
 async function ready(page: Page) {
   await openWithSample(page);
@@ -20,9 +19,6 @@ async function openSettingsFromAiMenu(page: Page) {
   return dlg;
 }
 
-function geminiReply(text: string) {
-  return { candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason: 'STOP' }] };
-}
 
 /** No WebGPU, as on many browsers, so the on-device option shows its explanation deterministically. */
 async function noWebGpu(page: Page) {
@@ -38,19 +34,15 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   const listed: string[] = [];
   await page.route(GEMINI, async (route: Route) => {
     const req = route.request();
-    const cors = { 'Access-Control-Allow-Origin': '*' };
     if (req.method() === 'GET' && req.url().includes('/models?')) {
-      // The model list: Socius picks the newest stable Flash model the key can use.
+      // The model list: Socius picks the newest Flash-Lite (else Flash) model the key can use.
       listed.push(req.headers()['x-goog-api-key'] ?? '');
-      const names = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.6-flash-image', 'gemini-3.6-pro'];
-      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ models: names.map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) }) });
+      return route.fulfill(modelsReply(['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.6-flash-image', 'gemini-3.6-pro']));
     }
     seen.push({ url: req.url(), key: req.headers()['x-goog-api-key'], body: req.postDataJSON() });
-    if (mode === 'badkey')
-      return route.fulfill({ status: 400, headers: cors, contentType: 'application/json', body: JSON.stringify({ error: { code: 400, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [{ reason: 'API_KEY_INVALID' }] } }) });
-    if (mode === 'quota')
-      return route.fulfill({ status: 429, headers: cors, contentType: 'application/json', body: JSON.stringify({ error: { code: 429, message: 'Resource has been exhausted', status: 'RESOURCE_EXHAUSTED' } }) });
-    return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(geminiReply('OK')) });
+    if (mode === 'badkey') return route.fulfill(googleErrorReply(400, 'INVALID_ARGUMENT', 'API key not valid. Please pass a valid API key.', [{ reason: 'API_KEY_INVALID' }]));
+    if (mode === 'quota') return route.fulfill(googleErrorReply(429, 'RESOURCE_EXHAUSTED', 'Resource has been exhausted'));
+    return route.fulfill(interactionReply([{ thoughtSignature: 'sig' }, { text: 'OK' }], false));
   });
   await ready(page);
   const dlg = await openSettingsFromAiMenu(page);
@@ -72,29 +64,37 @@ test('AI settings: open from Help, Gemini key guide, privacy notice, test connec
   await expect(dlg.locator('.ai-privacy')).toHaveAttribute('data-privacy', 'google');
   await expect(dlg.locator('.ai-privacy')).toContainText('human reviewers may read it');
   await expect(dlg.locator('.ai-privacy')).toContainText('anonymise');
-  await expect(dlg.locator('#ai-gemini-model')).toHaveValue(''); // empty = automatic
+  await expect(dlg.locator('#ai-gemini-choice')).toHaveValue(''); // automatic (Flash-Lite first)
   const key = dlg.locator('#ai-gemini-key');
   await expect(key).toHaveAttribute('type', 'password');
-  await key.fill('AIza-e2e-key');
+  await key.fill('  "AIza-e2e-key"\n');
   await dlg.getByRole('button', { name: 'Show' }).click();
   await expect(key).toHaveAttribute('type', 'text');
   // Nothing is sent until Test connection is clicked.
   expect(seen).toHaveLength(0);
 
+  // The pasted key was cleaned (spaces, quotes, line break), and a key that does not look like
+  // Google's gets a gentle warning, but can still be tested.
+  await expect(key).toHaveValue('AIza-e2e-key');
+  await expect(dlg.locator('.ai-key-warn')).toContainText('12 characters');
+
   await dlg.getByRole('button', { name: 'Test connection' }).click();
   await expect(dlg.locator('.ai-test-result')).toContainText('Connected to gemini-3.6-flash');
+  await expect(dlg.locator('.ai-check-step[data-state="ok"]')).toHaveCount(5);
   expect(listed).toEqual(['AIza-e2e-key']);
   expect(seen).toHaveLength(1);
-  expect(seen[0].url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent');
+  expect(seen[0].url).toBe('https://generativelanguage.googleapis.com/v1beta/interactions');
+  expect(seen[0].body).toMatchObject({ model: 'gemini-3.6-flash', input: 'Reply with the single word OK.', store: false });
   expect(seen[0].key).toBe('AIza-e2e-key');
   expect(seen[0].url).not.toContain('AIza');
 
   mode = 'badkey';
   await dlg.getByRole('button', { name: 'Test connection' }).click();
-  await expect(dlg.locator('.ai-test-result .text-bad')).toContainText('did not accept the key');
+  await expect(dlg.locator('.ai-check-error')).toContainText('did not accept the key');
+  await expect(dlg.locator('.ai-test-result .text-bad')).toContainText('Not connected');
   mode = 'quota';
   await dlg.getByRole('button', { name: 'Test connection' }).click();
-  await expect(dlg.locator('.ai-test-result .text-bad')).toContainText('Too many AI requests');
+  await expect(dlg.locator('.ai-check-error')).toContainText('Too many AI requests');
 
   // The key is kept in this browser's localStorage only.
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('socius.ai') ?? '{}'));
@@ -134,11 +134,10 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
     const req = route.request();
     const body = req.postDataJSON();
     calls.push({ url: req.url(), body });
-    const prompt: string = body.contents[0].parts[0].text;
-    const cors = { 'Access-Control-Allow-Origin': '*' };
-    if (req.url().includes('streamGenerateContent')) {
-      const ev = (t: string) => `data: ${JSON.stringify(geminiReply(t))}\r\n\r\n`;
-      return route.fulfill({ status: 200, headers: cors, contentType: 'text/event-stream', body: ev('Residents describe irregular supply ') + ev('and reliance on tankers.') });
+    const prompt: string = promptOf(body);
+    if (body.stream) {
+      const chunks = ['Residents describe irregular supply ', 'and reliance on tankers.'];
+      return route.fulfill(interactionReply([{ text: chunks.join('') }], true, chunks));
     }
     if (/propose a codebook/.test(prompt)) {
       // Fenced JSON: the tolerant parser must cope.
@@ -146,11 +145,11 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
         { name: 'Civic infrastructure', parent: null, description: 'Municipal services', inclusion: '', exclusion: '', examples: ['water supply'] },
         { name: 'Water insecurity', parent: 'Civic infrastructure', description: 'Irregular supply', inclusion: '', exclusion: '', examples: [] },
       ] };
-      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(geminiReply('```json\n' + JSON.stringify(json) + '\n```')) });
+      return route.fulfill(interactionReply([{ text: '```json\n' + JSON.stringify(json) + '\n```' }], false));
     }
     const items = [...prompt.matchAll(/\{"id":"(r\d+)","text":"((?:[^"\\]|\\.)*)"\}/g)];
     const out = items.map((m) => ({ id: m[1], codes: /water/i.test(m[2]) ? ['water'] : [] }));
-    return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(geminiReply(JSON.stringify(out))) });
+    return route.fulfill(interactionReply([{ text: JSON.stringify(out) }], false));
   });
   await ready(page);
   await importChallenge(page);
@@ -172,7 +171,7 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
   await dlg.getByRole('button', { name: 'Suggest codes' }).click();
   await expect(dlg.locator('.cw-suggest')).toHaveCount(2);
   expect(calls).toHaveLength(1);
-  expect(calls[0].body.generationConfig.responseMimeType).toBe('application/json');
+  expect(calls[0].body.response_format).toEqual({ type: 'text', mime_type: 'application/json' });
   await dlg.getByRole('button', { name: 'Add 2 codes' }).click();
   await expect(page.locator('.cw-code[aria-level="2"]')).toHaveText(/Water insecurity/);
 
@@ -194,16 +193,14 @@ test('AI coding end to end against a mocked Gemini: suggest a codebook, suggest 
   await expect(page.locator('.cw-retrieve .ai-note')).toContainText('When you click Summarise this code');
   await page.locator('.cw-retrieve button', { hasText: 'Summarise this code' }).click();
   await expect(page.locator('.cw-ai-summary')).toContainText('Residents describe irregular supply and reliance on tankers.');
-  expect(calls[calls.length - 1].url).toContain(':streamGenerateContent?alt=sse');
+  expect(calls[calls.length - 1].body.stream).toBe(true);
 });
 
 test('AI errors from Gemini show a friendly message in the coding dialog', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('socius.ai', JSON.stringify({ provider: 'gemini', gemini: { apiKey: 'wrong', model: 'gemini-3.6-flash' } }));
   });
-  await page.route(GEMINI, (route) =>
-    route.fulfill({ status: 403, headers: { 'Access-Control-Allow-Origin': '*' }, contentType: 'application/json', body: JSON.stringify({ error: { code: 403, message: 'Permission denied', status: 'PERMISSION_DENIED' } }) }),
-  );
+  await page.route(GEMINI, (route) => route.fulfill(googleErrorReply(403, 'PERMISSION_DENIED', 'Permission denied')));
   await ready(page);
   await importChallenge(page);
   await page.locator('.cw-toolbar .cw-menu-trigger', { hasText: 'AI suggestions' }).click();
@@ -235,7 +232,15 @@ test('Help menu and top bar: user guide, feedback and About links', async ({ pag
     return url;
   };
   expect(await viaHelp('User guide')).toBe(`${baseURL}/guide/`);
-  expect(await viaHelp('Send feedback or report a problem')).toBe('https://github.com/hackhead95/socius/issues/new/choose');
+  // Feedback first offers the error report (a small dialog), then opens the bug form with a summary filled in.
+  await page.getByRole('menuitem', { name: 'Help', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Send feedback or report a problem' }).click();
+  const fb = page.getByRole('dialog', { name: 'Send feedback or report a problem' });
+  const fbPopup = page.waitForEvent('popup');
+  await fb.getByRole('button', { name: 'Open the feedback form' }).click();
+  const fbPage = await fbPopup;
+  expect(fbPage.url()).toMatch(/^https:\/\/github\.com\/hackhead95\/socius\/issues\/new\?template=bug_report\.yml&/);
+  await fbPage.close();
 
   await page.getByRole('menuitem', { name: 'Help', exact: true }).click();
   await page.getByRole('menuitem', { name: 'About Socius' }).click();

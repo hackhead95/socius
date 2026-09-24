@@ -123,7 +123,8 @@ test('results, help topics and coded text', async ({ page, context, baseURL }) =
 
   // Coded text: keyword in context.
   await page.getByRole('menuitem', { name: 'Text coding', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Load sample interviews' }).click();
+  await page.getByRole('menuitem', { name: 'Load sample interviews...' }).click();
+  await page.locator('.modal').getByRole('button', { name: /^Load 3 interviews$/ }).click();
   await expect(page.locator('.toast').filter({ hasText: 'sample interview' }).first()).toBeVisible();
   await page.keyboard.press('Control+k');
   await input(page).fill('water');

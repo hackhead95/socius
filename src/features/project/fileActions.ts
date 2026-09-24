@@ -11,6 +11,7 @@ import { loadSampleDataset, samples } from '../../samples';
 import { useUi } from '../../app/ui-store';
 import { parseProject, projectFileName, serializeProject, type ProjectState } from './projectFile';
 import { addRecent, clearSession, loadRecent } from './persistence';
+import { logFailure, logSlow, logWarn } from '../../platform/errorlog';
 
 export const DATA_ACCEPT = '.sav,.zsav,.csv,.tsv,.txt,.tab,.dat,.xlsx,.xlsm,.zip';
 export const PROJECT_ACCEPT = '.json,.socius.json,application/json,.zip';
@@ -93,8 +94,10 @@ export async function importBytes(name: string, bytes: Uint8Array, opts: ImportO
   const ui = useUi.getState();
   const st = useStore.getState();
   ui.setBusy(`Opening ${name}...`);
+  const t0 = performance.now();
   try {
     const res = await importFile(name, bytes, opts);
+    logSlow('import', 'open data file', performance.now() - t0, { file: name });
     const ds = { ...res.dataset, name: res.dataset.name || stripExt(name) };
     const shown = hideWarning ? res.warnings.filter((w) => !hideWarning(w)) : res.warnings;
     activateDataset(ds, {
@@ -104,6 +107,7 @@ export async function importBytes(name: string, bytes: Uint8Array, opts: ImportO
     if (shown.length > 4) st.toast(`${shown.length - 4} more notes about this file were not shown.`, 'info');
     return res.warnings;
   } catch (e) {
+    logFailure('import', e, { file: name, op: 'open data file' });
     st.toast(e instanceof Error ? e.message : `Could not open ${name}.`, 'error');
     return null;
   } finally {
@@ -125,7 +129,8 @@ export async function openDataFile(file?: File | null): Promise<void> {
   let bytes: Uint8Array;
   try {
     bytes = await readBytes(f);
-  } catch {
+  } catch (e) {
+    logFailure('import', e, { file: f.name, op: 'read file' });
     st.toast(`Could not read ${f.name}.`, 'error');
     return;
   }
@@ -140,12 +145,14 @@ export async function openDataFile(file?: File | null): Promise<void> {
       name = inner.name;
       bytes = inner.bytes;
     } catch (e) {
+      logFailure('import', e, { file: f.name, op: 'unzip' });
       st.toast(e instanceof Error ? e.message : `Could not open ${f.name}.`, 'error');
       return;
     }
   }
   const why = unopenableReason(name, bytes.subarray(0, 8192));
   if (why) {
+    logWarn('import', why, { file: name, op: 'unsupported file' });
     st.toast(why, 'error');
     return;
   }
@@ -218,6 +225,7 @@ export async function openProjectFile(file?: File | null): Promise<void> {
       text = new TextDecoder().decode(inner.bytes);
     } else text = new TextDecoder().decode(bytes);
   } catch (e) {
+    logFailure('import', e, { file: f.name, op: 'read project' });
     st.toast(e instanceof Error && /zip/.test(e.message) ? e.message : `Could not read ${f.name}.`, 'error');
     return;
   }
@@ -230,6 +238,7 @@ async function openProjectText(name: string, text: string): Promise<void> {
   try {
     p = parseProject(text);
   } catch (e) {
+    logFailure('import', e, { file: name, op: 'open project' });
     st.toast(e instanceof Error ? e.message : 'This project could not be opened.', 'error');
     return;
   }
@@ -256,7 +265,10 @@ function reportSave(outcome: Awaited<ReturnType<typeof saveFile>>, what: string)
     return true;
   }
   if (outcome === 'declined') st.toast('Saving was cancelled.', 'info');
-  else st.toast(`Could not save ${what}. Your browser blocked the download.`, 'error');
+  else {
+    logWarn('export', `Download failed (${outcome})`, { file: what, op: 'save file' });
+    st.toast(`Could not save ${what}. Your browser blocked the download.`, 'error');
+  }
   return false;
 }
 
@@ -267,7 +279,8 @@ export async function saveProject(): Promise<void> {
   let text: string;
   try {
     text = serializeProject(state);
-  } catch {
+  } catch (e) {
+    logFailure('export', e, { op: 'save project' });
     st.toast('The project is too large to save as a single file.', 'error');
     return;
   }
@@ -300,6 +313,7 @@ export async function exportSavFile(kind: 'sav' | 'zsav'): Promise<void> {
       for (const w of warnings.slice(0, 3)) st.toast(w, 'warning');
     }
   } catch (e) {
+    logFailure('export', e, { op: `save ${kind}` });
     st.toast(e instanceof Error ? e.message : 'Could not write the SPSS file.', 'error');
   }
 }
@@ -312,6 +326,7 @@ export async function exportCsvFile(values: 'codes' | 'labels'): Promise<void> {
     const file = `${baseName(ds)}${values === 'labels' ? '_labels' : ''}.csv`;
     reportSave(await saveFile(file, text, 'text/csv'), file);
   } catch (e) {
+    logFailure('export', e, { op: 'save csv' });
     useStore.getState().toast(e instanceof Error ? e.message : 'Could not write the CSV file.', 'error');
   }
 }
@@ -326,6 +341,7 @@ export async function exportXlsxFile(values: 'codes' | 'labels'): Promise<void> 
     const file = `${baseName(ds)}${values === 'labels' ? '_labels' : ''}.xlsx`;
     reportSave(await saveFile(file, blob, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), file);
   } catch (e) {
+    logFailure('export', e, { op: 'save xlsx' });
     st.toast(e instanceof Error ? e.message : 'Could not write the Excel file.', 'error');
   } finally {
     useUi.getState().setBusy(null);
@@ -358,6 +374,7 @@ export async function exportCodebook(format: 'xlsx' | 'csv'): Promise<void> {
     const file = `${baseName(ds)}_codebook.xlsx`;
     reportSave(await saveFile(file, blob, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), file);
   } catch (e) {
+    logFailure('export', e, { op: `codebook ${format}` });
     st.toast(e instanceof Error ? e.message : 'Could not export the codebook.', 'error');
   }
 }
@@ -376,6 +393,7 @@ export async function loadSample(opts: { confirm?: boolean; quiet?: boolean } = 
     activateDataset(ds, { sample: true, message: opts.quiet ? undefined : `Loaded ${ds.name}.` });
     return true;
   } catch (e) {
+    logFailure('import', e, { op: 'load sample' });
     if (!opts.quiet) st.toast(e instanceof Error ? e.message : 'The sample survey could not be loaded.', 'error');
     return false;
   } finally {

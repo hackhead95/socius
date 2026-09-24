@@ -52,6 +52,27 @@ export function trimHistory(states: Dataset[], current: Dataset | null, budget =
   return states;
 }
 
+/** A result removed from the Output tab, remembered so Undo (in the Output tab) can bring it back. */
+export interface OutputDeletion {
+  item: OutputItem;
+  /** Its position in the output list when it was removed. */
+  index: number;
+}
+
+const OUTPUT_UNDO_LIMIT = 20;
+
+/**
+ * Optional names of dataset changes, keyed by the dataset state the change produced (so Edit > Undo
+ * can say "Undo Recode"). Changes without a name are described by comparing the two states
+ * (src/app/undo.ts). A WeakMap, so it never keeps old states alive.
+ */
+const changeLabels = new WeakMap<Dataset, string>();
+
+/** The name given to the change that produced `ds` (see `mutateDataset`'s `label`), if any. */
+export function changeLabelOf(ds: Dataset | null | undefined): string | undefined {
+  return ds ? changeLabels.get(ds) : undefined;
+}
+
 export interface AppState {
   dataset: Dataset | null;
   /** Undo/redo stacks of previous dataset states. */
@@ -59,6 +80,9 @@ export interface AppState {
   future: Dataset[];
 
   outputs: OutputItem[];
+  /** Results deleted from Output (newest last), for Undo in the Output tab; and deletions undone, for Redo. */
+  outputUndo: OutputDeletion[];
+  outputRedo: OutputDeletion[];
   coding: CodingProject;
 
   tab: MainTab;
@@ -71,8 +95,11 @@ export interface AppState {
 
   // dataset
   setDataset: (ds: Dataset | null) => void;
-  /** Apply a change; `fn` returns the new dataset (build it immutably). Records undo history. */
-  mutateDataset: (fn: (ds: Dataset) => Dataset, opts?: { noHistory?: boolean }) => void;
+  /**
+   * Apply a change; `fn` returns the new dataset (build it immutably). Records undo history.
+   * `label` names the change for Edit > Undo / Redo ("Recode", "Rename age"); optional.
+   */
+  mutateDataset: (fn: (ds: Dataset) => Dataset, opts?: { noHistory?: boolean; label?: string }) => void;
   setCell: (row: number, varId: string, value: number | string) => void;
   updateVariable: (varId: string, patch: Partial<Variable>) => void;
   /** Insert a variable (with optional column data) at index (default: end). */
@@ -89,8 +116,13 @@ export interface AppState {
   // output
   /** Append an output item. By default it is focused and the Output tab opens; pass `{ focus: false }` to log quietly. */
   addOutput: (item: OutputItem, opts?: { focus?: boolean }) => void;
+  /** Remove one result; Undo in the Output tab brings it back (`restoreOutput`). */
   removeOutput: (id: string) => void;
   clearOutputs: () => void;
+  /** Bring back the last deleted result. Returns false when there is none. */
+  restoreOutput: () => boolean;
+  /** Delete again the result that `restoreOutput` brought back. Returns false when there is none. */
+  redeleteOutput: () => boolean;
   moveOutput: (id: string, toIndex: number) => void;
 
   // coding
@@ -117,6 +149,8 @@ export const useStore = create<AppState>((set, get) => ({
   past: [],
   future: [],
   outputs: [],
+  outputUndo: [],
+  outputRedo: [],
   coding: emptyCodingProject(),
   tab: 'data',
   dialog: null,
@@ -132,6 +166,7 @@ export const useStore = create<AppState>((set, get) => ({
     const next = fn(cur);
     if (next === cur) return;
     const withVersion = next.version === cur.version ? { ...next, version: cur.version + 1 } : next;
+    if (opts?.label) changeLabels.set(withVersion, opts.label);
     if (opts?.noHistory) set({ dataset: withVersion });
     else set({ dataset: withVersion, past: trimHistory([...get().past, cur].slice(-HISTORY_LIMIT), withVersion), future: [] });
   },
@@ -273,8 +308,42 @@ export const useStore = create<AppState>((set, get) => ({
         ? { outputs: [...get().outputs, item] }
         : { outputs: [...get().outputs, item], focusOutputId: item.id, tab: 'output' },
     ),
-  removeOutput: (id) => set({ outputs: get().outputs.filter((o) => o.id !== id) }),
-  clearOutputs: () => set({ outputs: [] }),
+  removeOutput: (id) => {
+    const outputs = get().outputs;
+    const index = outputs.findIndex((o) => o.id === id);
+    if (index < 0) return;
+    set({
+      outputs: outputs.filter((o) => o.id !== id),
+      outputUndo: [...get().outputUndo, { item: outputs[index], index }].slice(-OUTPUT_UNDO_LIMIT),
+      outputRedo: [],
+    });
+  },
+  clearOutputs: () => set({ outputs: [], outputUndo: [], outputRedo: [] }),
+  restoreOutput: () => {
+    const { outputs, outputUndo, outputRedo } = get();
+    // Skip entries already brought back another way (the Output tab's own "Undo" toast).
+    const stack = outputUndo.filter((d) => !outputs.some((o) => o.id === d.item.id));
+    const last = stack[stack.length - 1];
+    if (!last) {
+      if (stack.length !== outputUndo.length) set({ outputUndo: stack });
+      return false;
+    }
+    const outs = outputs.slice();
+    outs.splice(Math.min(last.index, outs.length), 0, last.item);
+    set({ outputs: outs, outputUndo: stack.slice(0, -1), outputRedo: [...outputRedo, last], focusOutputId: last.item.id });
+    return true;
+  },
+  redeleteOutput: () => {
+    const { outputs, outputUndo, outputRedo } = get();
+    const last = outputRedo[outputRedo.length - 1];
+    if (!last || !outputs.some((o) => o.id === last.item.id)) {
+      if (last) set({ outputRedo: [] });
+      return false;
+    }
+    const index = outputs.findIndex((o) => o.id === last.item.id);
+    set({ outputs: outputs.filter((o) => o.id !== last.item.id), outputRedo: outputRedo.slice(0, -1), outputUndo: [...outputUndo, { item: last.item, index }] });
+    return true;
+  },
   moveOutput: (id, toIndex) => {
     const outs = get().outputs.slice();
     const from = outs.findIndex((o) => o.id === id);
@@ -298,3 +367,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
 }));
+
+// Opening a project or starting fresh replaces the data and the output together (with a fresh undo
+// history); deleted results of the previous work must not come back into the new one.
+useStore.subscribe((s, prev) => {
+  if (s.outputs !== prev.outputs && s.dataset !== prev.dataset && s.past.length === 0 && (s.outputUndo.length || s.outputRedo.length)) {
+    useStore.setState({ outputUndo: [], outputRedo: [] });
+  }
+});

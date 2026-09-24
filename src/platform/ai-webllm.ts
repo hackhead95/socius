@@ -18,8 +18,10 @@ export interface WebLlmModelChoice {
   detail: string;
   /** Approximate download, for the user. */
   download: string;
-  /** Graphics memory needed, from the package's model list. */
+  /** Graphics memory needed, from the package's model list (16-bit files). */
   vramMB: number;
+  /** Graphics memory needed by the 32-bit fallback files. */
+  vramMB32: number;
 }
 
 // Ids checked against prebuiltAppConfig in @mlc-ai/web-llm 0.2.85 (tests/platform/webllm.test.ts).
@@ -31,6 +33,7 @@ export const WEBLLM_MODELS: WebLlmModelChoice[] = [
     detail: 'Qwen 2.5, 1.5 billion parameters. Works on most laptops with a recent browser.',
     download: 'about 1 GB',
     vramMB: 1630,
+    vramMB32: 1889,
   },
   {
     id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
@@ -39,6 +42,7 @@ export const WEBLLM_MODELS: WebLlmModelChoice[] = [
     detail: 'Llama 3.2, 3 billion parameters. Slower, needs a computer with more graphics memory.',
     download: 'about 1.8 GB',
     vramMB: 2264,
+    vramMB32: 2952,
   },
 ];
 
@@ -76,12 +80,35 @@ function loadModule(): Promise<WebLlmModule> {
 
 // ---------- WebGPU detection ----------
 
+/** WebLLM's own minimum adapter limits (detectGPUDevice in @mlc-ai/web-llm 0.2.x). */
+const MIN_LIMITS: Array<[string, number, string]> = [
+  ['maxBufferSize', 1 << 28, 'buffer size'],
+  ['maxStorageBufferBindingSize', 1 << 27, 'storage buffer size'],
+  ['maxComputeWorkgroupStorageSize', 32 << 10, 'workgroup memory'],
+  ['maxStorageBuffersPerShaderStage', 10, 'storage buffers per shader'],
+];
+
 export interface WebGpuStatus {
   ok: boolean;
-  /** 'no_api': the browser has no WebGPU; 'no_adapter': it has, but no usable graphics chip; 'build': not in this build. */
-  reason: 'no_api' | 'no_adapter' | 'build' | null;
+  /**
+   * Why not:
+   * - 'no_api': this browser has no WebGPU at all (older browsers, Firefox and Safari on many systems).
+   * - 'insecure': the page is not a secure (https or localhost) page, where browsers hide WebGPU.
+   * - 'no_adapter': the browser has WebGPU but found no graphics chip it may use (hardware acceleration
+   *   turned off, the graphics driver on the browser's block list, or turned off by the organisation).
+   * - 'limits': there is a graphics chip, but it is too limited for the model.
+   * - 'error': asking for the graphics chip failed.
+   * - 'build': the on-device option is not part of this build.
+   */
+  reason: 'no_api' | 'insecure' | 'no_adapter' | 'limits' | 'error' | 'build' | null;
   /** 16-bit float shaders available (picks the q4f16 model files). */
   f16: boolean;
+  /** Only a software ("fallback") adapter: it works, but runs on the processor and is very slow. */
+  software?: boolean;
+  /** Graphics chip vendor and architecture, when the browser says (for diagnostics). */
+  adapter?: string;
+  /** Technical detail for 'limits' and 'error'. */
+  detail?: string;
 }
 
 let gpuPromise: Promise<WebGpuStatus> | null = null;
@@ -90,18 +117,67 @@ export function detectWebGpu(): Promise<WebGpuStatus> {
   if (!gpuPromise) {
     gpuPromise = (async (): Promise<WebGpuStatus> => {
       if (!WEBLLM_IN_BUILD) return { ok: false, reason: 'build', f16: false };
-      const gpu = (globalThis as any).navigator?.gpu;
-      if (!gpu || typeof gpu.requestAdapter !== 'function') return { ok: false, reason: 'no_api', f16: false };
-      try {
-        const adapter = await gpu.requestAdapter();
-        if (!adapter) return { ok: false, reason: 'no_adapter', f16: false };
-        return { ok: true, reason: null, f16: !!adapter.features?.has?.('shader-f16') };
-      } catch {
-        return { ok: false, reason: 'no_adapter', f16: false };
+      const g = globalThis as any;
+      const gpu = g.navigator?.gpu;
+      if (!gpu || typeof gpu.requestAdapter !== 'function') {
+        // Browsers only offer WebGPU on secure pages (https or localhost).
+        return { ok: false, reason: g.isSecureContext === false ? 'insecure' : 'no_api', f16: false };
       }
+      let adapter: any;
+      try {
+        adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' });
+      } catch (e: any) {
+        return { ok: false, reason: 'error', f16: false, detail: String(e?.message ?? e) };
+      }
+      if (!adapter) return { ok: false, reason: 'no_adapter', f16: false };
+      const info = adapter.info ?? {};
+      const name = [info.vendor, info.architecture, info.description].filter((x: unknown) => typeof x === 'string' && x).join(' ');
+      const base: WebGpuStatus = { ok: true, reason: null, f16: !!adapter.features?.has?.('shader-f16') };
+      if (name) base.adapter = name;
+      if (info.isFallbackAdapter === true || adapter.isFallbackAdapter === true) base.software = true;
+      const limits = adapter.limits;
+      if (limits) {
+        const short = MIN_LIMITS.filter(([k, min]) => typeof limits[k] === 'number' && limits[k] < min);
+        if (short.length) return { ...base, ok: false, reason: 'limits', detail: short.map(([k, min, label]) => `${label} ${limits[k]} < ${min}`).join(', ') };
+      }
+      return base;
     })();
   }
   return gpuPromise;
+}
+
+/**
+ * Free space the browser will give this site, in MB (quota minus usage), or null when it does not say.
+ * A private window often has a tiny quota.
+ */
+export async function storageFreeMB(): Promise<number | null> {
+  try {
+    const est = await (globalThis as any).navigator?.storage?.estimate?.();
+    if (!est || typeof est.quota !== 'number') return null;
+    return Math.max(0, Math.round((est.quota - (est.usage ?? 0)) / 1e6));
+  } catch {
+    return null;
+  }
+}
+
+/** Ask the browser to keep the downloaded model when disk space runs low (best effort, never throws). */
+export async function requestPersistentStorage(): Promise<boolean> {
+  try {
+    return !!(await (globalThis as any).navigator?.storage?.persist?.());
+  } catch {
+    return false;
+  }
+}
+
+/** Memory this computer reports (Chrome and Edge only, rounded, at most 8 or so), or null. */
+export function deviceMemoryGB(): number | null {
+  const m = (globalThis as any).navigator?.deviceMemory;
+  return typeof m === 'number' && m > 0 ? m : null;
+}
+
+/** Suggest the smaller model when this computer reports little memory. */
+export function suggestSmallerModel(choiceId: string, memGB = deviceMemoryGB()): boolean {
+  return memGB !== null && memGB < 8 && webLlmChoice(choiceId).id !== WEBLLM_MODELS[0].id;
 }
 
 /** The model id to load on this computer for a chosen model. */
@@ -109,6 +185,12 @@ export async function resolveModelId(choiceId: string): Promise<string> {
   const c = webLlmChoice(choiceId);
   const gpu = await detectWebGpu();
   return gpu.f16 ? c.id : c.id32;
+}
+
+/** After the engine reported that 16-bit shaders are missing after all: use the 32-bit model files from now on. */
+async function disableF16(): Promise<void> {
+  const gpu = await detectWebGpu();
+  gpuPromise = Promise.resolve({ ...gpu, f16: false });
 }
 
 // ---------- load state (for progress bars) ----------
@@ -139,6 +221,20 @@ function setState(patch: Partial<WebLlmState>) {
   for (const l of [...listeners]) l();
 }
 
+/** What the progress bar is doing, in plain words (the package reports downloading, then preparing the graphics chip). */
+export function describeWebLlmProgress(s: Pick<WebLlmState, 'progress' | 'text'>): string {
+  const pct = Math.round(Math.max(0, Math.min(1, s.progress)) * 100);
+  const t = s.text ?? '';
+  if (/^Fetching param cache/i.test(t)) {
+    const mb = t.match(/(\d+)\s*MB fetched/i);
+    return `Downloading the model: ${pct}%${mb ? ` (${mb[1]} MB so far)` : ''}`;
+  }
+  if (/^Loading model from cache/i.test(t)) return `Loading the model from this browser's storage: ${pct}%`;
+  if (/shader/i.test(t)) return `Preparing the graphics chip: ${pct}%`;
+  if (/^Finish loading/i.test(t)) return 'Almost ready…';
+  return 'Starting: fetching the model settings and program…';
+}
+
 // ---------- engine ----------
 
 type EngineLike = Pick<MLCEngine, 'reload' | 'unload' | 'interruptGenerate' | 'chat'>;
@@ -151,10 +247,19 @@ function isAbortError(e: any): boolean {
   return e?.name === 'AbortError' || /abort/i.test(String(e?.message ?? ''));
 }
 
-function loadErrorCode(e: any): string {
-  const msg = `${e?.name ?? ''} ${e?.message ?? ''}`;
-  if (/quota|storage|space/i.test(msg)) return 'model_download_failed';
-  if (/webgpu|adapter|device/i.test(msg) && !/fetch|network|download/i.test(msg)) return 'webgpu_unavailable';
+/**
+ * Stable error code for a failed model load. The package's own messages are technical; these codes
+ * map to plain-language messages in aiErrorMessage (src/platform/ai.ts).
+ */
+export function loadErrorCode(e: any): string {
+  const name = String(e?.name ?? '');
+  const msg = `${name} ${e?.message ?? ''}`;
+  if (name === 'ShaderF16SupportError' || /shader-f16/i.test(msg)) return 'webgpu_f16';
+  if (name === 'WebGPUNotAvailableError' || name === 'WebGPUNotFoundError') return 'webgpu_unavailable';
+  if (name === 'QuotaExceededError' || /quota|not enough (storage|space)|disk (is )?full|storage.*(full|exceed)/i.test(msg)) return 'model_storage_full';
+  if (name === 'DeviceLostError' || /device (was )?lost|out of memory|\boom\b|allocation failed/i.test(msg)) return 'webgpu_out_of_memory';
+  if (/cannot fetch|failed to fetch|networkerror|network error|load failed|request failed|err_|fetch|download|status (4|5)\d\d|\b(403|404|429|5\d\d)\b/i.test(msg)) return 'model_download_failed';
+  if (/webgpu|compatible gpu|adapter|requestdevice|cannot initialize runtime|maxbuffersize|maxstoragebuffer|featuresupport/i.test(msg)) return 'webgpu_unavailable';
   return 'model_download_failed';
 }
 
@@ -191,8 +296,10 @@ export async function ensureEngine(modelId: string, signal?: AbortSignal): Promi
         setState({ phase: 'idle', modelId: null, progress: 0, text: '' });
         throw new AiUnavailableError('cancelled', 'Stopped.');
       }
-      setState({ phase: 'error', progress: 0, text: String(e?.message ?? e) });
-      throw new AiUnavailableError(loadErrorCode(e), 'The on-device model could not be loaded.', e?.message);
+      const code = loadErrorCode(e);
+      // A 16-bit shader problem is retried with the 32-bit model files (see loadChoice): not an error yet.
+      setState(code === 'webgpu_f16' ? { phase: 'idle', modelId: null, progress: 0, text: '' } : { phase: 'error', progress: 0, text: String(e?.message ?? e) });
+      throw new AiUnavailableError(code, 'The on-device model could not be loaded.', String(e?.message ?? e).slice(0, 300));
     } finally {
       signal?.removeEventListener('abort', onAbort);
     }
@@ -232,8 +339,7 @@ export interface WebLlmAskOptions {
 
 /** Ask the on-device model. Always streams internally so Stop can interrupt generation. */
 export async function askWebLlm(choiceId: string, prompt: string, opts: WebLlmAskOptions = {}): Promise<string> {
-  const modelId = await resolveModelId(choiceId);
-  const eng = await ensureEngine(modelId, opts.signal);
+  const eng = await loadChoice(choiceId, opts.signal);
   if (opts.signal?.aborted) throw new AiUnavailableError('cancelled', 'Stopped.');
   const onAbort = () => void eng.interruptGenerate();
   opts.signal?.addEventListener('abort', onAbort);
@@ -272,7 +378,21 @@ export async function askWebLlm(choiceId: string, prompt: string, opts: WebLlmAs
 
 /** Download (or load from the browser cache) without asking anything. */
 export async function prepareWebLlm(choiceId: string, signal?: AbortSignal): Promise<void> {
-  await ensureEngine(await resolveModelId(choiceId), signal);
+  await loadChoice(choiceId, signal);
+}
+
+/**
+ * Load the right files for a chosen model. The GPU check says whether 16-bit shaders exist; if the
+ * engine finds out otherwise while loading, switch to the 32-bit files once and try again.
+ */
+async function loadChoice(choiceId: string, signal?: AbortSignal): Promise<EngineLike> {
+  try {
+    return await ensureEngine(await resolveModelId(choiceId), signal);
+  } catch (e: any) {
+    if (e?.code !== 'webgpu_f16') throw e;
+    await disableF16();
+    return ensureEngine(await resolveModelId(choiceId), signal);
+  }
 }
 
 /** Is the model already in the browser cache? (No download.) */

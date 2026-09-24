@@ -482,7 +482,7 @@ The AI menu is their one home. In the Text coding workspace the **AI suggestions
 **Choose where the AI runs.** Open **AI > AI assistant settings...**, the one place for AI set-up. The AI chip in the top bar and every **Set up AI** button open the same settings:
 
 - **On this computer (free, private).** A small language model runs inside your browser. Nothing leaves your computer, and after a one-time download it works offline. Choose **Small and fast** (about 1 GB to download) or **Better quality** (about 1.8 GB, needs more graphics memory). Click **Download model** and wait for the progress bar; the browser keeps the model for next time. It needs WebGPU, which recent Chrome and Edge offer on Windows, Mac and ChromeOS desktops and laptops; the settings say whether your browser can run it. It is slower and less accurate than the online options, and handles fewer excerpts at a time. This is the option to use for confidential interviews.
-- **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and paste the key into the settings. Leave the model empty: Socius then picks the newest free Flash model your key can use. Click **Test connection** to check it.
+- **Google Gemini (free key).** Good and fast. To get a key: open [Google AI Studio](https://aistudio.google.com/apikey), sign in with a Google account, click **Create API key**, and copy the key with its copy button into the settings (new keys start with `AQ.`). Leave **Model** on **Automatic: Flash-Lite (most free requests per day)**: Socius picks the newest Flash-Lite model your key can use, and another one if that is not available. **Automatic: Flash** gives better answers for single requests but has far fewer free requests per day; the assistant and coding suggestions always use Flash-Lite. Click **Test connection** to check it.
 - **Other service (advanced).** Any OpenAI-compatible service: Groq and OpenRouter (choose them from the list to fill in the address, then paste your key; on OpenRouter, free models end in `:free`), or a model on your own computer with Ollama or LM Studio (the service must allow requests from the Socius page; for Ollama, start it with `OLLAMA_ORIGINS` set to the site's address).
 - **Claude.** When Socius runs inside Claude, it uses Claude automatically.
 
@@ -497,7 +497,7 @@ Keys and settings are stored in this browser only. They are never saved in proje
 - Treat suggestions as a starting point for your own reading, not as findings. Check every quote against the data. Suggested codes are part of your codebook like any other and should go through intercoder reliability in the usual way.
 - Say in your methods section that AI assistance was used, which model, and for what.
 
-**If something goes wrong.** Messages say what happened in plain words: a key that was not accepted (paste it again, or create a new one), too many requests (wait a minute; free tiers have per-minute and per-day limits), a browser that cannot run the on-device model (use Chrome or Edge, or choose Gemini), or a reply in an unexpected format (try again with fewer items; small on-device models find long lists harder).
+**If something goes wrong.** Messages say what happened in plain words: a key that was not accepted (paste it again, or create a new one), too many requests (wait a minute; free tiers have per-minute and per-day limits), a browser that cannot run the on-device model (use Chrome or Edge, or choose Gemini), or a reply in an unexpected format (try again with fewer items; small on-device models find long lists harder). Where an AI answer failed (an explanation, the assistant), a **Details** link shows a short technical report you can copy for support. See [AI does not connect](#ai-does-not-connect) in Troubleshooting.
 
 ## Using Socius inside Claude
 
@@ -548,6 +548,31 @@ Clearing your browser's history, cookies or site data, using a private or incogn
 **A dialog warns that a variable has the wrong measurement level.**
 It is a warning, not a block. Socius suggests which levels suit each box (for example scale for a t-test outcome). Often the fix is to set the right measure in Variable View.
 
+### AI does not connect
+
+Open **AI > AI assistant settings...** and click **Test connection**. It checks each step and puts a tick or a cross next to it: **1. Internet connection**, **2. Reached Google**, **3. Key accepted**, **4. Model chosen** (with the model's name), **5. Got an answer** (with the reply). For Groq or OpenRouter the steps are **Reached** *the service*, **Key accepted**, **Model available** and **Got an answer**. Under a cross it says why and what to do. The usual causes:
+
+- **Key accepted fails.** Copy the key again with the copy button in Google AI Studio (a key cut short or with extra characters is refused; Socius removes spaces, quotes and line breaks itself). If the key is new, wait a few minutes. Otherwise create a new key in AI Studio. Keys that start with `AIza` are older Google keys, which Google is retiring in September 2026: create a new one. Some new Google accounts have a known problem with `AQ.` keys: if a new key still fails, try a key from a different Google Cloud project.
+- **"The Gemini API is turned off" or "website restrictions".** The key was made in the Google Cloud Console. Easiest: make a new key in Google AI Studio. Or, in the Cloud Console, turn on the Generative Language API for the project, or add `https://hackhead95.github.io/*` to the key's website restrictions.
+- **"User location is not supported".** Google does not offer the free Gemini API where your connection appears to be. Turn off a VPN or proxy, or choose the on-device option.
+- **Model chosen fails, "no free allowance".** Google gives some models (Pro, some previews) no free requests. Leave Model on Automatic; Socius tries up to three models and uses the first that answers.
+- **Too many requests.** Wait a minute for the per-minute limit. The daily limit starts again at midnight Pacific time (morning in Europe, early afternoon in India). Flash-Lite has far more free requests per day than Flash.
+- **Reached Google fails.** The computer is offline, or something blocks Google's address `generativelanguage.googleapis.com`: an ad or privacy blocker, antivirus web protection, a company or university firewall, or a VPN. Allow it or try another network.
+- **The service is busy or did not answer in time.** Socius already tried again once; wait a minute and test again.
+
+If you need help, click **Copy details** under the checklist and paste it into your feedback (**Help > Send feedback or report a problem**). The report lists the app version, your browser, each step and what Google or the service answered. It never contains your key.
+
 **Keyboard shortcuts.** **Help > Keyboard shortcuts** lists them all, including the Responses view keys in Text coding. **Help > Getting started** gives a six-step overview.
 
-**Something is wrong, or I have a suggestion.** **Help > Send feedback or report a problem** (or **Feedback** in the top bar) opens a form on GitHub. Say what you did, what you expected and what happened; do not attach confidential data.
+**Something is wrong, or I have a suggestion.** **Help > Send feedback or report a problem** (or **Feedback** in the top bar) first offers to copy the error report (see below), then opens a form on GitHub with your Socius version, your browser and a short summary of recent problems already filled in. Say what you did, what you expected and what happened; do not attach confidential data. For an idea rather than a problem, choose **Suggest an idea instead**.
+
+### Troubleshooting with the error log
+
+Socius keeps a small log of the problems it notices: a file that would not open, an analysis that stopped with an error, an AI service that did not answer, a full browser storage, or a part of the screen that stopped working. Open it with **Help > Error log...** (Search finds it as "error log", "report a problem" or "diagnostics"). A small dot on the **Help** menu means new errors were logged since you last looked; it goes away when you open the log.
+
+- Each line shows when it happened, how serious it was (**Error**, **Warning** or **Info**), where (Opening files, Analyses, AI...) and the message. Click a line for the technical details. Filter by level or area at the top.
+- **Copy report** copies the whole log as plain text, ready to paste into your feedback. **Download report (.txt)** saves it as a file. **Clear log...** empties it (it asks first).
+- **The log never contains your research data.** Before anything is written, Socius removes data values, variable names and labels, value labels, file names, quoted text, e-mail addresses, and AI keys or tokens. What is kept: the message, the type of error, the AI service's error code, the size of the dataset (for example "500 cases x 40 variables"), which tab was open, the AI provider and model, and the Socius version. Read the report before sending it if you want to check.
+- The log lives only in this browser (the last 300 entries at most) and is never sent anywhere by itself. Clearing your browser's site data clears it too.
+
+If the whole page stops with **Something went wrong**, click **Copy error report**, then **Reload**: your work is autosaved in the browser, so you continue where you left off (changes from the last few seconds may be missing). If only one tab shows "stopped working", the other tabs still work; **Try again** redraws it.

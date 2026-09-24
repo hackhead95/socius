@@ -3,44 +3,87 @@ import { useEffect, useRef, useState } from 'react';
 import { MenuList, type MenuItem } from '../ui/Menu';
 import { Icon } from '../ui/Icon';
 import { useMenus, type TopMenu } from './menus';
+import { useStore } from '../core/store';
+import { useUnseenErrors } from '../features/errorlog/actions';
 
 export function MenuBar() {
   const menus = useMenus();
+  const unseenErrors = useUnseenErrors();
+  const tab = useStore((s) => s.tab);
   const [open, setOpen] = useState<number | null>(null);
-  const [focusFirst, setFocusFirst] = useState(true);
+  // One tab stop for the whole bar (roving tabindex): the menu last focused.
+  const [tabStop, setTabStop] = useState(0);
+  // Keyboard: the first item is highlighted. Mouse: the menu has focus, nothing is highlighted until you point.
+  const [focusMode, setFocusMode] = useState<true | 'menu'>(true);
   const barRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  // Where focus was before the menu opened. It goes back there when the menu closes (as in desktop
+  // apps), so a menu button never keeps focus, or a focus ring, after a mouse click. A dialog opened
+  // from the menu hands focus back there too. Opened from the keyboard, that is the menu button.
+  const returnTo = useRef<HTMLElement | null>(null);
+
+  const close = (restore: boolean) => {
+    setOpen(null);
+    const el = returnTo.current;
+    returnTo.current = null;
+    if (!restore) return;
+    if (el && el.isConnected && el !== document.body) el.focus({ preventScroll: true });
+    else if (barRef.current?.contains(document.activeElement) || document.activeElement?.closest?.('.menu-dropdown')) (document.activeElement as HTMLElement).blur();
+  };
+  const closeRef = useRef(close);
+  closeRef.current = close;
 
   useEffect(() => {
     if (open === null) return;
-    const down = (e: MouseEvent) => {
-      if (!barRef.current?.contains(e.target as Node)) setOpen(null);
+    // Pressing anywhere else (a tab, the grid, a toolbar) closes the menu and leaves focus to what was
+    // pressed. Capture phase, so nothing on the page can stop it.
+    const down = (e: PointerEvent) => {
+      if (!barRef.current?.contains(e.target as Node)) closeRef.current(false);
     };
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        const i = open;
-        setOpen(null);
-        btnRefs.current[i]?.focus();
+        closeRef.current(true);
       }
     };
-    window.addEventListener('mousedown', down, true);
+    // Alt-Tab, another browser tab, a resized window: close, like desktop menus.
+    const away = () => closeRef.current(false);
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') away();
+    };
+    window.addEventListener('pointerdown', down, true);
     window.addEventListener('keydown', key);
+    window.addEventListener('blur', away);
+    window.addEventListener('resize', away);
+    document.addEventListener('visibilitychange', hidden);
     return () => {
-      window.removeEventListener('mousedown', down, true);
+      window.removeEventListener('pointerdown', down, true);
       window.removeEventListener('keydown', key);
+      window.removeEventListener('blur', away);
+      window.removeEventListener('resize', away);
+      document.removeEventListener('visibilitychange', hidden);
     };
   }, [open]);
 
-  const openAt = (i: number, focus = true) => {
-    setFocusFirst(focus);
+  // Switching the main tab (from the tabs, a shortcut or a command) never leaves a menu open.
+  useEffect(() => {
+    setOpen(null);
+  }, [tab]);
+
+  const openAt = (i: number, mode: true | 'menu') => {
+    if (open === null && !returnTo.current) {
+      const active = document.activeElement as HTMLElement | null;
+      returnTo.current = active && !barRef.current?.contains(active) ? active : null;
+    }
+    setFocusMode(mode);
     setOpen((i + menus.length) % menus.length);
   };
 
   const onBtnKey = (e: React.KeyboardEvent, i: number) => {
     if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      openAt(i);
+      returnTo.current = e.currentTarget as HTMLElement;
+      openAt(i, true);
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
       btnRefs.current[(i + 1) % menus.length]?.focus();
@@ -62,39 +105,61 @@ export function MenuBar() {
               aria-haspopup="menu"
               aria-expanded={open === i}
               className={`menubar-btn ${open === i ? 'open' : ''}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                if (open === i) setOpen(null);
-                else openAt(i, false);
-                btnRefs.current[i]?.focus();
+              tabIndex={i === tabStop ? 0 : -1}
+              onFocus={() => setTabStop(i)}
+              onPointerDown={(e) => {
+                // Opens on press, like desktop menus (left button; Ctrl+click is a right click on a Mac).
+                if (e.button !== 0 || e.ctrlKey) return;
+                if (open === i) close(true);
+                else openAt(i, 'menu');
               }}
-              onMouseEnter={() => {
-                if (open !== null && open !== i) openAt(i, false);
+              // Do not move focus to the button: the menu takes it, and it goes back where it was.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => {
+                // Enter or Space on the button (a click with no pointer): open with the first item highlighted.
+                if (e.detail === 0 && open !== i) {
+                  returnTo.current = e.currentTarget;
+                  openAt(i, true);
+                }
+              }}
+              onPointerEnter={(e) => {
+                // Once a menu is open, pointing at another menu opens it at once (as in desktop apps).
+                // Not for touch, where "enter" is a tap that opens the menu anyway.
+                if (e.pointerType !== 'touch' && open !== null && open !== i) openAt(i, 'menu');
               }}
               onKeyDown={(e) => onBtnKey(e, i)}
+              aria-describedby={m.id === 'help' && unseenErrors ? 'help-errors-note' : undefined}
             >
               {m.label}
+              {m.id === 'help' && unseenErrors ? <span className="menu-dot" aria-hidden="true" title="New problems in Help > Error log" /> : null}
             </button>
             {open === i ? (
               <MenuList
+                key={m.id}
                 items={m.items}
                 label={m.label}
                 className="menu-dropdown"
-                autoFocus={focusFirst}
+                autoFocus={focusMode}
                 onNavigate={(dir) => {
-                  openAt(i + dir);
-                  btnRefs.current[(i + dir + menus.length) % menus.length]?.focus();
+                  const j = (i + dir + menus.length) % menus.length;
+                  // Opened from the keyboard: Esc later returns to the menu now open, not the first one.
+                  if (returnTo.current && barRef.current?.contains(returnTo.current)) returnTo.current = btnRefs.current[j];
+                  openAt(j, true);
                 }}
                 onClose={(reason) => {
-                  setOpen(null);
-                  // After a choice, focus returns to the menu button, so a dialog it opens hands focus back there on close.
-                  if (reason === 'escape' || reason === 'select') btnRefs.current[i]?.focus();
+                  if (reason === 'tab') {
+                    // Tab leaves the menu bar from its button, like the other controls.
+                    setOpen(null);
+                    returnTo.current = null;
+                    btnRefs.current[i]?.focus();
+                  } else close(true);
                 }}
               />
             ) : null}
           </div>
         ))}
       </div>
+      {unseenErrors ? <span id="help-errors-note" className="sr-only">New problems in Help, Error log</span> : null}
       <MenuSheetButton menus={menus} />
     </>
   );

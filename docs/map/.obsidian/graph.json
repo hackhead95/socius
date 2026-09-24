@@ -1,0 +1,105 @@
+{
+  "collapse-filter": false,
+  "search": "-path:Code/tests -path:Code/e2e",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:Areas",
+      "color": {
+        "a": 1,
+        "rgb": 16777215
+      }
+    },
+    {
+      "query": "path:Code",
+      "color": {
+        "a": 1,
+        "rgb": 8421504
+      }
+    },
+    {
+      "query": "path:Components",
+      "color": {
+        "a": 1,
+        "rgb": 3900150
+      }
+    },
+    {
+      "query": "path:Hooks",
+      "color": {
+        "a": 1,
+        "rgb": 6737151
+      }
+    },
+    {
+      "query": "path:Store",
+      "color": {
+        "a": 1,
+        "rgb": 16750848
+      }
+    },
+    {
+      "query": "path:Menus",
+      "color": {
+        "a": 1,
+        "rgb": 10233776
+      }
+    },
+    {
+      "query": "path:Dialogs",
+      "color": {
+        "a": 1,
+        "rgb": 15277667
+      }
+    },
+    {
+      "query": "path:Procedures",
+      "color": {
+        "a": 1,
+        "rgb": 5025616
+      }
+    },
+    {
+      "query": "path:Transforms",
+      "color": {
+        "a": 1,
+        "rgb": 13434828
+      }
+    },
+    {
+      "query": "path:AI",
+      "color": {
+        "a": 1,
+        "rgb": 16007990
+      }
+    },
+    {
+      "query": "path:Storage",
+      "color": {
+        "a": 1,
+        "rgb": 7951688
+      }
+    },
+    {
+      "query": "path:Output",
+      "color": {
+        "a": 1,
+        "rgb": 49151
+      }
+    },
+    {
+      "query": "path:Shortcuts",
+      "color": {
+        "a": 1,
+        "rgb": 16761095
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "collapse-forces": true
+}

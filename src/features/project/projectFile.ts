@@ -8,10 +8,11 @@ import type { OutputItem } from '../../core/output';
 import type { CodingProject } from '../../core/coding-types';
 import { emptyCodingProject } from '../../core/coding-types';
 import type { MainTab } from '../../core/store';
+import { BUILD_INFO } from '../../platform/buildInfo';
 
 export const PROJECT_FORMAT = 'socius-project';
 export const PROJECT_VERSION = 1;
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = BUILD_INFO.version;
 
 export interface ProjectUi {
   showValueLabels: boolean;

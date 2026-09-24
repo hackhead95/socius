@@ -3,12 +3,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useStore } from '../../core/store';
 import type { Alignment, Dataset, MeasureLevel, Variable, VarRole } from '../../core/types';
-import { isDateFormat, validateVarName } from '../../core/data';
+import { isDateFormat } from '../../core/data';
 import { useUi } from '../../app/ui-store';
 import { Icon } from '../../ui/Icon';
 import { MeasureIcon, measureKind } from '../../ui/MeasureIcon';
 import { ContextMenu, type MenuItem } from '../../ui/Menu';
-import { changeType, duplicateVariables, formatWith, newDefaultVariable } from './mutations';
+import { changeType, duplicateVariables, formatWith, newDefaultVariable, varNameProblem } from './mutations';
 import { CopyPropertiesDialog, describeMissing, describeValueLabels, MissingDialog, TypeDialog, typeName, ValueLabelsDialog } from './VarDialogs';
 
 type ColKey = 'name' | 'type' | 'width' | 'decimals' | 'label' | 'values' | 'missing' | 'columns' | 'align' | 'measure' | 'role';
@@ -96,9 +96,22 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
     setActive({ r: i, c: 0 });
     setSelRows(new Set([target.varId!]));
     setAnchor(i);
+    // Double-clicking a column heading in Data View lands here ready to rename the variable.
+    if (target.editName) setEditing({ r: i, c: 0, text: ds.variables[i].name, error: null });
     requestAnimationFrame(() => {
       rowV.scrollToIndex(i, { align: 'center' });
-      scrollRef.current?.focus({ preventScroll: true });
+      if (!target.editName) {
+        scrollRef.current?.focus({ preventScroll: true });
+        return;
+      }
+      // The row may only be drawn after the scroll: focus the name box once it is there.
+      requestAnimationFrame(() => {
+        const el = inputRef.current;
+        if (el instanceof HTMLInputElement && document.activeElement !== el) {
+          el.focus({ preventScroll: true });
+          el.select();
+        }
+      });
     });
   }, [target?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -196,8 +209,11 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
       const many = selRows.has(v.id) && selRows.size > 1 ? ds.variables.filter((x) => selRows.has(x.id)) : [v];
       switch (col.key) {
         case 'name': {
+          // Same name, or only different in capitals (age -> Age), is a rename too; the name is checked
+          // against the other variables only. Variables are referred to by id everywhere else (weight,
+          // filter, coding links), so they keep working after a rename.
           if (text !== v.name) {
-            const err = validateVarName(ds, text, v.id);
+            const err = varNameProblem(ds, text, v.id);
             if (err) return fail(err);
             updateVariable(v.id, { name: text });
           }
@@ -302,6 +318,10 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
     if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1 && r < n && (COLS[c].kind === 'text' || COLS[c].kind === 'num')) {
       e.preventDefault();
       startEdit(r, c, e.key);
+    } else if ((e.key === 'Process' || e.nativeEvent.isComposing) && r < n && COLS[c].kind === 'text') {
+      // An input method (for example a Bengali or phonetic keyboard) is composing: open the box so the
+      // text lands in it.
+      startEdit(r, c, '');
     }
   };
 
@@ -362,11 +382,26 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
     setActive({ r: i, c: active.c });
   };
 
+  /**
+   * Leave an edit that cannot be saved (clicking elsewhere with an invalid value): keep the old value
+   * and say why, rather than trapping the user in the cell.
+   */
+  const abandonInvalid = () => {
+    const ed = editRef.current;
+    if (!ed) return;
+    const v = ds.variables[ed.r];
+    if (ed.error) toast(`${COLS[ed.c].label}${v ? ` of ${v.name}` : ''} not changed. ${ed.error}`, 'warning');
+    setEditing(null);
+  };
+
   const onCellMouseDown = (e: React.MouseEvent, r: number, c: number) => {
     if (e.button !== 0) return;
+    // Clicks inside the box being edited place the caret or select text; they must not restart the edit
+    // (that used to put the old name back while you were fixing a typo).
+    if ((e.target as HTMLElement).closest('.vv-input')) return;
     const ed = editRef.current;
     if (ed && !(ed.r === r && ed.c === c)) {
-      if (!commit(0, 0)) return;
+      if (!commit(0, 0)) abandonInvalid();
     }
     const wasActive = active.r === r && active.c === c;
     setActive({ r, c });
@@ -386,9 +421,13 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
   const nSel = selectedIds().length;
   const curVar = ds.variables[active.r];
 
+  // Mirrors Data > Define variable properties..., starting with the selected variables.
+  const openDefineProperties = () => useStore.getState().openDialog({ kind: 'transform', id: 'define-properties', params: { varIds: selectedIds() } });
+
   const menuItems: MenuItem[] = [
     { id: 'ins', label: 'Insert variable above', onSelect: () => addVariableAt(Math.min(active.r, n)) },
     { id: 'dup', label: nSel > 1 ? `Duplicate ${nSel} variables` : 'Duplicate', disabled: !nSel, onSelect: duplicate },
+    { id: 'definep', label: 'Define variable properties...', disabled: !nSel, title: nSel ? undefined : 'Select a variable first', onSelect: () => openDefineProperties() },
     { id: 'copyp', label: 'Copy variable properties...', disabled: !curVar, onSelect: () => setDialog({ kind: 'copy', varId: curVar?.id ?? null }) },
     { id: 'up', label: 'Move up', separator: true, disabled: !nSel, onSelect: () => moveSelected(-1) },
     { id: 'down', label: 'Move down', disabled: !nSel, onSelect: () => moveSelected(1) },
@@ -409,6 +448,9 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
         <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => moveSelected(-1)} disabled={!nSel} aria-label="Move up" title="Move up"><Icon name="up" size={15} /></button>
         <button type="button" className="btn btn-sm btn-ghost btn-icon" onClick={() => moveSelected(1)} disabled={!nSel} aria-label="Move down" title="Move down"><Icon name="down" size={15} /></button>
         <span className="toolbar-sep" />
+        <button type="button" className="btn btn-sm btn-ghost" onClick={openDefineProperties} disabled={!n} title="Define variable properties... (Data menu): label values, mark missing codes, set the measurement level" aria-label="Define variable properties...">
+          <Icon name="tag" size={14} /> <span className="hide-narrow">Define variable properties...</span>
+        </button>
         <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDialog({ kind: 'copy', varId: curVar?.id ?? null })} disabled={!n} title="Copy value labels, missing values or measure to other variables">
           <Icon name="copy" size={14} /> Copy properties
         </button>
@@ -532,7 +574,9 @@ function VariableViewInner({ ds }: { ds: Dataset }) {
                               inputMode={col.kind === 'num' ? 'numeric' : undefined}
                               onChange={(e) => setEditing({ ...editing, text: e.target.value, error: null })}
                               onKeyDown={onEditKey}
-                              onBlur={() => editRef.current && !editRef.current.error && commit(0, 0)}
+                              onBlur={() => {
+                                if (editRef.current && !commit(0, 0)) abandonInvalid();
+                              }}
                             />
                             {editing.error ? <div className="vv-error" role="alert">{editing.error}</div> : null}
                           </>

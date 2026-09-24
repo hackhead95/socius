@@ -3,6 +3,7 @@
 // the Artifact sandbox), and the app must work without it.
 
 import type { ProjectState } from './projectFile';
+import { logError, logWarn } from '../../platform/errorlog';
 
 const DB_NAME = 'socius';
 const DB_VERSION = 1;
@@ -36,7 +37,10 @@ function openDb(): Promise<IDBDatabase | null> {
         if (!db.objectStoreNames.contains(RECENT_STORE)) db.createObjectStore(RECENT_STORE, { keyPath: 'id' });
       };
       req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(null);
+      req.onerror = () => {
+        logWarn('storage', req.error ?? 'The browser database could not be opened.', { op: 'open database' });
+        resolve(null);
+      };
       req.onblocked = () => resolve(null);
       setTimeout(() => resolve(null), 2500);
     } catch {
@@ -59,8 +63,14 @@ function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) 
           if (req) req.onsuccess = () => (result = req.result as T);
           t.oncomplete = () => resolve(result);
           t.onerror = () => resolve(null);
-          t.onabort = () => resolve(null);
-        } catch {
+          // A full disk or storage quota aborts the transaction: log it (autosave did not happen).
+          t.onabort = () => {
+            if (t.error?.name === 'QuotaExceededError') logError('storage', t.error, { op: `${mode} ${store}` });
+            else logWarn('storage', t.error ?? 'A browser storage write was cancelled.', { op: `${mode} ${store}` });
+            resolve(null);
+          };
+        } catch (e) {
+          logWarn('storage', e, { op: `${mode} ${store}` });
           resolve(null);
         }
       }),
@@ -139,7 +149,8 @@ export function writePref(key: string, value: string | null): void {
   try {
     if (value === null) window.localStorage.removeItem(`socius.${key}`);
     else window.localStorage.setItem(`socius.${key}`, value);
-  } catch {
+  } catch (e) {
+    logWarn('storage', e, { op: 'save preference' });
     /* storage unavailable: preference is kept for this visit only */
   }
 }

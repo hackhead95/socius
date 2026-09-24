@@ -27,13 +27,29 @@ export function commit(label: string, fn: (c: CodingProject) => CodingProject, k
   if (top && top.after !== before) history = []; // project replaced outside the coding tab
   if (key && top && top.key === key && top.after === before) history = [...history.slice(0, -1), { ...top, after }];
   else history = [...history, { label, before, after, key }].slice(-HISTORY_LIMIT);
-  ui.set({ history });
+  ui.set({ history, future: [] });
+}
+
+/** The coding change Undo would take back (its label), or null. */
+export function undoLabel(): string | null {
+  const { history } = useCodingUi.getState();
+  const top = history[history.length - 1];
+  return top && top.after === useStore.getState().coding ? top.label : null;
+}
+
+/** The coding change Redo would apply again (its label), or null. */
+export function redoLabel(): string | null {
+  const { future } = useCodingUi.getState();
+  const top = future[future.length - 1];
+  return top && top.before === useStore.getState().coding ? top.label : null;
 }
 
 export function canUndo(): boolean {
-  const { history } = useCodingUi.getState();
-  const top = history[history.length - 1];
-  return !!top && top.after === useStore.getState().coding;
+  return undoLabel() !== null;
+}
+
+export function canRedo(): boolean {
+  return redoLabel() !== null;
 }
 
 /** Undo the last coding change. Returns its label, or null when there is nothing to undo. */
@@ -41,11 +57,25 @@ export function undoCoding(): string | null {
   const ui = useCodingUi.getState();
   const top = ui.history[ui.history.length - 1];
   if (!top || top.after !== useStore.getState().coding) {
-    if (top) ui.set({ history: [] });
+    // The project was replaced outside Text coding (opened a project, started fresh): nothing to undo.
+    if (top) ui.set({ history: [], future: [] });
     return null;
   }
   useStore.getState().setCoding(top.before);
-  ui.set({ history: ui.history.slice(0, -1) });
+  ui.set({ history: ui.history.slice(0, -1), future: [...ui.future, top].slice(-HISTORY_LIMIT) });
+  return top.label;
+}
+
+/** Redo the last undone coding change. Returns its label, or null when there is nothing to redo. */
+export function redoCoding(): string | null {
+  const ui = useCodingUi.getState();
+  const top = ui.future[ui.future.length - 1];
+  if (!top || top.before !== useStore.getState().coding) {
+    if (top) ui.set({ future: [] });
+    return null;
+  }
+  useStore.getState().setCoding(top.after);
+  ui.set({ future: ui.future.slice(0, -1), history: [...ui.history, top].slice(-HISTORY_LIMIT) });
   return top.label;
 }
 
@@ -310,14 +340,16 @@ export function setActiveCoder(name: string): void {
   const rebase = (p: CodingProject): CodingProject => (p.coders.includes(name) ? { ...p, activeCoder: name } : p);
   const ui = useCodingUi.getState();
   const top = ui.history[ui.history.length - 1];
-  if (top && top.after === before) {
+  const next = ui.future[ui.future.length - 1];
+  if ((top && top.after === before) || (next && next.before === before)) {
     const rebased = new Map<CodingProject, CodingProject>([[before, after]]);
     const map = (p: CodingProject) => {
       let r = rebased.get(p);
       if (!r) rebased.set(p, (r = rebase(p)));
       return r;
     };
-    ui.set({ history: ui.history.map((h) => ({ ...h, before: map(h.before), after: map(h.after) })) });
+    const remap = (list: typeof ui.history) => list.map((h) => ({ ...h, before: map(h.before), after: map(h.after) }));
+    ui.set({ history: remap(ui.history), future: remap(ui.future) });
   }
 }
 

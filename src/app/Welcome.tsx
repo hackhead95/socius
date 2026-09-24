@@ -1,21 +1,55 @@
 // Welcome screen (no dataset open) and the sample-data banner.
-import { useEffect, useState } from 'react';
-import { useStore } from '../core/store';
+import { useEffect, useRef, useState } from 'react';
+import { useStore, type MainTab } from '../core/store';
 import { Icon } from '../ui/Icon';
 import { loadSample, newDataset, openDataFile, openProjectFile, openRecentProject } from '../features/project/fileActions';
 import { listRecent, type RecentEntry } from '../features/project/persistence';
 import { samples } from '../samples';
 import { useUi } from './ui-store';
 
+const TAB_NAMES: Record<MainTab, string> = { data: 'Data View', variables: 'Variable View', output: 'Output', coding: 'Text coding' };
+
+/** What "Back" returns to from the start screen, or null when nothing is open. */
+export function backTarget(st: { dataset: { name: string } | null; tab: MainTab; outputs: unknown[]; coding: { docs: unknown[]; codes: unknown[] } }): string | null {
+  if (st.dataset) return 'your data';
+  if (st.tab === 'output' && st.outputs.length) return TAB_NAMES.output;
+  if (st.tab === 'coding' && (st.coding.docs.length || st.coding.codes.length)) return TAB_NAMES.coding;
+  return null;
+}
+
+/**
+ * The start screen: shown when nothing is open, and over open work when the Socius logo (Home) is
+ * clicked, with a way back.
+ */
 export function Welcome() {
   const [recent, setRecent] = useState<RecentEntry[]>([]);
   const openDialog = useStore((s) => s.openDialog);
+  const home = useUi((s) => s.home);
+  const ds = useStore((s) => s.dataset);
+  const back = useStore((s) => (home ? backTarget(s) : null));
+  const backRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     void listRecent().then((r) => setRecent(r.slice(0, 4)));
   }, []);
+  useEffect(() => {
+    if (home) backRef.current?.focus({ preventScroll: true });
+  }, [home]);
+  const hasData = !!ds;
   return (
     <div className="welcome">
       <div className="welcome-inner">
+        {back ? (
+          <div className="welcome-back" role="region" aria-label="Your open work">
+            <span>
+              {ds ? <>Open now: <strong>{ds.name}</strong>. </> : null}
+              Opening another file here replaces it (Socius asks first if there are unsaved changes).
+            </span>
+            <span className="spacer" />
+            <button ref={backRef} type="button" className="btn btn-primary btn-sm" onClick={() => useUi.getState().setHome(false)}>
+              Back to {back}
+            </button>
+          </div>
+        ) : null}
         <div className="welcome-head">
           <h1>Start with your data</h1>
           <p className="welcome-lede">Open an SPSS file, a CSV or an Excel sheet. Variable labels, value labels and missing values come with it.</p>
@@ -30,7 +64,7 @@ export function Welcome() {
             <span><strong>Open project</strong><span className="help">A .socius.json file you saved</span></span>
           </button>
           {samples.length ? (
-            <button type="button" className="welcome-action" onClick={() => void loadSample({ confirm: false })}>
+            <button type="button" className="welcome-action" onClick={() => void loadSample({ confirm: hasData })}>
               <Icon name="sigma" size={20} />
               <span><strong>Load sample survey</strong><span className="help">{samples[0].title}</span></span>
             </button>

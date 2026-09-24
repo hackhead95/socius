@@ -6,7 +6,7 @@ import { aiPromptBudget } from '../../platform/ai';
 import { copyToClipboard } from '../../platform/host';
 import { useStore } from '../../core/store';
 import { openAssistant } from '../assistant/open';
-import { AiLoadProgress, AiProviderNote, SET_UP_AI } from './AiBits';
+import { AiErrorDetails, AiLoadProgress, AiProviderNote, SET_UP_AI } from './AiBits';
 import { AiText } from './AiText';
 import { buildExplainPrompt, byteLength, plainText } from './explainPrompt';
 import { useExplain } from './explainStore';
@@ -81,6 +81,7 @@ export function ExplainPanel({ item }: { item: OutputItem }) {
           ) : null}
           {panel.text ? <AiText text={panel.text} className="ai-explain-text" /> : null}
           {panel.error ? <p className={panel.phase === 'error' ? 'text-bad' : 'help'}>{panel.error}</p> : null}
+          {panel.phase === 'error' ? <AiErrorDetails report={panel.errorReport} /> : null}
           {panel.provider ? <p className="help">Written by {panel.provider}. It can be wrong: check every number against the tables above.</p> : null}
           <div className="row ai-explain-actions">
             {panel.phase === 'running' ? (

@@ -18,6 +18,12 @@ body:
     attributes:
       label: Steps to repeat it
       placeholder: "1. Open the sample survey\n2. Analyze > Descriptive Statistics > Crosstabs...\n3. ..."
+  - type: textarea
+    id: error-report
+    attributes:
+      label: "Error report (Help > Error log > Copy report)"
+      description: In Socius, open Help > Error log, click Copy report and paste it here. It lists error messages and technical details only, never your data values, variable names or keys. If you came from Socius's feedback dialog, a short summary is already filled in.
+      render: text
   - type: input
     id: browser
     attributes:

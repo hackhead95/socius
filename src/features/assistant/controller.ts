@@ -4,6 +4,8 @@ import { useStore } from '../../core/store';
 import { newId } from '../../core/types';
 import { aiErrorText, getAiStatus, effectiveProvider, providerLabel, refreshAiStatus } from '../../platform/ai';
 import { copyToClipboard } from '../../platform/host';
+import { aiErrorReport } from '../../platform/ai-diagnose';
+import { logError } from '../../platform/errorlog';
 import { runAgent, type Driver } from '../../lib/assistant/agent';
 import { addToOutput, applyProposal } from '../../lib/assistant/actions';
 import { createDriver } from '../../lib/assistant/drivers';
@@ -90,8 +92,9 @@ export async function sendMessage(text: string, opts: SendOptions = {}): Promise
   } catch (e: any) {
     if (e?.code === 'cancelled' || controller.signal.aborted) patch((x) => ({ ...x, status: 'stopped' }));
     else {
+      logError('assistant', e, { op: 'assistant-turn' });
       const partial = typeof e?.partial === 'string' ? e.partial : '';
-      patch((x) => ({ ...x, status: 'error', error: e?.daily ? `${aiErrorText(e)} ${e.detail ?? ''}`.trim() : aiErrorText(e), text: x.text || partial }));
+      patch((x) => ({ ...x, status: 'error', error: aiErrorText(e), errorReport: aiErrorReport(e, 'Socius assistant'), text: x.text || partial }));
     }
   } finally {
     if (useAssistantChat.getState().controller === controller) useAssistantChat.setState({ running: false, controller: null });

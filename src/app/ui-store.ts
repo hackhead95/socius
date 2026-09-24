@@ -17,6 +17,8 @@ export interface ConfirmRequest {
 export interface GridTarget {
   varId?: string;
   row?: number;
+  /** Variable View: start editing the variable's name (double-click on a Data View column heading). */
+  editName?: boolean;
   seq: number;
 }
 
@@ -36,7 +38,7 @@ interface UiState {
   focusGrid: (t: Omit<GridTarget, 'seq'>) => void;
   /** Ask Variable View to select a variable. */
   varViewTarget: GridTarget | null;
-  focusVariableView: (varId: string) => void;
+  focusVariableView: (varId: string, opts?: { editName?: boolean }) => void;
   /** Variable currently selected in Data View (sidebar highlight). */
   currentVarId: string | null;
   setCurrentVarId: (id: string | null) => void;
@@ -60,6 +62,9 @@ interface UiState {
   /** Ask the Output view to scroll to an item (and optionally one of its blocks). */
   outputTarget: { itemId: string; blockIndex?: number; seq: number } | null;
   focusOutput: (itemId: string, blockIndex?: number) => void;
+  /** The start screen (welcome, recent projects) is showing over open work: the Socius logo shows it. */
+  home: boolean;
+  setHome: (b: boolean) => void;
 }
 
 let seq = 0;
@@ -87,7 +92,7 @@ export const useUi = create<UiState>((set, get) => ({
   gridTarget: null,
   focusGrid: (t) => set({ gridTarget: { ...t, seq: ++seq } }),
   varViewTarget: null,
-  focusVariableView: (varId) => set({ varViewTarget: { varId, seq: ++seq } }),
+  focusVariableView: (varId, opts) => set({ varViewTarget: { varId, editName: opts?.editName, seq: ++seq } }),
   currentVarId: null,
   setCurrentVarId: (id) => (get().currentVarId === id ? undefined : set({ currentVarId: id })),
   confirmReq: null,
@@ -114,6 +119,8 @@ export const useUi = create<UiState>((set, get) => ({
   setPaletteOpen: (b) => set({ paletteOpen: b }),
   outputTarget: null,
   focusOutput: (itemId, blockIndex) => set({ outputTarget: { itemId, blockIndex, seq: ++seq } }),
+  home: false,
+  setHome: (b) => (get().home === b ? undefined : set({ home: b })),
 }));
 
 export function applyTheme(t: ThemePref) {

@@ -1,7 +1,8 @@
 // Help menu dialogs: Getting started, Keyboard shortcuts, About Socius.
 import { Modal } from '../ui/Modal';
 import { FEEDBACK_URL, GUIDE_URL, SITE_URL } from './links';
-import { APP_VERSION } from '../features/project/projectFile';
+import { BUILD_INFO } from '../platform/buildInfo';
+import { openErrorLog, openFeedback } from '../features/errorlog/actions';
 import { isMac } from './shortcuts';
 
 export function GettingStartedDialog({ onClose }: { onClose: () => void }) {
@@ -45,8 +46,8 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
       rows: [
         [`[${mod}+K] or [/]`, 'Search commands, variables, results and help'],
         [`[${mod}+J]`, 'Open or close the Socius assistant (AI menu)'],
-        [`[${mod}+Z]`, 'Undo the last data change (Text coding: the last coding change)'],
-        [`[${mod}+Y] or [${mod}+Shift+Z]`, 'Redo'],
+        [`[${mod}+Z]`, 'Undo, in the tab you are in: in Text coding the last coding change; in Output the last deleted result (otherwise the last data change); in Data View and Variable View the last data change. Edit > Undo names what it will undo. While you type in a box, it undoes your typing.'],
+        [`[${mod}+Y] or [${mod}+Shift+Z]`, 'Redo, in the same way'],
         [`[${mod}+O]`, 'Open a data file'],
         [`[${mod}+S]`, 'Save the project'],
         ['[Esc]', 'Close a dialog or menu'],
@@ -126,7 +127,7 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
 
 export function AboutDialog({ onClose }: { onClose: () => void }) {
   return (
-    <Modal title="About Socius" subtitle={`Version ${APP_VERSION}`} onClose={onClose} footer={<button className="btn btn-primary" onClick={onClose}>Close</button>}>
+    <Modal title="About Socius" subtitle={`Version ${BUILD_INFO.label}`} onClose={onClose} footer={<button className="btn btn-primary" onClick={onClose}>Close</button>}>
       <div className="stack about">
         <p>Socius is a research workbench for sociologists: survey data, statistics and qualitative coding in one place, in the browser.</p>
         <section>
@@ -140,7 +141,8 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
           <h3 className="eyebrow">Help and feedback</h3>
           <ul>
             <li><a href={GUIDE_URL} target="_blank" rel="noopener noreferrer">User guide</a></li>
-            <li><a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">Send feedback or report a problem</a> (a form on GitHub)</li>
+            <li><a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); openFeedback(); }}>Send feedback or report a problem</a> (a form on GitHub)</li>
+            <li>Something not working? <button type="button" className="linkish" onClick={openErrorLog}>Help &gt; Error log</button> lists what went wrong, to copy into your report.</li>
             <li>Website: <a href={SITE_URL} target="_blank" rel="noopener noreferrer">{SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a></li>
           </ul>
         </section>

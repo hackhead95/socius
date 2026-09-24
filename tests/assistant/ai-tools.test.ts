@@ -1,13 +1,16 @@
-// Tool-calling adapters: Gemini functionDeclarations / functionCall / functionResponse (with thought
-// signatures replayed), OpenAI-compatible tools / tool_calls (streamed and not), rate-limit details,
-// and the Claude `sample` tools path.
-import { afterEach, describe, expect, it, vi } from 'vitest';
+// Tool-calling adapters: Gemini via the Interactions API (function tools, function_call steps, thought
+// steps replayed verbatim with store: false) and the generateContent fallback (functionDeclarations /
+// functionCall / functionResponse with thought signatures), OpenAI-compatible tools / tool_calls
+// (streamed and not), rate-limit details, and the Claude `sample` tools path.
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  askClaudeTools, askGeminiTools, askOpenAiTools, buildGeminiToolRequest, buildOpenAiToolRequest, claudeToolsAvailable, geminiContents, isToolsUnsupported, openAiMessages,
-  parseDelay, parseOpenAiTurn, toGeminiSchema, toolErrorFromResponse, type ChatMessage, type ToolSpec,
+  askClaudeTools, askGeminiTools, askOpenAiTools, buildGeminiInteractionToolRequest, buildGeminiToolRequest, buildOpenAiToolRequest, claudeToolsAvailable, geminiContents, interactionSteps,
+  isToolsUnsupported, openAiMessages, parseDelay, parseOpenAiTurn, toGeminiSchema, toolErrorFromResponse, type ChatMessage, type ToolSpec,
 } from '../../src/platform/ai-tools';
+import { __resetGeminiState, __setHttpRetryDelay } from '../../src/platform/ai-http';
 import { __resetCapabilityCache } from '../../src/platform/claude';
 import { jsonResponse, sseResponse } from '../platform/helpers';
+import { G, interactionCalls, interactionStream } from '../platform/gemini-fixtures';
 
 const gem = { apiKey: ' AIza-tools ', model: '' };
 const oa = { baseUrl: 'https://api.groq.com/openai/v1', apiKey: 'gsk_x', model: 'llama-3.3-70b-versatile' };
@@ -21,9 +24,15 @@ const tools: ToolSpec[] = [
   },
 ];
 
+beforeEach(() => {
+  __resetGeminiState();
+  __setHttpRetryDelay(0);
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
   __resetCapabilityCache();
+  __setHttpRetryDelay(1500);
 });
 
 function mockFetch(respond: (url: string, init: RequestInit) => Response | Promise<Response>) {
@@ -33,10 +42,43 @@ function mockFetch(respond: (url: string, init: RequestInit) => Response | Promi
 }
 
 const modelList = () =>
-  jsonResponse({ models: ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.6-flash-image', 'gemini-3.6-pro'].map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) });
+  jsonResponse({ models: ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.6-flash-lite', 'gemini-3.6-flash-image', 'gemini-3.6-pro'].map((n) => ({ name: `models/${n}`, supportedGenerationMethods: ['generateContent'] })) });
 
 describe('Gemini function calling', () => {
-  it('builds functionDeclarations with Gemini schema types, system instruction and tool config', () => {
+  it('Interactions: function tools with JSON Schema, system instruction, no storage, tool choice', () => {
+    const r = buildGeminiInteractionToolRequest({ apiKey: 'AQ.k', model: 'gemini-3.5-flash-lite' }, { system: 'You are...', messages: [{ role: 'user', text: 'Hi' }], tools, stream: true, maxTokens: 4096 });
+    expect(r.url).toBe('https://generativelanguage.googleapis.com/v1beta/interactions');
+    const body = JSON.parse(r.init.body);
+    expect(body).toMatchObject({ model: 'gemini-3.5-flash-lite', system_instruction: 'You are...', store: false, stream: true, input: [{ type: 'user_input', content: [{ type: 'text', text: 'Hi' }] }] });
+    expect(body.tools).toEqual([
+      { type: 'function', name: 'get_dataset_overview', description: 'Overview.' },
+      { type: 'function', name: 'describe_variables', description: 'Describe.', parameters: tools[1].parameters },
+    ]);
+    expect(body.generation_config).toEqual({ thinking_level: 'low', max_output_tokens: 5120 });
+    expect(body.temperature).toBeUndefined();
+    const none = JSON.parse(buildGeminiInteractionToolRequest({ apiKey: 'k', model: 'm' }, { system: '', messages: [], tools, toolChoice: 'none', stream: false }).init.body);
+    expect(none.generation_config.tool_choice).toBe('none');
+  });
+
+  it('Interactions: a conversation with tool rounds becomes steps, replaying the model steps (thought signatures) verbatim', () => {
+    const raw = { provider: 'gemini-interactions', parts: [{ type: 'thought', signature: 'SIG123' }, { type: 'function_call', id: 'fc_1', name: 'describe_variables', arguments: { names: ['trust5'] } }] };
+    const msgs: ChatMessage[] = [
+      { role: 'user', text: 'Describe trust5' },
+      { role: 'assistant', text: '', toolCalls: [{ id: 'fc_1', name: 'describe_variables', args: { names: ['trust5'] } }], raw },
+      { role: 'tool', results: [{ callId: 'fc_1', name: 'describe_variables', content: 'trust5: mean 3.01' }] },
+      { role: 'assistant', text: 'Mean is 3.01.' },
+      { role: 'user', text: 'Thanks' },
+    ];
+    expect(interactionSteps(msgs)).toEqual([
+      { type: 'user_input', content: [{ type: 'text', text: 'Describe trust5' }] },
+      ...raw.parts,
+      { type: 'function_result', call_id: 'fc_1', name: 'describe_variables', result: 'trust5: mean 3.01' },
+      { type: 'model_output', content: [{ type: 'text', text: 'Mean is 3.01.' }] },
+      { type: 'user_input', content: [{ type: 'text', text: 'Thanks' }] },
+    ]);
+  });
+
+  it('builds functionDeclarations with Gemini schema types, system instruction and tool config (generateContent fallback)', () => {
     const r = buildGeminiToolRequest({ apiKey: 'k', model: 'gemini-3.6-flash' }, { system: 'You are...', messages: [{ role: 'user', text: 'Hi' }], tools, stream: false });
     expect(r.url).toMatch(/models\/gemini-3\.6-flash:generateContent$/);
     const body = JSON.parse(r.init.body);
@@ -66,63 +108,57 @@ describe('Gemini function calling', () => {
     expect(c[3]).toEqual({ role: 'model', parts: [{ text: 'Mean is 3.01.' }] });
   });
 
-  it('lists models once, then reads several functionCall parts from one turn', async () => {
+  it('lists models once (Flash-Lite for tool loops), then reads several function_call steps from one turn', async () => {
     const f = mockFetch((url) => {
       if (url.includes('/models?')) return modelList();
-      return jsonResponse({
-        candidates: [
-          {
-            content: { role: 'model', parts: [{ text: 'Let me check.' }, { functionCall: { name: 'get_dataset_overview', args: {} }, thoughtSignature: 'S1' }, { functionCall: { name: 'describe_variables', args: { names: ['trust5', 'gender'] } } }] },
-            finishReason: 'STOP',
-          },
+      return interactionCalls(
+        [
+          { id: 'fc_a', name: 'get_dataset_overview', arguments: {} },
+          { id: 'fc_b', name: 'describe_variables', arguments: { names: ['trust5', 'gender'] } },
         ],
-      });
+        'Let me check.',
+      );
     });
     const turn = await askGeminiTools(gem, { system: 'sys', messages: [{ role: 'user', text: 'Describe' }], tools });
     expect(f.mock.calls[0][0]).toContain('/models?');
-    expect(f.mock.calls[1][0]).toContain('/models/gemini-3.6-flash:generateContent');
-    expect((f.mock.calls[1][1] as RequestInit & { headers: Record<string, string> }).headers['x-goog-api-key']).toBe('AIza-tools');
+    expect(f.mock.calls[1][0]).toBe('https://generativelanguage.googleapis.com/v1beta/interactions');
+    const init = f.mock.calls[1][1] as RequestInit & { headers: Record<string, string> };
+    expect(init.headers['x-goog-api-key']).toBe('AIza-tools');
+    expect(JSON.parse(init.body as string).model).toBe('gemini-3.6-flash-lite');
     expect(turn.text).toBe('Let me check.');
-    expect(turn.toolCalls.map((c) => c.name)).toEqual(['get_dataset_overview', 'describe_variables']);
+    expect(turn.toolCalls.map((c) => [c.id, c.name])).toEqual([['fc_a', 'get_dataset_overview'], ['fc_b', 'describe_variables']]);
     expect(turn.toolCalls[1].args).toEqual({ names: ['trust5', 'gender'] });
-    expect(new Set(turn.toolCalls.map((c) => c.id)).size).toBe(2);
-    expect(turn.raw?.parts).toHaveLength(3);
+    expect(turn.raw).toMatchObject({ provider: 'gemini-interactions' });
+    expect(turn.raw?.parts).toHaveLength(4); // thought (with signature), text, two calls
     // The model list is cached per key.
     await askGeminiTools(gem, { system: 'sys', messages: [{ role: 'user', text: 'Again' }], tools });
     expect(f.mock.calls.filter((c) => String(c[0]).includes('/models?'))).toHaveLength(1);
   });
 
-  it('streams the final answer text over SSE', async () => {
-    const ev = (parts: unknown[]) => `data: ${JSON.stringify({ candidates: [{ content: { role: 'model', parts } }] })}\r\n\r\n`;
-    mockFetch((url) => (url.includes('/models?') ? modelList() : sseResponse([ev([{ text: 'Trust is ' }]), ev([{ text: 'moderate.' }])])));
+  it('streams text, and function-call arguments sent in pieces', async () => {
+    mockFetch((url) => (url.includes('/models?') ? modelList() : interactionStream(['Trust is ', 'moderate.'])));
     const seen: string[] = [];
     const turn = await askGeminiTools({ apiKey: 'AIza-stream', model: 'gemini-3.6-flash' }, { system: 's', messages: [{ role: 'user', text: 'q' }], tools, onText: (t) => seen.push(t) });
     expect(turn.text).toBe('Trust is moderate.');
     expect(turn.toolCalls).toEqual([]);
     expect(seen).toEqual(['Trust is ', 'Trust is moderate.']);
+    expect(turn.raw?.parts[0]).toEqual({ type: 'thought', signature: 'EqEYsig' });
+    mockFetch(() => interactionStream([], { calls: [{ id: 'fc_9', name: 'describe_variables', args: ['{"names":', '["age"]}'] }] }));
+    const t2 = await askGeminiTools({ apiKey: 'AIza-stream', model: 'gemini-3.6-flash' }, { system: 's', messages: [{ role: 'user', text: 'q' }], tools, onText: () => undefined });
+    expect(t2.toolCalls).toEqual([{ id: 'fc_9', name: 'describe_variables', args: { names: ['age'] } }]);
   });
 
-  it('reports 429 with the retry delay and daily quota, and MALFORMED_FUNCTION_CALL as its own code', async () => {
-    mockFetch(() =>
-      jsonResponse(
-        {
-          error: {
-            code: 429,
-            message: 'You exceeded your current quota.',
-            status: 'RESOURCE_EXHAUSTED',
-            details: [
-              { '@type': 'type.googleapis.com/google.rpc.QuotaFailure', violations: [{ quotaId: 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier' }] },
-              { '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '21s' },
-            ],
-          },
-        },
-        429,
-      ),
-    );
+  it('reports 429 with the retry delay and daily quota, MAX_TOKENS and MALFORMED_FUNCTION_CALL as their own codes', async () => {
+    mockFetch(() => G.quotaPerMinute('gemini-3.6-flash'));
     await expect(askGeminiTools({ apiKey: 'k', model: 'gemini-3.6-flash' }, { system: '', messages: [{ role: 'user', text: 'q' }], tools })).rejects.toMatchObject({ code: 'rate_limited', retryAfterMs: 21_000, daily: false });
-    mockFetch(() => jsonResponse({ error: { code: 429, message: 'Quota exceeded', details: [{ violations: [{ quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier' }] }] } }, 429));
+    // Daily allowance used up on every model: rate_limited, daily (the agent then stops instead of waiting).
+    mockFetch((url) => (url.includes('/models?') ? modelList() : G.quotaPerDay('gemini-3.6-flash')));
     await expect(askGeminiTools({ apiKey: 'k', model: 'gemini-3.6-flash' }, { system: '', messages: [{ role: 'user', text: 'q' }], tools })).rejects.toMatchObject({ code: 'rate_limited', daily: true });
-    mockFetch(() => jsonResponse({ candidates: [{ content: { parts: [] }, finishReason: 'MALFORMED_FUNCTION_CALL' }] }));
+    __resetGeminiState();
+    mockFetch(() => jsonResponse({ id: 'x', status: 'incomplete', steps: [{ type: 'thought', signature: 's' }] }));
+    await expect(askGeminiTools({ apiKey: 'k', model: 'gemini-3.6-flash' }, { system: '', messages: [{ role: 'user', text: 'q' }], tools })).rejects.toMatchObject({ code: 'max_tokens' });
+    // generateContent fallback (Interactions endpoint missing): MALFORMED_FUNCTION_CALL.
+    mockFetch((url) => (url.endsWith('/interactions') ? G.endpointNotFound() : jsonResponse({ candidates: [{ content: { parts: [] }, finishReason: 'MALFORMED_FUNCTION_CALL' }] })));
     await expect(askGeminiTools({ apiKey: 'k', model: 'gemini-3.6-flash' }, { system: '', messages: [{ role: 'user', text: 'q' }], tools })).rejects.toMatchObject({ code: 'malformed_call' });
   });
 });

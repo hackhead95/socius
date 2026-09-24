@@ -2,7 +2,7 @@
 
 import type { Column, Dataset, Variable, VarType } from '../../core/types';
 import { makeVariable, newId } from '../../core/types';
-import { formatRawValue, isDateFormat, uniqueVarName } from '../../core/data';
+import { formatRawValue, isDateFormat, uniqueVarName, validateVarName } from '../../core/data';
 import { parseCellInput, parseDateText } from './gridEdit';
 import { utf8ByteLength } from '../../lib/io/encoding';
 import { variableNameFor } from '../../lib/io/infer';
@@ -12,6 +12,44 @@ const MAX_STRING_WIDTH = 32767;
 
 function bump(ds: Dataset, patch: Partial<Dataset>): Dataset {
   return { ...ds, ...patch, version: ds.version + 1 };
+}
+
+const NAME_CHAR = /[A-Za-z0-9_.@#$\u00C0-\uFFFF]/;
+const RESERVED_WORDS = 'ALL, AND, BY, EQ, GE, GT, LE, LT, NE, NOT, OR, TO, WITH';
+
+/**
+ * Why `raw` cannot be the name of variable `exceptId` (or of a new variable), in plain words with a
+ * suggestion where one helps; null when the name is fine. The rules are SPSS's (validateVarName):
+ * start with a letter (any alphabet, so Bengali names work), then letters, digits, _ . @ # $; no
+ * spaces; not ending in . or _; at most 64 bytes; not a reserved word; unique ignoring capitals.
+ */
+export function varNameProblem(ds: Dataset, raw: string, exceptId?: string): string | null {
+  const name = raw.trim();
+  const err = validateVarName(ds, name, exceptId);
+  if (!err) return null;
+  if (!name) return 'Type a name. Every variable needs one.';
+  const others = { ...ds, variables: ds.variables.filter((v) => v.id !== exceptId) };
+  const suggest = (): string => {
+    let cand = name.replace(/\s+/g, '_');
+    cand = Array.from(cand).map((ch) => (NAME_CHAR.test(ch) ? ch : '_')).join('');
+    if (!/^[A-Za-z@#$\u00C0-\uFFFF]/.test(cand)) cand = `v${cand}`;
+    cand = cand.replace(/[._]+$/, '');
+    if (cand !== name && validateVarName(others, cand) === null) return ` Try ${cand}.`;
+    // Taken (or still not valid): number it, name_2, name_3, ...
+    for (let i = 2; i < 100; i++) if (validateVarName(ds, `${cand}_${i}`) === null) return ` Try ${cand}_${i}.`;
+    return '';
+  };
+  if (/\s/.test(name)) return `Names cannot contain spaces.${suggest()}`;
+  const bad = Array.from(name).find((ch) => !NAME_CHAR.test(ch));
+  if (bad) return `Names can use letters, digits and _ . @ # $ only, not "${bad}".${suggest()}`;
+  if (!/^[A-Za-z@#$\u00C0-\uFFFF]/.test(name)) return `Names must start with a letter, not "${name.charAt(0)}".${suggest()}`;
+  if (/[._]$/.test(name)) return `Names cannot end with "${name.slice(-1)}".${suggest()}`;
+  const bytes = utf8ByteLength(name);
+  if (bytes > 64) return `This name is too long: ${bytes} bytes, and SPSS allows 64 (64 English letters, or about 21 Bengali letters).`;
+  const dup = others.variables.find((v) => v.name.toLowerCase() === name.toLowerCase());
+  if (dup) return `Another variable is already called ${dup.name}. Names must be different (capitals do not count).${suggest()}`;
+  if (/reserved/.test(err)) return `${name} is a reserved word in SPSS (${RESERVED_WORDS}). Choose another name.`;
+  return err;
 }
 
 /** Next free default name VAR00001, VAR00002, ... */

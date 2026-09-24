@@ -28,17 +28,17 @@ The audit test checks rules 1, 3, 5, 6, 7 and 8 on the real menu model, checks t
 | Menu | Items (submenus as "Parent > Item") |
 |---|---|
 | **File** | New dataset; Open data file... (Ctrl+O); Open project...; Recent projects...; Load sample survey; Save project (Ctrl+S); Save data as > SPSS data (.sav), SPSS compressed (.zsav), CSV with codes, CSV with value labels, Excel with codes, Excel with value labels; Export codebook > Excel (.xlsx), CSV; Export output report > Word document (.docx), Web page (.html), Excel workbook (.xlsx), Plain text (.txt); Close data and start fresh... |
-| **Edit** | Undo (Ctrl+Z); Redo (Ctrl+Y); Find in data... (Ctrl+F); Go to case...; Clear output... |
+| **Edit** | Undo (Ctrl+Z); Redo (Ctrl+Y) (both follow the tab and name what they will do, for example "Undo rename of age"); Find in data... (Ctrl+F); Go to case...; Clear output... |
 | **View** | Data View; Variable View; Output; Text coding; Value labels in Data View; Variable list; Theme > Match my system, Light, Dark |
-| **Data** | Copy variable properties...; Sort cases...; Select cases...; Weight cases...; Merge files > Add cases..., Add variables...; Aggregate...; Turn filter off (use all cases) and Turn weighting off (only while a filter or weight is on) |
+| **Data** | Define variable properties...; Copy variable properties...; Sort cases...; Select cases...; Weight cases...; Merge files > Add cases..., Add variables...; Aggregate...; Turn filter off (use all cases) and Turn weighting off (only while a filter or weight is on) |
 | **Transform** | Compute variable...; Count values within cases...; Recode into same variables...; Recode into different variables...; Automatic recode...; Visual binning...; Reverse-code items...; Create scale / index...; Standardize (z-scores)...; Rank cases... |
 | **Analyze** | Descriptive Statistics > Frequencies..., Descriptives..., Explore..., Crosstabs...; Compare Means > Means..., One-Sample T Test..., Independent-Samples T Test..., Paired-Samples T Test..., One-Way ANOVA...; Correlate > Bivariate Correlations..., Partial Correlations...; Regression > Linear Regression..., Binary Logistic Regression..., Ordinal Regression..., Multinomial Logistic Regression...; Nonparametric Tests > Chi-Square (goodness of fit)..., Binomial..., Mann-Whitney U (2 independent samples)..., Kruskal-Wallis H (k independent samples)..., Wilcoxon Signed-Rank (2 related samples)..., Friedman (k related samples)...; Scale > Reliability Analysis...; Dimension Reduction > Factor Analysis... |
 | **Graphs** | Bar Chart...; Histogram...; Box Plot...; Scatter Plot...; Line Chart...; Pie Chart...; Population Pyramid... |
-| **Text coding** | Import documents...; Import open-ended answers from dataset...; Load sample interviews; Code open-ended responses; Auto-code with keyword rules...; Retrieve coded segments; Code frequencies; Code co-occurrence; Codes by attribute; Word frequencies; Keyword in context; Intercoder reliability; Coders...; Memos; Export codes to dataset...; Export coded segments...; Qualitative report...; Codebook export and import... |
+| **Text coding** | Import documents...; Import open-ended answers from dataset...; Load sample interviews...; Code open-ended responses; Auto-code with keyword rules...; Retrieve coded segments; Code frequencies; Code co-occurrence; Codes by attribute; Word frequencies; Keyword in context; Intercoder reliability; Coders...; Memos; Export codes to dataset...; Export coded segments...; Qualitative report...; Codebook export and import... |
 | **AI** | Ask the Socius assistant... (Ctrl+J); Explain a result...; Suggest a codebook...; Suggest codes for open-ended answers...; Summarise a code...; AI assistant settings... |
-| **Help** | Getting started; User guide; Keyboard shortcuts; Send feedback or report a problem; About Socius |
+| **Help** | Getting started; User guide; Keyboard shortcuts; Send feedback or report a problem (a small dialog offers the error report, then opens the form on GitHub); Error log...; About Socius |
 
-107 commands, each in one place. On a phone the **Menu** button opens a sheet with the same menus.
+109 commands, each in one place. On a phone the **Menu** button opens a sheet with the same menus.
 
 ## Contextual shortcuts and their home
 
@@ -47,20 +47,23 @@ The audit test checks rules 1, 3, 5, 6, 7 and 8 on the real menu model, checks t
 | Tabs **Data View**, **Variable View**, **Output**, **Text coding** | Under the menu bar | View menu |
 | Search box, and the search icon on narrow screens (the same control, shown by width) | Top bar | Search (Ctrl+K or /); searches the menus |
 | **AI** chip: the five AI features, then **Set up AI** or **AI assistant settings** | Top bar | AI menu |
-| **Feedback** (tooltip: "Send feedback or report a problem ...") | Top bar | Help > Send feedback or report a problem |
-| Undo, Redo icons | Top bar | Edit > Undo, Edit > Redo |
+| **Feedback** (tooltip: "Send feedback or report a problem ...") | Top bar | Help > Send feedback or report a problem (same dialog) |
+| Undo, Redo icons (tooltip names what will be undone) | Top bar | Edit > Undo, Edit > Redo (same tab rules) |
+| **Undo** (tooltip "Undo: Code passage (Ctrl+Z, or Edit > Undo)") | Text coding toolbar | Edit > Undo, in the Text coding tab |
 | Theme icon (tooltip: "Theme: Match my system", "Theme: Light", "Theme: Dark") | Top bar | View > Theme |
 | Weight and filter chips (change, or turn off) | Dataset bar | Data > Weight cases..., Select cases..., Turn weighting off, Turn filter off |
 | **Open data file**, **Open project**, **Load sample survey**, **New dataset**, recent projects | Welcome screen | File menu |
 | **Getting started: six steps** | Welcome screen | Help > Getting started |
 | **Value labels** (tooltip names View > Value labels in Data View) | Data View toolbar | View > Value labels in Data View |
 | **Find in data** (Ctrl+F), **Go to case** | Data View toolbar | Edit > Find in data..., Edit > Go to case... |
+| **Define variable properties...** (toolbar button and right-click; starts with the selected variables) | Variable View | Data > Define variable properties... |
 | **Copy variable properties...** | Variable View right-click | Data > Copy variable properties... |
 | **Clear output** | Output toolbar | Edit > Clear output... |
 | Frequencies, Crosstabs, Independent-Samples T Test (buttons named after the procedure) | Empty Output tab | Analyze menu |
 | **Explain with AI** (explains this result) | Every Output result | AI > Explain a result... (which lets you pick a result) |
 | **Coders...** in the **Coder** button | Text coding toolbar | Text coding > Coders... |
-| **Import**: Import documents..., Paste text..., Import open-ended answers from dataset..., Sample interviews... | Text coding toolbar | Text coding menu (Paste text and Sample interviews are tabs of the same Import dialog) |
+| **Import**: Import documents..., Paste text..., Import open-ended answers from dataset..., Load sample interviews... | Text coding toolbar | Text coding menu (Paste text is a tab of the same Import dialog; Load sample interviews... is the same command as the menu item) |
+| **Load sample interviews** card | Text coding start page | Text coding > Load sample interviews... |
 | **Auto-code** (tooltip: Auto-code with keyword rules) | Text coding toolbar | Text coding > Auto-code with keyword rules... |
 | **AI suggestions**: Suggest a codebook..., Suggest codes for open-ended answers..., Summarise a code...; **Set up AI** next to it when AI is not set up | Text coding toolbar | AI menu |
 | **Export**: Export codes to dataset..., Export coded segments..., Qualitative report..., Codebook export and import... | Text coding toolbar | Text coding menu |
@@ -70,6 +73,8 @@ The audit test checks rules 1, 3, 5, 6, 7 and 8 on the real menu model, checks t
 | **Set up AI** | Explain panel, coding AI dialogs, Text coding note, the assistant panel | AI > AI assistant settings... |
 | **AI assistant settings** link | "What will be sent" notes in AI dialogs, the assistant's error messages | AI > AI assistant settings... |
 | **Assistant** button (Ctrl+J) | Bottom right of every screen | AI > Ask the Socius assistant... |
+
+**Home** (the Socius logo at the left of the top bar) shows the start screen: open a file, recent projects, the sample survey, Getting started. When data, output or coding is open it shows **Back to your data** (or Back to Output, Back to Text coding) at the top; any tab also returns. It is not a menu command because it opens nothing and changes nothing.
 
 Commands that have no menu home on purpose, because they only make sense where they are: the Data View right-click and toolbar actions on the selection (Insert case above, Insert variable, Delete cases, Sort ascending or descending by the current column, Column statistics), the Output toolbar (APA tables or SPSS tables, Interpretations, Syntax, Outline, Export report), and the per-result buttons (Copy, Move up, Move down, Delete).
 
@@ -84,9 +89,9 @@ Every action that existed before still has exactly one menu home (checked by the
 | Text coding > Suggest a codebook with AI... | AI > Suggest a codebook... | "suggest a codebook", "codebook" |
 | Text coding > Suggest codes for responses with AI... | AI > Suggest codes for open-ended answers... | "suggest codes", "code responses" |
 | Text coding > Open coding workspace | View > Text coding | "open coding workspace", "coding workspace" |
-| Data > Define variable properties | View > Variable View | "define variable properties", "value labels", "missing values" |
+| Data > Define variable properties | View > Variable View (a real Define variable properties wizard has since taken this Data menu place; see decision 6) | "variable view", "dictionary" |
 
-All other 107 menu items keep their menu, their place and their action. The only menu label changes are in the Text coding menu, where "…" became "..." like every other menu.
+All other 107 menu items keep their menu, their place and their action. The only menu label changes are in the Text coding menu, where "…" became "..." like every other menu, and (September 2026) "Load sample interviews" became "Load sample interviews..." because it now opens the chooser; Edit > Undo and Redo name what they will do.
 
 ## Audit findings
 
@@ -133,7 +138,20 @@ These look similar but are not clear duplicates, so they were left as they are.
    Original note: The Output toolbar's **Export report** (Word, web page, Excel, plain text) is the only way to export results, so Search cannot find it. A **File > Export report** submenu would give it a home, with the toolbar button as its shortcut.
 2. **Resolved: two ways to clear the output with different confirmations.** Both now call one shared confirmation (`confirmAndClearOutputs`).
    Original note: Edit > Clear output... and the Output toolbar's **Clear output** do the same thing but ask with different messages. They could share one confirmation.
-3. **Sample interviews: two different actions.** Text coding > **Load sample interviews** loads all three interviews at once; the toolbar's Import > **Sample interviews...** opens the Import dialog where you pick them. Keep both, or make the toolbar item load them directly?
-4. **Ctrl+Z in Text coding.** In the Text coding tab Ctrl+Z undoes the last coding change (if any) while **Edit > Undo**, which shows Ctrl+Z, always undoes the last data change. It is now documented; the owner may prefer Edit > Undo to follow the tab too.
-5. **Explain with AI vs Explain a result.** The per-result button keeps its own name because it explains that result, while the AI menu item asks which result. Renaming the button to "Explain a result" would make them identical but less clear.
-6. **Define variable properties.** SPSS users know Data > Define Variable Properties as a separate wizard. Socius's item only switched to Variable View, so it was removed as a duplicate; if a real wizard is added later, it would belong back in the Data menu.
+3. **Resolved: sample interviews are one command.** Text coding > **Load sample interviews...**, the toolbar's Import > **Load sample interviews...** and the card on the Text coding start page all open the same chooser (the Sample interviews tab of the Import dialog) with every interview that is not loaded yet ticked, and a **Load 3 interviews** button. Chosen over loading directly because it is one click more but shows what will be loaded (fictional transcripts, word counts, attributes), marks interviews already loaded instead of silently skipping them, and lets you load just one.
+   Original note: Text coding > **Load sample interviews** loaded all three interviews at once; the toolbar's Import > **Sample interviews...** opened the Import dialog where you pick them. Keep both, or make the toolbar item load them directly?
+4. **Resolved: Undo follows the tab.** Edit > Undo and Redo, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z (Cmd on a Mac) and the top-bar icons act on the tab you are in: in **Text coding** the last coding change (codes, passages, memos, sources; now with Redo too) and nothing else; in **Output** the last deleted result if there is one, otherwise the last data change; in **Data View** and **Variable View** the last data change. The menu label says what will happen ("Undo rename of age", "Undo code passage", "Undo deleting Frequencies"); when there is nothing, the item is disabled and its tooltip says why for that tab. The keys never fire while you type in a box (the box keeps its own undo). The logic is in `src/app/undo.ts`; Help > Keyboard shortcuts explains it.
+   Original note: In the Text coding tab Ctrl+Z undid the last coding change (if any) while **Edit > Undo**, which shows Ctrl+Z, always undid the last data change.
+5. **Resolved: Explain with AI and Explain a result stay as they are** (owner's decision). The per-result button keeps its own name because it explains that result, while the AI menu item asks which result.
+6. **Resolved: Define variable properties.** Now a real wizard at **Data > Define variable properties...** (first item of the Data menu, its one home), like SPSS's Data > Define Variable Properties: choose variables to scan, then for each one see every value with its count, label values inline, tick missing codes, set the measurement level with Socius's suggestion and its reason, accept suggested labels from a preview, and copy properties to the other items of a battery. Apply makes one undoable change and logs VARIABLE LABELS, VALUE LABELS, MISSING VALUES and VARIABLE LEVEL syntax to Output. Shortcut: **Define variable properties...** in the Variable View toolbar and right-click menu. Search finds it by "define properties", "value labels", "label values" and "missing values". Switching to Variable View stays at View > Variable View.
+   Original note: SPSS users know Data > Define Variable Properties as a separate wizard. Socius's item only switched to Variable View, so it was removed as a duplicate; if a real wizard is added later, it would belong back in the Data menu.
+
+## How the menus behave
+
+Fixed in September 2026 after the report "hovering menu gets stuck after I click on any tab" (details in `src/ui/Menu.tsx` and `src/app/MenuBar.tsx`, checked with real mouse movement by `e2e/shell-fixes.spec.ts`):
+
+- A menu opens on mouse press. While one is open, pointing at another menu opens it at once. With no menu open, passing over the menu bar opens nothing.
+- One highlight: the item under the pointer is the focused item, so the pointer and the arrow keys share one highlight. Leaving the menu for empty space removes it. Opened with the mouse, no item is highlighted until you point; opened with the keyboard, the first item is.
+- Submenus open after a short pause (120 ms) and stay open while the pointer moves diagonally towards them over other items; resting on another item switches.
+- Pressing anywhere else (a tab, the grid), Esc, leaving the window or the browser tab, resizing, and switching the main tab close the menu. After a choice, focus goes back where it was before the menu opened, so no menu button keeps focus or looks stuck; from the keyboard it goes back to the menu button.
+- The menu bar is one Tab stop (arrow keys move between menus). Hover styles only apply where there is a real pointer, so a tap on a touch screen leaves nothing highlighted. The phone Menu sheet is unchanged.

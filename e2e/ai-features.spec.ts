@@ -3,29 +3,20 @@
 // on an Output item (preview of what will be sent, streamed answer, Add to output).
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { openWithSample } from './helpers';
+import { GEMINI, interactionReply, modelsReply, promptOf } from './gemini-mock';
 
-const GEMINI = 'https://generativelanguage.googleapis.com/**';
-const cors = { 'Access-Control-Allow-Origin': '*' };
-const reply = (text: string) => ({ candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason: 'STOP' }] });
-
-async function mockGemini(page: Page, calls: Array<{ url: string; prompt: string }>) {
+/** Mock Gemini (Interactions API): streamed requests get an explanation, others "OK". */
+async function mockGemini(page: Page, calls: Array<{ url: string; prompt: string; stream: boolean }>) {
   await page.route(GEMINI, async (route: Route) => {
     const req = route.request();
-    if (req.method() === 'GET') {
-      return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ models: [{ name: 'models/gemini-3.6-flash', supportedGenerationMethods: ['generateContent'] }] }) });
-    }
+    if (req.method() === 'GET') return route.fulfill(modelsReply(['gemini-3.6-flash']));
     const body = req.postDataJSON();
-    calls.push({ url: req.url(), prompt: body.contents[0].parts[0].text });
-    if (req.url().includes('streamGenerateContent')) {
-      const ev = (t: string) => `data: ${JSON.stringify(reply(t))}\r\n\r\n`;
-      return route.fulfill({
-        status: 200,
-        headers: cors,
-        contentType: 'text/event-stream',
-        body: ev('## What was tested\nWhether attending civic meetings differs ') + ev('between migrants and non-migrants.\n\n## Cautions\n- Association is not causation.'),
-      });
+    calls.push({ url: req.url(), prompt: promptOf(body), stream: !!body.stream });
+    if (body.stream) {
+      const chunks = ['## What was tested\nWhether attending civic meetings differs ', 'between migrants and non-migrants.\n\n## Cautions\n- Association is not causation.'];
+      return route.fulfill(interactionReply([{ text: chunks.join('') }], true, chunks));
     }
-    return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(reply('OK')) });
+    return route.fulfill(interactionReply([{ text: 'OK' }], false));
   });
 }
 
@@ -83,7 +74,7 @@ test('AI not set up: the AI menu, the chip and Text coding lead to set-up that n
 });
 
 test('set up Gemini, "AI is ready. Try it", run Crosstabs, Explain with AI (streamed), Add to output', async ({ page }) => {
-  const calls: Array<{ url: string; prompt: string }> = [];
+  const calls: Array<{ url: string; prompt: string; stream: boolean }> = [];
   await mockGemini(page, calls);
   await openWithSample(page);
   await menu(page, 'AI', 'AI assistant settings...');
@@ -120,7 +111,7 @@ test('set up Gemini, "AI is ready. Try it", run Crosstabs, Explain with AI (stre
   await expect(panel.locator('.ai-preview-text')).toContainText('Pearson Chi-Square');
   await expect(panel.locator('.ai-preview-text')).toContainText('What the numbers mean');
   const before = calls.length; // only the connection test so far
-  expect(calls.every((c) => !c.url.includes('streamGenerateContent'))).toBe(true);
+  expect(calls.every((c) => !c.stream)).toBe(true);
 
   await panel.getByRole('button', { name: 'Explain', exact: true }).click();
   await expect(panel.locator('.ai-explain-text')).toContainText('Whether attending civic meetings differs between migrants and non-migrants.');
@@ -128,7 +119,8 @@ test('set up Gemini, "AI is ready. Try it", run Crosstabs, Explain with AI (stre
   await expect(panel).toContainText('AI-generated: check against the tables');
   expect(calls).toHaveLength(before + 1);
   const sent = calls[calls.length - 1];
-  expect(sent.url).toContain(':streamGenerateContent?alt=sse');
+  expect(sent.url).toBe('https://generativelanguage.googleapis.com/v1beta/interactions');
+  expect(sent.stream).toBe(true);
   expect(sent.prompt).toContain('Pearson Chi-Square');
   expect(sent.prompt).toContain('Crosstabulation');
   expect(sent.prompt).not.toContain('Urban trust survey'); // the dataset name stays here

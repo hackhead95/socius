@@ -3,14 +3,9 @@
 
 import { useEffect } from 'react';
 import { useStore } from '../../core/store';
-import { newId } from '../../core/types';
-import { sampleTranscripts } from '../../samples';
-import { normaliseText } from '../../lib/coding/importers';
 import { useAiStatus } from '../ai/hooks';
 import { AiSetupButton } from '../ai/AiBits';
 import { Modal } from '../../ui/Modal';
-import { addDocs } from './actions';
-import { plural, toast } from './hooks';
 import { useCodingUi, type AnalyseTab, type CodingView } from './uiStore';
 import { ImportDialog } from './dialogs/ImportDialog';
 import { AutoCodeDialog } from './dialogs/AutoCodeDialog';
@@ -35,25 +30,6 @@ function ViewSwitch({ target, onClose }: { target: string; onClose: () => void }
     useStore.getState().setTab('coding');
     onClose();
   }, [target, onClose]);
-  return null;
-}
-
-function LoadSamples({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const existing = new Set(useStore.getState().coding.docs.filter((d) => d.kind === 'document').map((d) => d.name));
-    const fresh = sampleTranscripts.filter((t) => !existing.has(t.name));
-    if (!sampleTranscripts.length) toast('No sample interviews are bundled in this build.', 'warning');
-    else if (!fresh.length) toast('The sample interviews are already loaded.', 'info');
-    else {
-      const now = Date.now();
-      const docs = fresh.map((t, i) => ({ id: newId('doc'), name: t.name, kind: 'document' as const, text: normaliseText(t.text), attributes: { ...t.attributes }, createdAt: now + i }));
-      addDocs(docs, 'Load sample interviews');
-      useCodingUi.getState().set({ view: 'documents', activeDocId: docs[0].id });
-      toast(`Loaded ${plural(docs.length, 'sample interview')}.`, 'success');
-    }
-    useStore.getState().setTab('coding');
-    onClose();
-  }, [onClose]);
   return null;
 }
 
@@ -104,7 +80,10 @@ export function CodingDialog(props: { id: string; params?: Record<string, unknow
     case 'import-survey':
       return <ImportDialog onClose={onClose} initialTab="survey" />;
     case 'load-samples':
-      return <LoadSamples onClose={onClose} />;
+      // Text coding > Load sample interviews... and the toolbar's Import > Load sample interviews...
+      // open the same chooser: the Import dialog's Sample interviews tab, with every interview that is
+      // not loaded yet ticked (docs/NAVIGATION.md, decision 3).
+      return <ImportDialog onClose={onClose} initialTab="samples" />;
     case 'auto-code':
       return <AutoCodeDialog onClose={onClose} />;
     case 'ai-codebook':

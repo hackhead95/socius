@@ -1,8 +1,11 @@
 // Tool calling ("function calling") for the Socius assistant, next to the plain-text adapters.
 //
-// - Google Gemini: native `functionDeclarations`; several functionCall parts per turn; results go back
-//   as functionResponse parts. The model's own parts (including Gemini 3 "thought signatures") are
-//   replayed exactly as received, which Gemini requires for multi-step tool use.
+// - Google Gemini: the Interactions API (POST /v1beta/interactions) with `tools` of type "function";
+//   the conversation is sent as a list of steps (user_input, model_output, thought, function_call,
+//   function_result) with `store: false`, so nothing is kept on Google's servers. The model's own steps
+//   (including thought signatures) are replayed exactly as received, which Gemini requires for multi-step
+//   tool use. For "AIza" keys the older generateContent endpoint (functionDeclarations / functionCall /
+//   functionResponse parts) remains as a fallback; model choice and fallbacks are shared with ai-http.
 // - OpenAI-compatible services: `tools` / `tool_calls` / role "tool" messages, streamed or not.
 // - Claude inside the claude.ai viewer: the `sample` capability runs the tool rounds itself; we pass
 //   page functions in `tools`.
@@ -12,7 +15,12 @@
 // Everything is provider-neutral at the edges: ChatMessage in, ModelTurn out.
 
 import { AiUnavailableError, useCapability } from './claude';
-import { GEMINI_BASE, geminiBlocked, geminiModelName, httpErrorCode, normaliseBaseUrl, readSse, resolveGeminiModel, type GeminiConfig, type OpenAiConfig } from './ai-http';
+import {
+  GEMINI_BASE, InteractionAccumulator, buildInteractionRequest, errorFromResponse, geminiBlocked, geminiEmptyError, geminiModelName, geminiRun, geminiThinkingConfig, httpErrorCode, normaliseBaseUrl,
+  readJsonEvents as readGeminiEvents, readSse, sanitizeApiKey, type AiAttempt, type GeminiConfig, type OpenAiConfig,
+} from './ai-http';
+
+export { parseDelay } from './ai-http';
 
 // ---------- neutral types ----------
 
@@ -94,55 +102,9 @@ function isAbort(e: any, signal?: AbortSignal): boolean {
 
 const cancelled = () => new AiUnavailableError('cancelled', 'Stopped.');
 
-/** "21s", "1.5s", "300ms" -> milliseconds. */
-export function parseDelay(s: string): number | undefined {
-  const m = /^\s*([\d.]+)\s*(ms|s)?\s*$/i.exec(s);
-  if (!m) return undefined;
-  const n = parseFloat(m[1]);
-  if (!Number.isFinite(n)) return undefined;
-  return Math.round((m[2]?.toLowerCase() === 'ms' ? n : n * 1000));
-}
-
 /** Error for a failed HTTP response, with the rate-limit details Gemini and OpenAI-style services send. */
 export async function toolErrorFromResponse(res: Response): Promise<ToolAiError> {
-  let message = '';
-  let retryAfterMs: number | undefined;
-  let daily = false;
-  let text = '';
-  try {
-    text = await res.text();
-  } catch {
-    /* no body */
-  }
-  try {
-    const j = JSON.parse(text);
-    const e = Array.isArray(j) ? j[0]?.error : j?.error;
-    message = (typeof e === 'string' ? e : e?.message) ?? j?.message ?? text;
-    const details: any[] = Array.isArray(e?.details) ? e.details : [];
-    const reason = details.map((d) => d?.reason).filter(Boolean).join(' ');
-    if (reason) message = `${message} (${reason})`;
-    for (const d of details) {
-      if (typeof d?.retryDelay === 'string') retryAfterMs = parseDelay(d.retryDelay) ?? retryAfterMs;
-      for (const v of Array.isArray(d?.violations) ? d.violations : []) if (/per ?day/i.test(`${v?.quotaId ?? ''} ${v?.quotaMetric ?? ''}`)) daily = true;
-    }
-    if (typeof e?.failed_generation === 'string') message = `${message} (tool_use_failed)`;
-  } catch {
-    message = text;
-  }
-  const header = res.headers?.get?.('retry-after');
-  if (header && retryAfterMs === undefined) retryAfterMs = parseDelay(header);
-  if (retryAfterMs === undefined) {
-    const m = /(?:try again|retry) in ([\d.]+\s*(?:ms|s))/i.exec(message);
-    if (m) retryAfterMs = parseDelay(m[1].replace(/\s+/g, ''));
-  }
-  if (/per ?day|daily/i.test(message)) daily = true;
-  const code = httpErrorCode(res.status, String(message));
-  const err = new AiUnavailableError(code, `The AI service answered ${res.status}.`, String(message).slice(0, 300) || undefined) as ToolAiError;
-  if (code === 'rate_limited') {
-    err.retryAfterMs = retryAfterMs;
-    err.daily = daily;
-  }
-  return err;
+  return (await errorFromResponse(res, 'chat')) as ToolAiError;
 }
 
 async function sendRequest(req: BuiltToolRequest, signal?: AbortSignal): Promise<Response> {
@@ -262,11 +224,13 @@ export function geminiContents(messages: ChatMessage[]): Array<{ role: 'user' | 
   return out;
 }
 
-export function buildGeminiToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean }): BuiltToolRequest {
-  const model = encodeURIComponent(geminiModelName(cfg.model));
-  const url = `${GEMINI_BASE}/models/${model}:${opts.stream ? 'streamGenerateContent?alt=sse' : 'generateContent'}`;
+export function buildGeminiToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean; thinking?: boolean }): BuiltToolRequest {
+  const name = geminiModelName(cfg.model);
+  const url = `${GEMINI_BASE}/models/${encodeURIComponent(name)}:${opts.stream ? 'streamGenerateContent?alt=sse' : 'generateContent'}`;
   const generationConfig: Record<string, unknown> = { temperature: opts.temperature ?? 0.3 };
-  if (opts.maxTokens) generationConfig.maxOutputTokens = opts.maxTokens;
+  const thinking = opts.thinking ? geminiThinkingConfig(name) : undefined;
+  if (thinking) generationConfig.thinkingConfig = thinking;
+  if (opts.maxTokens) generationConfig.maxOutputTokens = opts.maxTokens + (thinking && thinking.thinkingBudget !== 0 ? 1024 : 0);
   const body: Record<string, unknown> = {
     contents: geminiContents(opts.messages),
     generationConfig,
@@ -278,8 +242,58 @@ export function buildGeminiToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions 
   }
   return {
     url,
-    init: { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': cfg.apiKey.trim() }, body: JSON.stringify(body) },
+    init: { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': sanitizeApiKey(cfg.apiKey) }, body: JSON.stringify(body) },
   };
+}
+
+/** Interactions API `input` for a neutral conversation: a list of steps, replaying the model's own steps verbatim. */
+export function interactionSteps(messages: ChatMessage[]): unknown[] {
+  const out: unknown[] = [];
+  for (const m of messages) {
+    if (m.role === 'user') out.push({ type: 'user_input', content: [{ type: 'text', text: m.text }] });
+    else if (m.role === 'assistant') {
+      if (m.raw?.provider === 'gemini-interactions' && m.raw.parts.length) out.push(...m.raw.parts);
+      else {
+        if (m.text) out.push({ type: 'model_output', content: [{ type: 'text', text: m.text }] });
+        for (const c of m.toolCalls ?? []) out.push({ type: 'function_call', id: c.id, name: c.name, arguments: c.args });
+      }
+    } else for (const r of m.results) out.push({ type: 'function_result', call_id: r.callId, name: r.name, result: r.content });
+  }
+  return out;
+}
+
+/** Function tools for the Interactions API (standard JSON Schema; no schema for tools without arguments). */
+export function interactionTools(tools: ToolSpec[]): unknown[] {
+  return tools.map((t) =>
+    Object.keys(t.parameters.properties ?? {}).length
+      ? { type: 'function', name: t.name, description: t.description, parameters: t.parameters }
+      : { type: 'function', name: t.name, description: t.description },
+  );
+}
+
+export function buildGeminiInteractionToolRequest(cfg: GeminiConfig, opts: ToolTurnOptions & { stream: boolean; thinking?: boolean; noStore?: boolean }): BuiltToolRequest {
+  return buildInteractionRequest(cfg, interactionSteps(opts.messages), {
+    stream: opts.stream,
+    maxTokens: opts.maxTokens,
+    thinking: opts.thinking,
+    noStore: opts.noStore,
+    system: opts.system,
+    tools: interactionTools(opts.tools),
+    toolChoice: opts.toolChoice,
+  });
+}
+
+/** A ModelTurn from an Interactions reply (function_call steps become tool calls). */
+export function interactionTurn(acc: InteractionAccumulator): ModelTurn {
+  const steps = acc.outputSteps();
+  const toolCalls: ToolCall[] = [];
+  for (const s of steps) {
+    if (s.type !== 'function_call' || typeof s.name !== 'string') continue;
+    const { args, error } = parseArgs(s.arguments);
+    if (typeof s.id !== 'string' || !s.id) s.id = newCallId();
+    toolCalls.push({ id: s.id, name: s.name, args, ...(error ? { argsError: error } : {}) });
+  }
+  return { text: acc.text(), toolCalls, raw: { provider: 'gemini-interactions', parts: steps }, finishReason: acc.status };
 }
 
 /** Collects Gemini parts from one reply or from streamed chunks into a ModelTurn. */
@@ -309,43 +323,64 @@ export class GeminiTurnAccumulator {
   }
 }
 
-/** One Gemini turn with tools. Picks the model automatically (and falls back once from a retired name). */
-export async function askGeminiTools(cfg: GeminiConfig, opts: ToolTurnOptions): Promise<ModelTurn> {
-  if (!cfg.apiKey.trim()) throw new AiUnavailableError('not_configured', 'No Gemini key.');
+/** One Gemini turn with tools. Picks the model automatically, with the same fallbacks as plain requests. */
+export async function askGeminiTools(cfg: GeminiConfig, opts: ToolTurnOptions & { trace?: AiAttempt[]; onModel?: (model: string) => void }): Promise<ModelTurn> {
+  const key = sanitizeApiKey(cfg.apiKey);
+  if (!key) throw new AiUnavailableError('not_configured', 'No Gemini key.');
   const stream = !!opts.onText;
-  const explicit = !!geminiModelName(cfg.model);
-  let model = await resolveGeminiModel(cfg, opts.signal);
-  let res: Response;
-  try {
-    res = await sendRequest(buildGeminiToolRequest({ ...cfg, model }, { ...opts, stream }), opts.signal);
-  } catch (e) {
-    if (!(e instanceof AiUnavailableError) || e.code !== 'bad_model') throw e;
-    const fallback = await resolveGeminiModel({ ...cfg, model: '' }, opts.signal, !explicit);
-    if (fallback === model) throw e;
-    model = fallback;
-    res = await sendRequest(buildGeminiToolRequest({ ...cfg, model }, { ...opts, stream }), opts.signal);
+  const run = await geminiRun(
+    { apiKey: key, model: cfg.model },
+    {
+      stream,
+      interactions: (model, o) => buildGeminiInteractionToolRequest({ apiKey: key, model }, { ...opts, stream, thinking: o.thinking, noStore: o.noStore }),
+      generateContent: (model, o) => buildGeminiToolRequest({ apiKey: key, model }, { ...opts, stream, thinking: o.thinking }),
+    },
+    // Tool loops make several requests per question: favour Flash-Lite's larger free daily allowance.
+    { signal: opts.signal, trace: opts.trace, prefer: 'lite' },
+  );
+  opts.onModel?.(run.model);
+  const info = { model: run.model, api: run.api, tried: run.tried, trace: opts.trace };
+  let last = '';
+  const emit = (t: string) => {
+    if (t && t !== last) {
+      last = t;
+      opts.onText?.(t);
+    }
+  };
+  if (run.api === 'interactions') {
+    const acc = new InteractionAccumulator();
+    if (stream)
+      await readGeminiEvents(
+        run.res,
+        (d) => {
+          acc.add(d);
+          emit(acc.text());
+        },
+        opts.signal,
+        'generate',
+        info,
+      );
+    else acc.addInteraction(await readJson(run.res, opts.signal));
+    const turn = interactionTurn(acc);
+    if (!turn.text && !turn.toolCalls.length && (acc.errors.length || acc.status === 'incomplete' || acc.status === 'failed' || acc.status === 'budget_exceeded')) throw acc.emptyError(info);
+    return turn;
   }
   const acc = new GeminiTurnAccumulator();
-  if (stream) {
-    let last = '';
-    await readJsonEvents(
-      res,
+  if (stream)
+    await readGeminiEvents(
+      run.res,
       (d) => {
         acc.add(d);
-        const t = acc.text();
-        if (t && t !== last) {
-          last = t;
-          opts.onText?.(t);
-        }
+        emit(acc.text());
       },
       opts.signal,
+      'generate',
+      info,
     );
-  } else acc.add(await readJson(res, opts.signal));
+  else acc.add(await readJson(run.res, opts.signal));
   const turn = acc.turn();
-  if (!turn.text && !turn.toolCalls.length) {
-    if (acc.blocked) throw new AiUnavailableError('blocked', 'The request was blocked by the service.');
-    if (turn.finishReason === 'MALFORMED_FUNCTION_CALL') throw new AiUnavailableError('malformed_call', 'The model sent a tool call that could not be read.', turn.finishReason);
-  }
+  if (!turn.text && !turn.toolCalls.length && (acc.blocked || turn.finishReason === 'MALFORMED_FUNCTION_CALL' || turn.finishReason === 'MAX_TOKENS' || turn.finishReason === 'RECITATION'))
+    throw geminiEmptyError(turn.finishReason, acc.blocked && !turn.finishReason ? 'SAFETY' : undefined, info);
   return turn;
 }
 
