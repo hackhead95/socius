@@ -3,8 +3,9 @@
 Date: 24 Sep 2026. Suites: `tests/fuzz/**` (vitest), `scripts/fuzz/ui-permutations.mjs` (Playwright),
 `scripts/fuzz/oracle.py` (scipy / statsmodels / pingouin oracle).
 
-**19 open findings: 4 P0, 6 P1, 9 P2.** Three more AI-layer problems were found and then fixed by the
-concurrent Gemini/Interactions rework during this run (see "Resolved during the run").
+**All 19 findings (4 P0, 6 P1, 9 P2) are resolved** as of 24 Sep 2026 (Wave B). `tests/fuzz/known-issues.ts` is empty,
+so the fuzz suites now fail if any of these problems comes back. Three more AI-layer problems were found and then
+fixed by the concurrent Gemini/Interactions rework during this run (see "Resolved during the run").
 
 | Area | P0 | P1 | P2 | Total |
 |---|---|---|---|---|
@@ -86,6 +87,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
   ```
 
 **FZ-03 [P0] Procedures: Descriptives puts the S.E. mean under the "Std. Deviation" header**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/descriptives.ts` (the header adds the "Std. Error" sub-column of Mean only when Mean is ticked, but the body always writes the S.E. value).
 - Symptom: with *S.E. mean* on and *Mean* off, the header has 5 columns and the body 6. Every value to the right shifts one column: the S.E. (7.81) appears under "Std. Deviation", and the real SD (17.46) sits in an unlabelled column. 12 hits.
 - Seed: procedures 20260924, `FUZZ_ONLY=descriptives:2`.
@@ -99,6 +101,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
   ```
 
 **FZ-04 [P0] Procedures: Crosstabs Case Processing Summary mixes weighted and unweighted counts**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/crosstabs.ts:118-119` (`nMissing: sel.nMissing` is the unweighted case count from `selectCases`, while `N` is weighted; `nTotal = N + nMissing` and both percentages mix the two bases). The case note ("25 cases excluded") has the same problem.
 - Symptom: with WEIGHT on, "Missing N" and "Total N" differ from the same data with cases replicated (for example 25 vs 51), and Valid/Missing percentages are wrong. SPSS shows weighted counts here.
 - Seed: procedures 20260924, `FUZZ_ONLY=crosstabs:2` (`FUZZ_REPLAY=crosstabs:2 FUZZ_VARIANT=weight` prints both).
@@ -119,24 +122,28 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 - Repro: variables `filter_$` (string), `filter_$1`, `age`; `selectCasesTransform(ds, { kind: 'if', condition: 'age > 30' }, 'filter')`.
 
 **FZ-06 [P1] Procedures: One-way ANOVA's APA sentence prints "F(2, NaN) = n/a, p = n/a"**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/oneway.ts` (Welch APA/interpretation built when Welch is not computable) and `src/procedures/core/common.ts:256-265` (`n/a` formatting).
 - Symptom: when a group has one case (or zero variance), the Welch statistic cannot be computed, but the text still reads "A Welch one-way ANOVA showed that ... F(2, NaN) = n/a, p = n/a, ω² = .98". This reaches the rendered output and the copied APA text. 3 hits.
 - Seed: procedures 20260924, `FUZZ_ONLY=oneway-anova:12`.
 - Repro: `income = [41.55, 41.36, 61.89]`, `trust = [1, 1, 3]`, One-Way ANOVA with default options.
 
 **FZ-07 [P1] Procedures: Correlations and scatter APA sentences report negative df**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/correlations.ts` (APA sentence), `src/procedures/graphs/index.ts` (scatter fit text), `common.ts` n/a formatting.
 - Symptom: "Monthly income was not significantly correlated with Not asked, r(-2) = n/a, p = n/a." This happens when a pair has 0 valid cases, and in the scatter plot when the total weight is below 3 (tiny positive weights), which gives "r(-2) = 1.00, p = ..". 14 hits.
 - Seed: procedures 20260924, `FUZZ_ONLY=correlations:0` and `graph-scatter:18`.
 - Repro: correlations of `income = [1,2,3,4]` with an all-missing variable.
 
 **FZ-08 [P1] Procedures: confidence level 50 is accepted by the dialog, then refused by the analysis**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/ttests.ts:41` and `src/procedures/core/oneway.ts:220` (`conf > 0.5` is strict, but the option's `min` is 50).
 - Symptom: typing 50 (the dialog minimum) passes validation, then Run shows "The confidence level must be between 50 and 99.9 percent." Affects the one-sample, paired and independent t tests, and One-Way ANOVA.
 - Seed: procedures 20260924 boundary check (`FUZZ_ONLY=ttest-one-sample:0` with ciLevel 50).
 - Repro: One-Sample T Test on any variable with `ciLevel: 50`.
 
 **FZ-09 [P1] Procedures: One-way ANOVA post hoc tests freeze the page for seconds**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/lib/stats/distributions.ts:839-849` (`studentizedRangeCdf/Sf/Ppf`) as used by Games-Howell and Tukey in `src/lib/stats/anova.ts` / `src/procedures/core/oneway.ts`. The Games-Howell quantile with fractional Welch df is the slow path.
 - Symptom: on 3,000 cases, 7 groups and 3 dependents, Games-Howell takes 11.2 s and Tukey 2.0 s (3.5 s / 0.5 s per dependent). On only 150 cases with a 10-group string factor and 3 dependents, the run takes 4 to 8 s. Everything runs on the main thread, so the app is frozen meanwhile.
 - Seed: procedures-perf 5150 (`oneway-anova`); procedures 20260924 `FUZZ_ONLY=oneway-anova:42`.
@@ -152,6 +159,7 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 ### P2: cosmetic or edge case
 
 **FZ-11 [P2] Procedures: Crosstabs exact tests block the page about 1.2 s per table**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/crosstabs.ts` / `src/lib/stats/crosstabs.ts` (exact r x c tests; no time limit or Monte Carlo fallback as in SPSS).
 - Symptom: three 10x2 tables on 6,000 weighted cases take 3.6 s alone, and up to 11 s under load.
 - Seed: procedures-perf 5150 (`crosstabs`, exact=exact).
@@ -169,16 +177,19 @@ is also a test in `tests/fuzz/findings-repro.test.ts` under the same ID.
 - Repro: `binLabels([-11.52], -28.36, false)` or `binLabels([-20, -10], -30, true)`.
 
 **FZ-14 [P2] Procedures: Descriptives / Explore APA text says "SD = n/a"**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/descriptives.ts` APA text and `common.ts` n/a formatting.
 - Symptom: with one valid case, the text reads "scale1: M = -18.64, SD = n/a". Explore groups add "Monthly income (-23): ... SD = n/a". Omit the statistic, or say it needs 2 cases.
 - Seed: procedures 20260924 `FUZZ_ONLY=descriptives:3`, `explore:2`.
 
 **FZ-15 [P2] Procedures: Chi-square expected-values message says "0 to Infinity"**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/core/common.ts:47` (range message with `hi = Infinity`).
 - Symptom: "Expected values: -1 is outside the allowed range 0 to Infinity." It should say "must be positive".
 - Repro: Chi-square test, expected = values, `-1, 2`.
 
 **FZ-16 [P2] Procedures: empty names and empty text blocks in chart and model interpretations**
+- **Resolved** in the Wave B statistics fixes. Its repro in `tests/fuzz/findings-repro.test.ts` now runs as a normal test and passes.
 - Source: `src/procedures/graphs/index.ts` (line and box interpretations) and `src/procedures/models/nomreg.ts`.
 - Symptoms:
   - Line chart grouped by a blank string value: "For , the mean falls from -2.58 (-30) to ...".

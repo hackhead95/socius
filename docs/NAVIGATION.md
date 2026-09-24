@@ -38,7 +38,7 @@ The audit test checks rules 1, 3, 5, 6, 7 and 8 on the real menu model, checks t
 | **AI** | Ask the Socius assistant... (Ctrl+J); Explain a result...; Suggest a codebook...; Suggest codes for open-ended answers...; Summarise a code...; AI assistant settings... |
 | **Help** | Getting started; User guide; Keyboard shortcuts; Send feedback or report a problem (a small dialog offers the error report, then opens the form on GitHub); Error log...; About Socius |
 
-109 commands, each in one place. On a phone the **Menu** button opens a sheet with the same menus.
+113 menu commands (counting each submenu choice), each in one place. On a phone the **Menu** button opens a sheet with the same menus.
 
 ## Contextual shortcuts and their home
 
