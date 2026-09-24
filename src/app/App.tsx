@@ -13,6 +13,7 @@ import { Sidebar } from './Sidebar';
 import { DialogHost } from './DialogHost';
 import { AiSettingsHost } from '../features/ai/AiSettingsDialog';
 import { CommandPaletteHost } from './CommandPalette';
+import { AssistantRoot } from '../features/assistant/AssistantRoot';
 import { BusyOverlay, ConfirmHost, DropOverlay, Toasts } from './Overlays';
 import { SampleBanner, Welcome } from './Welcome';
 import { applyTheme, useUi } from './ui-store';
@@ -178,6 +179,7 @@ export function App() {
       </div>
       <DialogHost />
       <CommandPaletteHost />
+      <AssistantRoot />
       <AiSettingsHost />
       <ConfirmHost />
       <Toasts />

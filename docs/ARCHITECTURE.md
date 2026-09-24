@@ -39,6 +39,7 @@ Python "oracle" environment for verifying numerics and SPSS files: `/opt/oracle/
 | `src/core/store.ts` | zustand store: dataset (immutable updates, undo), outputs, coding project, UI state, dialogs, toasts |
 | `src/core/coding-types.ts` | Qualitative coding project model |
 | `src/platform/host.ts` | `saveFile`, `copyToClipboard` (and re-exports of the AI functions below for older imports) |
+| `src/platform/ai-tools.ts`, `src/lib/assistant/**` | The Socius assistant: tool-calling adapters (Gemini, OpenAI-compatible, Claude viewer, JSON fallback for on-device), the agent loop, tools that read the live store and run real procedures, and the specialist prompt. UI in `src/features/assistant/**`; open it with `openAssistant()` |
 | `src/platform/ai.ts` | AI provider layer: `askAI`, `askAIJson`, `aiAvailable`, `aiErrorMessage`, `aiPromptBudget`, settings and status |
 | `src/app/links.ts` | `SITE_URL`, `GUIDE_URL`, `FEEDBACK_URL` (derived from the GitHub Pages address, with fallbacks) |
 | `src/lib/io/index.ts` | `importFile`, `exportSav`, `exportCsv`, `exportXlsx`, `codebookRows` |

@@ -188,6 +188,7 @@ export function useMenus(): TopMenu[] {
       label: f.menuLabel,
       separator: i === 1,
       title: f.does.charAt(0).toUpperCase() + f.does.slice(1),
+      shortcut: f.id === 'assistant' ? `${mod}+J` : undefined,
       onSelect: () => void runAiFeature(f.id),
     })),
     { id: 'ai-settings', label: 'AI assistant settings...', separator: true, onSelect: openAiSettings },

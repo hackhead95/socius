@@ -45,6 +45,7 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
       title: 'Everywhere',
       rows: [
         [`[${mod}+K] or [/]`, 'Search commands, variables, results and help'],
+        [`[${mod}+J]`, 'Open or close the Socius assistant'],
         [`[${mod}+Z]`, 'Undo the last data change'],
         [`[${mod}+Y] or [${mod}+Shift+Z]`, 'Redo'],
         [`[${mod}+O]`, 'Open a data file'],
