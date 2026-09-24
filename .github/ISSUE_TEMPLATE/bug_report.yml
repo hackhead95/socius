@@ -1,0 +1,30 @@
+name: Something is not working
+description: Report a problem, a wrong result, or an error message.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Socius. Please do not attach confidential or identifiable research data.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to repeat it
+      placeholder: "1. Open the sample survey\n2. Analyze > Descriptive Statistics > Crosstabs...\n3. ..."
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: e.g. Chrome on Windows laptop
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshot or anything else
+      description: You can paste a screenshot here.

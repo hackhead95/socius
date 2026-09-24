@@ -1,0 +1,16 @@
+name: Idea or request
+description: Suggest a feature, a missing analysis, or a clearer way to do something.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help you?
+      description: Describe the task you are trying to do and what would make it easier.
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: How do you do this today?
+      description: For example in SPSS, NVivo, Excel or by hand.
