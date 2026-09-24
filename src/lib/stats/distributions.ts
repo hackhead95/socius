@@ -201,13 +201,17 @@ export function regIncGammaQ(a: number, x: number): number {
 // Incomplete beta
 // ---------------------------------------------------------------------------------------------
 
-/** Continued fraction part of I_x(a,b) (Numerical Recipes betacf, modified Lentz). */
-function betacf(x: number, a: number, b: number): number {
+/**
+ * Continued fraction part of I_x(a,b) (Numerical Recipes betacf, modified Lentz). y = 1 - x is
+ * used for the leading term so it does not cancel when a is large and x is near 1.
+ */
+function betacf(x: number, y: number, a: number, b: number): number {
   const qab = a + b;
   const qap = a + 1;
   const qam = a - 1;
   let c = 1;
-  let d = 1 - (qab * x) / qap;
+  // 1 - (a+b) x / (a+1) = (a y + 1 - b x) / (a + 1)
+  let d = (a * y + 1 - b * x) / qap;
   if (Math.abs(d) < FPMIN) d = FPMIN;
   d = 1 / d;
   let h = d;
@@ -233,27 +237,93 @@ function betacf(x: number, a: number, b: number): number {
   return h;
 }
 
-/** log of I_x(a,b) computed via the continued fraction (use when x < (a+1)/(a+b+2)). */
+/**
+ * bd0(x, np) with the difference d = x - np also supplied by the caller (accurate in absolute
+ * terms): the series branch uses d, the direct branch uses np (accurate in relative terms).
+ */
+function bd0d(x: number, np: number, d: number): number {
+  if (x === 0) return np;
+  if (Math.abs(d) < 0.1 * (x + np)) {
+    let v = d / (x + np);
+    let s = d * v;
+    if (Math.abs(s) < DBL_MIN) return s;
+    let ej = 2 * x * v;
+    v = v * v;
+    for (let j = 1; j < 1000; j++) {
+      ej *= v;
+      const s1 = s + ej / (2 * j + 1);
+      if (s1 === s) return s1;
+      s = s1;
+    }
+    return s;
+  }
+  return x * Math.log(x / np) + np - x;
+}
+
+/**
+ * log( x^a y^b Gamma(a+b+1) / (Gamma(a+1) Gamma(b+1)) ) in Loader's saddle-point form. The
+ * deviance terms take a - (a+b) x = a y - b x, formed from both x and y, so the result keeps full
+ * relative accuracy when a or b is huge (t with large df, F with large df2).
+ */
+function logBetaKernel(x: number, y: number, a: number, b: number): number {
+  const n = a + b;
+  const dA = a * y - b * x; // a - n x
+  const lc = stirlerr(n) - stirlerr(a) - stirlerr(b) - bd0d(a, n * x, dA) - bd0d(b, n * y, -dA);
+  return lc + 0.5 * (Math.log(n) - Math.log(a) - Math.log(b) - LN_2PI);
+}
+
+/**
+ * Power series I_x(a,b) = x^a y^b / (a B(a,b)) * 2F1(a+b, 1; a+1; x). All terms are positive, so
+ * it is accurate whenever it converges quickly. Returns NaN if it needs more than `maxTerms`.
+ */
+function logIbetaSeries(x: number, y: number, a: number, b: number, maxTerms: number): number {
+  let term = 1;
+  let sum = 1;
+  let k = 0;
+  for (; k < maxTerms; k++) {
+    term *= ((a + b + k) * x) / (a + 1 + k);
+    sum += term;
+    if (term < sum * 1e-17) break;
+  }
+  if (k >= maxTerms) return NaN;
+  return Math.log(b / (a + b)) + logBetaKernel(x, y, a, b) + Math.log(sum);
+}
+
+/** log I_x(a,b) by the continued fraction: I = x^a y^b / (a B(a,b)) * cf. */
 function logIbetaCF(x: number, y: number, a: number, b: number): number {
-  // I = x^a y^b / (a B(a,b)) * cf = b/(a+b) * dbinom(a; a+b, x) * cf
-  const ld = logDbinomRaw(a, a + b, x, y);
-  return Math.log(b / (a + b)) + ld + Math.log(betacf(x, a, b));
+  return Math.log(b / (a + b)) + logBetaKernel(x, y, a, b) + Math.log(betacf(x, y, a, b));
 }
 
 /**
  * Both tails of the regularised incomplete beta, given x and y = 1 - x separately (so callers can
- * supply y without cancellation).
+ * supply y without cancellation). Method choice:
+ * 1. the tail on the near side of the mean (x < (a+1)/(a+b+2) means the lower tail) by the
+ *    all-positive power series when it converges within a few thousand terms;
+ * 2. otherwise the opposite tail by its power series, when that leaves at least
+ *    min(1e-3, 30 / max(a, b)) for this tail (the subtraction then costs fewer digits than the
+ *    continued fraction would lose for huge parameters);
+ * 3. otherwise the continued fraction on the near-side tail.
  */
 function incBeta(x: number, y: number, a: number, b: number): TailPair {
   if (Number.isNaN(x) || Number.isNaN(a) || Number.isNaN(b) || a <= 0 || b <= 0) return { p: NaN, q: NaN };
   if (x <= 0) return { p: 0, q: 1 };
   if (y <= 0) return { p: 1, q: 0 };
-  if (x < (a + 1) / (a + b + 2)) {
-    const p = Math.exp(logIbetaCF(x, y, a, b));
-    return { p, q: 1 - p };
+  const lowerNear = x < (a + 1) / (a + b + 2);
+  const nx = lowerNear ? x : y;
+  const ny = lowerNear ? y : x;
+  const na = lowerNear ? a : b;
+  const nb = lowerNear ? b : a;
+  const pack = (near: number): TailPair => (lowerNear ? { p: near, q: 1 - near } : { p: 1 - near, q: near });
+  const ls = logIbetaSeries(nx, ny, na, nb, 3000);
+  if (!Number.isNaN(ls)) return pack(Math.exp(ls));
+  const lo = logIbetaSeries(ny, nx, nb, na, 3000);
+  if (!Number.isNaN(lo)) {
+    const other = Math.exp(lo);
+    // The continued fraction loses roughly a * eps / 50 relative accuracy for huge a; prefer the
+    // complement whenever it is expected to be more accurate.
+    if (1 - other >= Math.min(1e-3, 30 / Math.max(na, nb))) return pack(1 - other);
   }
-  const q = Math.exp(logIbetaCF(y, x, b, a));
-  return { p: 1 - q, q };
+  return pack(Math.exp(logIbetaCF(nx, ny, na, nb)));
 }
 
 /** Regularised incomplete beta I_x(a, b). */
@@ -545,7 +615,7 @@ export function tPpf(p: number, df: number): number {
   const tp = lowerSide ? p : 1 - p; // one-sided tail target, <= 0.5
   let x: number;
   if (df === 1) {
-    x = Math.tan(Math.PI * (0.5 - tp));
+    x = 1 / Math.tan(Math.PI * tp); // Cauchy: cot(pi p), no cancellation for small p
   } else if (df === 2) {
     // t = (1 - 2a) / sqrt(2 a (1 - a)) with a = tp
     x = (1 - 2 * tp) / Math.sqrt(2 * tp * (1 - tp));
@@ -636,67 +706,89 @@ function gaussLegendre(n: number): { x: number[]; w: number[] } {
 
 const GL = gaussLegendre(16);
 
-/** Composite Gauss-Legendre over [a, b] with `pieces` equal panels. */
-function integrate(fn: (z: number) => number, a: number, b: number, pieces: number): number {
+/** Nodes and weights of a composite Gauss-Legendre rule on [a, b]. */
+function compositeRule(a: number, b: number, pieces: number): { z: Float64Array; w: Float64Array } {
+  const n = GL.x.length;
+  const z = new Float64Array(pieces * n);
+  const w = new Float64Array(pieces * n);
   const h = (b - a) / pieces;
-  let total = 0;
   for (let p = 0; p < pieces; p++) {
     const mid = a + (p + 0.5) * h;
-    let s = 0;
-    for (let i = 0; i < GL.x.length; i++) s += GL.w[i] * fn(mid + 0.5 * h * GL.x[i]);
-    total += 0.5 * h * s;
+    for (let i = 0; i < n; i++) {
+      z[p * n + i] = mid + 0.5 * h * GL.x[i];
+      w[p * n + i] = 0.5 * h * GL.w[i];
+    }
   }
-  return total;
+  return { z, w };
 }
 
+interface RangeRule {
+  /** lower-tail grid on [-9.5, 9.5] with phi(z) * weight and Phi(z) precomputed */
+  z: Float64Array;
+  pw: Float64Array;
+  cdf: Float64Array;
+  /** upper-tail rule on [-9.5, 9.5], shifted by w/2 at use */
+  uz: Float64Array;
+  uw: Float64Array;
+  /** outer cut points in units of the log-scale standard deviation */
+  cuts: number[];
+}
+
+function makeRangeRule(panels: number, cuts: number[]): RangeRule {
+  const { z, w } = compositeRule(-9.5, 9.5, panels);
+  const pw = new Float64Array(z.length);
+  const cdf = new Float64Array(z.length);
+  for (let i = 0; i < z.length; i++) {
+    pw[i] = w[i] * normalPdf(z[i]);
+    cdf[i] = normalCdf(z[i]);
+  }
+  return { z, pw, cdf, uz: z, uw: w, cuts };
+}
+
+/** Full accuracy (about 1e-12 absolute) and a cheaper rule (about 1e-7) used to bracket quantiles. */
+const RANGE_FULL = makeRangeRule(10, [-40, -20, -12, -8, -5, -3, -1.5, 0, 1.5, 3, 5, 8, 12]);
+const RANGE_FAST = makeRangeRule(5, [-20, -8, -3, 0, 3, 8]);
+
 /** [W(w), 1 - W(w)] for the range of k standard normals. */
-function rangeProbs(w: number, k: number): [number, number] {
+function rangeProbs(w: number, k: number, rule: RangeRule): [number, number] {
   if (w <= 0) return [0, 1];
   const km1 = k - 1;
-  const lower = () =>
-    k *
-    integrate(
-      (z) => {
-        const d = normalCdf(z) - normalCdf(z - w);
-        return d > 0 ? normalPdf(z) * Math.pow(d, km1) : 0;
-      },
-      -9.5,
-      9.5 + Math.min(w, 0),
-      24,
-    );
-  const upper = () =>
-    k *
-    integrate(
-      (z) => {
-        const a = normalCdf(z);
-        const c = normalCdf(z - w);
-        const b = Math.max(0, a - c);
-        // a^(k-1) - b^(k-1) = c * sum_{i=0}^{k-2} a^(k-2-i) b^i
-        let sum = 0;
-        let term = Math.pow(a, km1 - 1);
-        const ratio = a > 0 ? b / a : 0;
-        for (let i = 0; i < km1; i++) {
-          sum += term;
-          term *= ratio;
-        }
-        return normalPdf(z) * c * sum;
-      },
-      Math.min(-9.5, w / 2 - 10),
-      Math.max(9.5, w / 2 + 10),
-      24,
-    );
-  // Choose which tail to integrate: the median of the range grows slowly with k.
-  const W = lower();
+  // Lower: W(w) = k * integral phi(z) [Phi(z) - Phi(z - w)]^(k-1) dz
+  let W = 0;
+  const { z, pw, cdf } = rule;
+  for (let i = 0; i < z.length; i++) {
+    const d = cdf[i] - normalCdf(z[i] - w);
+    if (d > 0) W += pw[i] * Math.pow(d, km1);
+  }
+  W *= k;
   if (W <= 0.5) return [W, 1 - W];
-  const R = upper();
+  // Upper: 1 - W(w) = k * integral phi(z) Phi(z - w) sum_i a^(k-2-i) b^i dz, centred on w/2.
+  let R = 0;
+  const shift = w / 2;
+  const { uz, uw } = rule;
+  for (let i = 0; i < uz.length; i++) {
+    const zz = uz[i] + shift;
+    const a = normalCdf(zz);
+    const c = normalCdf(zz - w);
+    const b = Math.max(0, a - c);
+    let sum = 0;
+    let term = Math.pow(a, km1 - 1);
+    const ratio = a > 0 ? b / a : 0;
+    for (let j = 0; j < km1; j++) {
+      sum += term;
+      term *= ratio;
+    }
+    R += uw[i] * normalPdf(zz) * c * sum;
+  }
+  R *= k;
   return [1 - R, R];
 }
 
-function studentizedRangeBoth(q: number, k: number, df: number): [number, number] {
+function studentizedRangeBoth(q: number, k: number, df: number, rule: RangeRule = RANGE_FULL): [number, number] {
   if (Number.isNaN(q) || Number.isNaN(k) || Number.isNaN(df) || k < 2 || !(df > 0)) return [NaN, NaN];
   if (q <= 0) return [0, 1];
   if (q === Infinity) return [1, 0];
-  if (df === Infinity || df > 1e7) return rangeProbs(q, k);
+  if (df === Infinity || df > 1e7) return rangeProbs(q, k, rule);
   // Outer integral over t = log(s): weight exp(nu * (t - expm1(2t)/2)) (peak 1 at t = 0).
   const logw = (t: number) => df * (t - Math.expm1(2 * t) / 2);
   const T = 200;
@@ -714,10 +806,13 @@ function studentizedRangeBoth(q: number, k: number, df: number): [number, number
   };
   const tlo = root(-1);
   const thi = root(1);
-  // Panels: put more resolution near the peak by splitting at +-4 standard deviations.
+  // One Gauss-Legendre panel per segment; segments are denser near the peak (sd of log s).
   const sd = 1 / Math.sqrt(2 * df);
   const cuts = [tlo];
-  for (const c of [-8 * sd, -3 * sd, 0, 3 * sd, 8 * sd]) if (c > tlo && c < thi) cuts.push(c);
+  for (const m of rule.cuts) {
+    const c = m * sd;
+    if (c > tlo && c < thi) cuts.push(c);
+  }
   cuts.push(thi);
   let norm = 0;
   let lowSum = 0;
@@ -725,19 +820,16 @@ function studentizedRangeBoth(q: number, k: number, df: number): [number, number
   for (let c = 0; c + 1 < cuts.length; c++) {
     const a = cuts[c];
     const b = cuts[c + 1];
-    const pieces = 6;
-    const h = (b - a) / pieces;
-    for (let p = 0; p < pieces; p++) {
-      const mid = a + (p + 0.5) * h;
-      for (let i = 0; i < GL.x.length; i++) {
-        const t = mid + 0.5 * h * GL.x[i];
-        const wt = GL.w[i] * 0.5 * h * Math.exp(logw(t));
-        if (wt === 0) continue;
-        const [lo, up] = rangeProbs(q * Math.exp(t), k);
-        norm += wt;
-        lowSum += wt * lo;
-        upSum += wt * up;
-      }
+    const mid = 0.5 * (a + b);
+    const half = 0.5 * (b - a);
+    for (let i = 0; i < GL.x.length; i++) {
+      const t = mid + half * GL.x[i];
+      const wt = GL.w[i] * half * Math.exp(logw(t));
+      if (wt === 0) continue;
+      const [lo, up] = rangeProbs(q * Math.exp(t), k, rule);
+      norm += wt;
+      lowSum += wt * lo;
+      upSum += wt * up;
     }
   }
   return [lowSum / norm, upSum / norm];
@@ -753,40 +845,61 @@ export function studentizedRangeSf(q: number, k: number, df: number): number {
   return studentizedRangeBoth(q, k, df)[1];
 }
 
-/** Quantile of the studentized range (used for Tukey HSD confidence intervals). */
+/** Quantile of the studentized range (Tukey HSD and Games-Howell confidence intervals). */
 export function studentizedRangePpf(p: number, k: number, df: number): number {
-  if (!(p > 0 && p < 1)) return p === 0 ? 0 : p === 1 ? Infinity : NaN;
-  // Bracket, then Illinois (modified regula falsi) on the CDF, which is smooth and monotone.
-  let a = 0;
-  let fa = -p;
-  let b = 2;
-  let fb = studentizedRangeCdf(b, k, df) - p;
-  while (fb < 0) {
-    a = b;
-    fa = fb;
-    b *= 2;
-    if (b > 1e6) return Infinity;
-    fb = studentizedRangeCdf(b, k, df) - p;
-  }
-  let side = 0;
-  for (let it = 0; it < 100; it++) {
-    const c = (a * fb - b * fa) / (fb - fa);
-    const fc = studentizedRangeCdf(c, k, df) - p;
-    if (fc === 0 || Math.abs(b - a) < 1e-13 * Math.abs(c)) return c;
-    if (fc * fb > 0) {
-      b = c;
-      fb = fc;
-      if (side === -1) fa /= 2;
-      side = -1;
-    } else {
-      a = c;
-      fa = fc;
-      if (side === 1) fb /= 2;
-      side = 1;
+  if (!(p > 0 && p < 1) || !(k >= 2) || !(df > 0)) return p === 0 ? 0 : p === 1 ? Infinity : NaN;
+  // Work on the smaller tail for accuracy: g(q) = tail(q) - target, decreasing for the upper tail.
+  const upper = p > 0.5;
+  const target = upper ? 1 - p : p;
+  const g = (q: number, rule: RangeRule) => {
+    const [lo, up] = studentizedRangeBoth(q, k, df, rule);
+    return upper ? target - up : lo - target; // increasing in q either way
+  };
+  // Stage 1: bracket and solve with the cheap rule.
+  const solve = (rule: RangeRule, a0: number, b0: number, tol: number) => {
+    let a = a0;
+    let b = b0;
+    let fa = g(a, rule);
+    let fb = g(b, rule);
+    while (fb < 0) {
+      a = b;
+      fa = fb;
+      b *= 2;
+      if (b > 1e6) return Infinity;
+      fb = g(b, rule);
     }
-    if (Math.abs(fc) < 1e-15) return c;
-  }
-  return (a + b) / 2;
+    while (fa > 0 && a > 1e-8) {
+      b = a;
+      fb = fa;
+      a /= 2;
+      fa = g(a, rule);
+    }
+    let side = 0;
+    let c = 0.5 * (a + b);
+    for (let it = 0; it < 100; it++) {
+      c = (a * fb - b * fa) / (fb - fa);
+      if (!(c > a && c < b)) c = 0.5 * (a + b);
+      const fc = g(c, rule);
+      if (fc === 0 || Math.abs(b - a) < tol * c) return c;
+      if (fc > 0) {
+        b = c;
+        fb = fc;
+        if (side === -1) fa /= 2;
+        side = -1;
+      } else {
+        a = c;
+        fa = fc;
+        if (side === 1) fb /= 2;
+        side = 1;
+      }
+      if (Math.abs(fc) < 1e-14 * Math.max(target, 1e-300) && rule === RANGE_FULL) return c;
+    }
+    return c;
+  };
+  const rough = solve(RANGE_FAST, 1, 4, 1e-9);
+  if (!Number.isFinite(rough)) return rough;
+  // Stage 2: polish with the full rule inside a tight bracket.
+  return solve(RANGE_FULL, rough * (1 - 1e-5), rough * (1 + 1e-5), 1e-14);
 }
 
 // ---------------------------------------------------------------------------------------------

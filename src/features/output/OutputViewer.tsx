@@ -17,9 +17,9 @@ import './output.css';
 
 /** Quick-start procedures for the empty state (first three that are registered). */
 const QUICK_START: Array<{ label: string; ids: string[] }> = [
-  { label: 'Frequencies', ids: ['frequencies', 'freq'] },
-  { label: 'Crosstabs', ids: ['crosstabs', 'crosstab'] },
-  { label: 'Compare means', ids: ['means', 'compare-means', 'ttest-independent', 'ttest-ind', 'independent-t', 'oneway-anova', 'oneway'] },
+  { label: 'Frequencies', ids: ['frequencies'] },
+  { label: 'Crosstabs', ids: ['crosstabs'] },
+  { label: 'Compare means', ids: ['ttest-independent', 'means'] },
   { label: 'Bar chart', ids: ['graph-bar'] },
   { label: 'Histogram', ids: ['graph-histogram'] },
 ];
