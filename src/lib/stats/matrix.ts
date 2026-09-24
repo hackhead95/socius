@@ -813,3 +813,114 @@ export function symMatrixFunction(a: Matrix, fn: (lambda: number) => number): Ma
   }
   return symmetrize(out);
 }
+
+// ---------- Nearly singular information matrices ----------
+
+/**
+ * Relative size (after scaling the matrix to unit diagonal) below which an eigenvalue of an
+ * information matrix is treated as zero. Well above the rounding noise of symEigen (about
+ * n * 1e-16 * largest eigenvalue) and far below any eigenvalue of a well-identified model.
+ */
+export const NULL_EIGEN_TOL = 1e-12;
+
+interface ScaledEigen {
+  d: Float64Array;
+  values: Float64Array;
+  vectors: Matrix;
+  tol: number;
+}
+
+/** Eigen-decomposition of D A D with D = diag(A)^-1/2 (entries with no information keep scale 1). */
+function scaledEigen(a: Matrix, relTol: number): ScaledEigen {
+  const n = a.rows;
+  let maxDiag = 0;
+  for (let i = 0; i < n; i++) maxDiag = Math.max(maxDiag, a.data[i * n + i]);
+  const d = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const v = a.data[i * n + i];
+    d[i] = v > maxDiag * 1e-280 && v > 0 ? 1 / Math.sqrt(v) : 1;
+  }
+  const S = zeros(n, n);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) S.data[i * n + j] = d[i] * a.data[i * n + j] * d[j];
+  const { values, vectors } = symEigen(S);
+  const tol = relTol * Math.max(n ? values[0] : 0, 1);
+  return { d, values, vectors, tol };
+}
+
+export interface RobustSolve {
+  x: Float64Array;
+  /** True when the matrix had (numerically) zero eigenvalues, whose directions were left out of x. */
+  rankDeficient: boolean;
+}
+
+/**
+ * Solve A x = b for a symmetric positive semi-definite A (a Newton step with an information matrix).
+ * Uses Cholesky when A is positive definite; otherwise the minimum-norm solution on the identified
+ * subspace (Moore-Penrose pseudo-inverse of the unit-diagonal scaled matrix), which leaves
+ * directions with no information (for example diverging parameters under separation) unchanged.
+ */
+export function spdSolveRobust(a: Matrix, b: ArrayLike<number>, relTol = NULL_EIGEN_TOL): RobustSolve {
+  const L = cholesky(a);
+  if (L) return { x: choleskySolve(L, b), rankDeficient: false };
+  const n = a.rows;
+  const { d, values, vectors, tol } = scaledEigen(a, relTol);
+  const x = new Float64Array(n);
+  let rankDeficient = false;
+  for (let k = 0; k < n; k++) {
+    if (!(values[k] > tol)) {
+      rankDeficient = true;
+      continue;
+    }
+    let c = 0;
+    for (let i = 0; i < n; i++) c += vectors.data[i * n + k] * d[i] * b[i];
+    c /= values[k];
+    for (let i = 0; i < n; i++) x[i] += c * vectors.data[i * n + k];
+  }
+  for (let i = 0; i < n; i++) x[i] *= d[i];
+  return { x, rankDeficient };
+}
+
+export interface RobustInverse {
+  inv: Matrix;
+  /** True when Cholesky failed and the eigen-decomposition fallback was used. */
+  fallback: boolean;
+  /** True when some eigenvalues were (numerically) zero and had to be floored. */
+  rankDeficient: boolean;
+  /**
+   * For each parameter, the share (0 to 1) of its scaled direction lying in the numerical null
+   * space. Near 0 for well-determined parameters, clearly positive for the ones that are not
+   * identified (for example diverging parameters under quasi-complete separation).
+   */
+  nullLoading: Float64Array;
+}
+
+/**
+ * Inverse of an information matrix that may be numerically singular, for standard errors in the
+ * style of SPSS when the Hessian has "unexpected singularities". Cholesky when possible; otherwise
+ * the matrix is scaled to unit diagonal and eigen-decomposed, and eigenvalues below the tolerance
+ * are raised to it. Parameters that are well determined get their ordinary variances (the null
+ * directions barely touch them), while parameters in the null space get very large, finite ones.
+ */
+export function spdInverseRobust(a: Matrix, relTol = NULL_EIGEN_TOL): RobustInverse {
+  const n = a.rows;
+  const L = cholesky(a);
+  if (L) return { inv: choleskyInverse(L), fallback: false, rankDeficient: false, nullLoading: new Float64Array(n) };
+  const { d, values, vectors, tol } = scaledEigen(a, relTol);
+  const inv = zeros(n, n);
+  const nullLoading = new Float64Array(n);
+  let rankDeficient = false;
+  for (let k = 0; k < n; k++) {
+    const small = !(values[k] > tol);
+    if (small) rankDeficient = true;
+    const lk = small ? tol : values[k];
+    for (let i = 0; i < n; i++) {
+      const vi = vectors.data[i * n + k];
+      if (small) nullLoading[i] += vi * vi;
+      if (vi === 0) continue;
+      const s = vi / lk;
+      for (let j = 0; j < n; j++) inv.data[i * n + j] += s * vectors.data[j * n + k];
+    }
+  }
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) inv.data[i * n + j] *= d[i] * d[j];
+  return { inv: symmetrize(inv), fallback: true, rankDeficient, nullLoading };
+}

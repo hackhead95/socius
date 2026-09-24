@@ -14,10 +14,13 @@ import {
   coefCell,
   countPatterns,
   dfText,
+  emptyCellsText,
+  emptyOutcomeCells,
   fmtP,
   footName,
   hcell,
   heading,
+  HESSIAN_SINGULARITY_WARNING,
   levelsOf,
   listText,
   makeItem,
@@ -151,6 +154,9 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const pModel = chi2Sf(chi, dfModel);
   const pr = pseudoR2(ll0, fit.logLik, W);
   const usedTerms = terms.filter((t) => cols.some((c) => c.term === t));
+  const isUnstable = (k: number, j: number) => fit.unstable[k][j] === 1;
+  const anyUnstable = fit.unstable.some((u) => u.some((x) => x === 1));
+  const separated = fit.singular || fit.diverged || anyUnstable;
 
   const blocks: OutputBlock[] = [heading(`Multinomial Logistic Regression: ${footName(depVar)}`)];
   const factorTerms = terms.filter((t) => t.kind === 'factor' && t.cols.length > 0);
@@ -215,12 +221,18 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     const rows: Cell[][] = [];
     const rules: number[] = [];
     let anyRedundant = false;
+    let anyMarked = false;
     fit.cats.forEach((cat, k) => {
       const group: Cell[][] = [];
       const pr1 = (label: string, j: number): Cell[] => {
         const b = fit.coef[k][j], se = fit.se[k][j];
         const wald = (b / se) ** 2;
-        const r: Cell[] = [cell(label, 'text'), coefCell(b), coefCell(se), cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1))];
+        const seCell = coefCell(se);
+        if (isUnstable(k, j)) {
+          seCell.mark = 'c';
+          anyMarked = true;
+        }
+        const r: Cell[] = [cell(label, 'text'), coefCell(b), seCell, cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1))];
         if (j === 0) r.push(cell(null), cell(null), cell(null));
         else {
           const [lo, hi] = expCI(b, se, conf);
@@ -248,7 +260,8 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     });
     const foot = [`a. The reference category is: ${catLabel(ref)}.`];
     if (anyRedundant) foot.push('b. This parameter is set to zero because it is redundant (reference category of the factor).');
-    if (!fit.converged) foot.push('The estimates did not converge and should not be trusted.');
+    if (anyMarked) foot.push('c. Not a real estimate: because of separation (see the warnings) this parameter grows without limit with every iteration, so the value shown is where the iterations stopped. Its standard error is huge and its Wald test, significance and odds ratio are meaningless.');
+    if (!fit.converged && !separated) foot.push('The estimates did not converge and should not be trusted.');
     blocks.push(tbl({ title: 'Parameter Estimates', header, rows, stubColumns: 2, ruleBefore: rules, footnotes: foot }));
   }
 
@@ -282,10 +295,13 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   }
 
   // Warnings
-  if (!fit.converged || fit.singular)
-    warnings.push(`The model did not converge${fit.singular ? ' (unexpected singularities in the Hessian matrix)' : ''}. This usually means some combination of predictor and outcome categories is empty (separation). Estimates are unreliable; merge sparse categories or drop predictors.`);
+  if (separated) {
+    warnings.push(`${HESSIAN_SINGULARITY_WARNING} The procedure continues despite this warning; the results shown are based on the last iteration.`);
+    warnings.push(separationExplanation(fit, cols, usedTerms, y, J, w, depVar, catLabel));
+  } else if (!fit.converged)
+    warnings.push(`The model did not converge within ${maxIter} iterations. Estimates are unreliable; try fewer predictors, merge sparse categories, or allow more iterations.`);
   const bigSE: string[] = [];
-  fit.cats.forEach((cat, k) => cols.forEach((c, j) => { if (fit.se[k][j + 1] > 5) bigSE.push(`${c.name} (${catLabel(cat)})`); }));
+  fit.cats.forEach((cat, k) => cols.forEach((c, j) => { if (fit.se[k][j + 1] > 5 && !isUnstable(k, j + 1)) bigSE.push(`${c.name} (${catLabel(cat)})`); }));
   if (bigSE.length) warnings.push(`Very large standard errors for ${listText(bigSE.slice(0, 6))}${bigSE.length > 6 ? ' and others' : ''} suggest sparse cells or separation. Interpret these estimates with great care.`);
   const minCat = Math.min(...depLevels.map((l) => l.count));
   const nPar = (J - 1) * (p + 1);
@@ -322,6 +338,7 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     });
   });
   if (details.length) ip.push(`Holding the other predictors constant: ${details.slice(0, 8).join('; ')}${details.length > 8 ? '; see the Parameter Estimates table for the rest' : ''}.`);
+  if (anyUnstable) ip.push('Estimates affected by separation (marked c in the Parameter Estimates table) are left out of this summary.');
   if (Number.isFinite(pctCorrect)) ip.push(`The model classifies ${pctCorrect.toFixed(1)}% of cases correctly (the largest category alone is ${((100 * Math.max(...depLevels.map((l) => l.count))) / W).toFixed(1)}%).`);
   blocks.push(textBlock('interpretation', ip.join(' ')));
 
@@ -338,6 +355,55 @@ function runMultinomial(ds: Dataset, vars: SlotValues, opts: OptionValues) {
 
   const syntax = buildSyntax(ds, depVar, terms, ref === 0 ? 'FIRST' : ref === J - 1 ? 'LAST' : depLevels[ref].value, confPct, maxIter);
   return makeItem(multinomialLogistic.id, 'Multinomial Logistic Regression', ds, blocks, syntax, caseNote(ds, sel));
+}
+
+/**
+ * Plain-language account of the separation behind a singular Hessian: which outcome categories are
+ * empty in which predictor categories, which estimates are affected, and what to do about it.
+ */
+function separationExplanation(
+  fit: MultinomialFit,
+  cols: Col[],
+  usedTerms: Term[],
+  y: ArrayLike<number>,
+  J: number,
+  w: ArrayLike<number>,
+  depVar: Variable,
+  catLabel: (j: number) => string,
+): string {
+  const cells = emptyOutcomeCells(usedTerms, y, J, w);
+  // Affected estimates, grouped by predictor column: "gender = Other (all 6 comparisons)".
+  const byParam = new Map<string, string[]>();
+  fit.cats.forEach((cat, k) => {
+    fit.unstable[k].forEach((u, j) => {
+      if (!u) return;
+      const name = j === 0 ? 'the intercept' : cols[j - 1].term.kind === 'factor' ? `${cols[j - 1].term.variable.name} = "${cols[j - 1].term.levelLabels[cols[j - 1].level]}"` : cols[j - 1].name;
+      const list = byParam.get(name) ?? [];
+      list.push(catLabel(cat));
+      byParam.set(name, list);
+    });
+  });
+  const K = fit.cats.length;
+  const affected = [...byParam.entries()].map(([name, cats]) => (cats.length === K && K > 1 ? `${name} (in all ${K} comparisons)` : `${name} (for ${listText(cats.map((c) => `"${c}"`))})`));
+  const parts: string[] = [];
+  if (cells.length) {
+    const txt = emptyCellsText(cells, depVar.name, catLabel);
+    parts.push(`What this means: ${txt.charAt(0).toUpperCase()}${txt.slice(1)}.`);
+    parts.push('With an empty combination like this the model can always fit those cases better by pushing some estimates further towards infinity (quasi-complete separation), so no finite best estimate exists.');
+  } else parts.push('What this means: some combination of predictor values and outcome categories has no cases or is perfectly predicted (separation), so some estimates grow without limit and no finite best estimate exists.');
+  const nAffected = [...byParam.values()].reduce((s, l) => s + l.length, 0);
+  if (nAffected === 1)
+    parts.push(`The estimate for ${affected[0]} is affected: it is marked c in the Parameter Estimates table, its standard error is huge, and its test and odds ratio are meaningless. The other estimates, standard errors and tests are not affected and can be read as usual.`);
+  else if (nAffected > 1)
+    parts.push(`The estimates for ${listText(affected)} are affected: they are marked c in the Parameter Estimates table, their standard errors are huge, and their tests and odds ratios are meaningless. The other estimates, standard errors and tests are not affected and can be read as usual.`);
+  const fixes: string[] = [];
+  for (const c of cells) fixes.push(`merge "${c.label}" with another category of ${c.term.variable.name} (or leave those ${c.count === 1 ? 'case' : 'cases'} out)`);
+  if (cells.length) {
+    const emptyOutcomes = [...new Set(cells.flatMap((c) => c.empty))].map((j) => `"${catLabel(j)}"`);
+    fixes.push(`merge ${listText(emptyOutcomes)} with ${emptyOutcomes.length === 1 ? 'a similar outcome category' : 'similar outcome categories'}`);
+  } else fixes.push('merge sparse categories or leave out the predictor involved');
+  parts.push(`To get usable estimates for every parameter, ${[...new Set(fixes)].join(', or ')}.`);
+  return parts.join(' ');
 }
 
 function cntCell(x: number): Cell {

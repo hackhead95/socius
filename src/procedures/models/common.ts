@@ -283,6 +283,68 @@ export function describeCols(list: Array<{ name: string; term: Term; level: numb
   return out.map((x) => (x === '' ? factorTexts[fi++] : x));
 }
 
+// ---------- Separation ----------
+
+/** SPSS NOMREG / PLUM warning when the Hessian (information) matrix is singular. */
+export const HESSIAN_SINGULARITY_WARNING =
+  'Unexpected singularities in the Hessian matrix are encountered. This indicates that either some predictor variables should be excluded or some categories should be merged.';
+
+export interface EmptyOutcomeCells {
+  term: Term;
+  value: number | string;
+  label: string;
+  /** Weighted number of cases in this predictor category. */
+  count: number;
+  /** Outcome category indices (0..J-1) with no cases in this predictor category. */
+  empty: number[];
+}
+
+/**
+ * For each category of each factor, the outcome categories with no cases in it. An empty
+ * outcome-by-predictor cell makes the maximum-likelihood estimates of a (multinomial) logit model
+ * infinite: quasi-complete separation.
+ */
+export function emptyOutcomeCells(terms: Term[], y: ArrayLike<number>, J: number, w: ArrayLike<number>): EmptyOutcomeCells[] {
+  const out: EmptyOutcomeCells[] = [];
+  const n = y.length;
+  for (const t of terms) {
+    if (t.kind !== 'factor' || !t.levels || t.cols.length === 0) continue;
+    const levelOf = new Int32Array(n).fill(-1); // index into t.cols; -1 = reference category
+    t.cols.forEach((c, l) => {
+      for (let i = 0; i < n; i++) if (c[i] === 1) levelOf[i] = l;
+    });
+    const counts = Array.from({ length: t.cols.length + 1 }, () => new Float64Array(J));
+    for (let i = 0; i < n; i++) counts[levelOf[i] + 1][y[i]] += w[i];
+    for (const lv of t.levels) {
+      const isRef = lv.value === t.refValue;
+      const l = isRef ? -1 : t.levelValues.indexOf(lv.value);
+      if (!isRef && l < 0) continue;
+      const cnt = counts[l + 1];
+      let total = 0;
+      for (let j = 0; j < J; j++) total += cnt[j];
+      if (!(total > 0)) continue;
+      const empty: number[] = [];
+      for (let j = 0; j < J; j++) if (!(cnt[j] > 0)) empty.push(j);
+      if (empty.length) out.push({ term: t, value: lv.value, label: isRef ? (t.refLabel ?? String(lv.value)) : t.levelLabels[l], count: total, empty });
+    }
+  }
+  return out;
+}
+
+/** "or" list: "A", "A or B", "A, B, or C". */
+export function orList(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+  if (items.length === 2) return `${items[0]} or ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, or ${items[items.length - 1]}`;
+}
+
+/** Plain-language description of empty cells: 'no cases with gender = "Other" have employ = "Student" or "Retired"'. */
+export function emptyCellsText(cells: EmptyOutcomeCells[], depName: string, outcomeLabel: (j: number) => string): string {
+  return cells
+    .map((c) => `no cases with ${c.term.variable.name} = "${c.label}" have ${depName} = ${orList(c.empty.map((j) => `"${outcomeLabel(j)}"`))}`)
+    .join('; ');
+}
+
 /** Listwise case selection over all variables used by an analysis, with a friendly error if none remain. */
 export function selectAll(ds: Dataset, ids: string[], minCases = 3): CaseSelection {
   const sel = selectCases(ds, ids);

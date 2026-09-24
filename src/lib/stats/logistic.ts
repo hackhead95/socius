@@ -4,10 +4,56 @@
 // score tests for variables not in the equation.
 
 import { chi2Sf, normalPpf } from './distributions';
-import { cholesky, choleskyInverse, choleskySolve, zeros, type Matrix } from './matrix';
+import { cholesky, choleskySolve, spdInverseRobust, spdSolveRobust, zeros, type Matrix } from './matrix';
 import { log1pExp, logistic, sum, weightedMean, weightedSS } from './models-util';
 
 export const DEFAULT_MAX_ITER = 50;
+
+/**
+ * Newton iterations stop as "diverging" when the log-likelihood has stopped improving (relative
+ * change below this) for DIVERGE_ITERS iterations in a row while some estimate still moves by at
+ * least DIVERGE_STEP: the signature of (quasi-)complete separation, where some estimates run off to
+ * infinity. A regular model near its maximum never takes large steps with a flat likelihood.
+ */
+export const DIVERGE_DLL = 1e-12;
+export const DIVERGE_STEP = 0.1;
+export const DIVERGE_ITERS = 3;
+
+/** Tracks the divergence rule above across iterations. */
+export function divergenceTracker(): (dll: number, ll: number, maxStep: number) => boolean {
+  let flat = 0;
+  return (dll, ll, maxStep) => {
+    if (Math.abs(dll) <= DIVERGE_DLL * (1 + Math.abs(ll)) && maxStep >= DIVERGE_STEP) flat++;
+    else flat = 0;
+    return flat >= DIVERGE_ITERS;
+  };
+}
+
+/**
+ * Flags parameters whose estimates cannot be trusted because the information matrix is (nearly)
+ * singular in their direction: a clear share in the numerical null space, a non-finite standard
+ * error, or (for slopes, `scale` = standard deviation of the predictor, 0 for intercepts and
+ * thresholds) a standard error of more than 100 logits per standard deviation, or a huge estimate
+ * with an even larger standard error. These only happen when an estimate is running off to infinity.
+ */
+export function unstableParams(est: ArrayLike<number>, se: ArrayLike<number>, nullLoading: ArrayLike<number>, scale: ArrayLike<number>): Uint8Array {
+  const out = new Uint8Array(se.length);
+  for (let j = 0; j < se.length; j++) {
+    const s = scale[j];
+    if (!Number.isFinite(se[j]) || nullLoading[j] > 1e-4) out[j] = 1;
+    else if (s > 0 && (se[j] * s > 100 || (Math.abs(est[j]) * s > 8 && se[j] > Math.abs(est[j])))) out[j] = 1;
+  }
+  return out;
+}
+
+/** Weighted standard deviation of each column (0 for a constant column). */
+export function columnScales(X: ArrayLike<number>[], w: ArrayLike<number>): number[] {
+  return X.map((x) => {
+    const m = weightedMean(x, w);
+    const W = sum(w);
+    return W > 0 ? Math.sqrt(Math.max(weightedSS(x, w, m), 0) / W) : 0;
+  });
+}
 
 export interface CollinearityScreen {
   kept: number[];
@@ -69,8 +115,15 @@ export interface BinaryLogitFit {
   m2ll: number;
   iterations: number;
   converged: boolean;
-  /** True if iteration stopped because the information matrix became singular. */
+  /**
+   * True if the information matrix was numerically singular (after scaling) at some iteration or at
+   * the end; the affected directions are then held fixed and get very large standard errors.
+   */
   singular: boolean;
+  /** True if iteration stopped because the likelihood stopped improving while estimates kept growing (separation). */
+  diverged: boolean;
+  /** Per coefficient: 1 when the estimate is not identified or runs off to infinity (see unstableParams). */
+  unstable: Uint8Array;
   fitted: Float64Array;
   /** -2LL at each iteration (iteration history). */
   history: number[];
@@ -116,6 +169,8 @@ export function fitBinaryLogit(
   const history = [-2 * ll];
   let converged = false;
   let singular = false;
+  let diverged = false;
+  const diverging = divergenceTracker();
   let iterations = 0;
   let info = zeros(p, p);
   const xi = new Float64Array(p);
@@ -136,12 +191,9 @@ export function fitBinaryLogit(
       }
     }
     for (let a = 0; a < p; a++) for (let b = 0; b < a; b++) info.data[a * p + b] = info.data[b * p + a];
-    const L = cholesky(info);
-    if (!L) {
-      singular = true;
-      break;
-    }
-    const step = choleskySolve(L, grad);
+    const sol = spdSolveRobust(info, grad);
+    if (sol.rankDeficient) singular = true;
+    const step = sol.x;
     let t = 1;
     let next = new Float64Array(p);
     let llNext = -Infinity;
@@ -164,6 +216,10 @@ export function fitBinaryLogit(
       converged = true;
       break;
     }
+    if (diverging(dll, ll, maxStep)) {
+      diverged = true;
+      break;
+    }
   }
   // Final information at the solution.
   const fitted = new Float64Array(n);
@@ -180,21 +236,17 @@ export function fitBinaryLogit(
     }
   }
   for (let a = 0; a < p; a++) for (let b = 0; b < a; b++) info.data[a * p + b] = info.data[b * p + a];
-  const L = cholesky(info);
-  let cov: Matrix;
-  if (L) cov = choleskyInverse(L);
-  else {
-    singular = true;
-    cov = zeros(p, p);
-    cov.data.fill(NaN);
-  }
+  const inv = spdInverseRobust(info);
+  if (inv.rankDeficient) singular = true;
+  const cov = inv.inv;
   const se = new Float64Array(p), wald = new Float64Array(p), pv = new Float64Array(p);
   for (let a = 0; a < p; a++) {
     se[a] = Math.sqrt(cov.data[a * p + a]);
     wald[a] = (coef[a] / se[a]) ** 2;
     pv[a] = chi2Sf(wald[a], 1);
   }
-  return { coef, cov, se, wald, p: pv, logLik: ll, m2ll: -2 * ll, iterations, converged, singular, fitted, history };
+  const unstable = unstableParams(coef, se, inv.nullLoading, [0, ...columnScales(X, w)]);
+  return { coef, cov, se, wald, p: pv, logLik: ll, m2ll: -2 * ll, iterations, converged, singular, diverged, unstable, fitted, history };
 }
 
 /** Wald chi-square for a set of coefficients (indices into coef): b' V^-1 b, df = count. */
@@ -402,7 +454,16 @@ export interface MultinomialFit {
   m2ll: number;
   iterations: number;
   converged: boolean;
+  /**
+   * True if the information matrix was numerically singular (SPSS: "unexpected singularities in
+   * the Hessian matrix"); the affected directions are held at their last values and get very large
+   * standard errors, while the other parameters are estimated and tested normally.
+   */
   singular: boolean;
+  /** True if iteration stopped because the likelihood stopped improving while estimates kept growing (separation). */
+  diverged: boolean;
+  /** unstable[c][j]: 1 when that parameter is not identified or runs off to infinity (see unstableParams). */
+  unstable: Uint8Array[];
 }
 
 function multinomialLogLik(beta: Float64Array, yIdx: ArrayLike<number>, X: ArrayLike<number>[], w: ArrayLike<number>, cats: number[], p: number): number {
@@ -499,15 +560,14 @@ export function fitMultinomial(
           for (let l = 0; l < p; l++) H.data[(c * p + l) * P + a * p + j] = H.data[(a * p + j) * P + c * p + l];
     return { H, g };
   };
+  const diverging = divergenceTracker();
+  let diverged = false;
   for (let iter = 1; iter <= maxIter; iter++) {
     iterations = iter;
     const { H, g } = buildInfo(beta, true);
-    const L = cholesky(H);
-    if (!L) {
-      singular = true;
-      break;
-    }
-    const step = choleskySolve(L, g);
+    const sol = spdSolveRobust(H, g);
+    if (sol.rankDeficient) singular = true;
+    const step = sol.x;
     let t = 1;
     const next = new Float64Array(P);
     let llNext = -Infinity;
@@ -529,24 +589,25 @@ export function fitMultinomial(
       converged = true;
       break;
     }
+    if (diverging(dll, ll, maxStep)) {
+      diverged = true;
+      break;
+    }
   }
   const { H } = buildInfo(beta, false);
-  const L = cholesky(H);
-  let cov: Matrix;
-  if (L) cov = choleskyInverse(L);
-  else {
-    singular = true;
-    cov = zeros(P, P);
-    cov.data.fill(NaN);
-  }
-  const coef: Float64Array[] = [], se: Float64Array[] = [];
+  const inv = spdInverseRobust(H);
+  if (inv.rankDeficient) singular = true;
+  const cov = inv.inv;
+  const scales = [0, ...columnScales(X, w)];
+  const coef: Float64Array[] = [], se: Float64Array[] = [], unstable: Uint8Array[] = [];
   for (let k = 0; k < K; k++) {
     coef.push(beta.slice(k * p, (k + 1) * p));
     const s = new Float64Array(p);
     for (let j = 0; j < p; j++) s[j] = Math.sqrt(cov.data[(k * p + j) * P + k * p + j]);
     se.push(s);
+    unstable.push(unstableParams(coef[k], s, inv.nullLoading.subarray(k * p, (k + 1) * p), scales));
   }
-  return { J, ref, cats, coef, se, cov, logLik: ll, m2ll: -2 * ll, iterations, converged, singular };
+  return { J, ref, cats, coef, se, cov, logLik: ll, m2ll: -2 * ll, iterations, converged, singular, diverged, unstable };
 }
 
 /** Log-likelihood of the intercept-only multinomial model (closed form). */

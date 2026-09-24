@@ -10,8 +10,9 @@
 // multiply each case's log-likelihood contribution.
 
 import { chi2Sf, normalPpf } from './distributions';
-import { cholesky, choleskyInverse, choleskySolve, zeros, type Matrix } from './matrix';
+import { spdInverseRobust, spdSolveRobust, zeros, type Matrix } from './matrix';
 import { logistic, logisticDensity } from './models-util';
+import { columnScales, divergenceTracker, unstableParams } from './logistic';
 
 export interface CumulativeFit {
   J: number;
@@ -25,7 +26,12 @@ export interface CumulativeFit {
   m2ll: number;
   iterations: number;
   converged: boolean;
+  /** True if the information matrix was numerically singular; affected directions get very large standard errors. */
   singular: boolean;
+  /** True if iteration stopped because the likelihood stopped improving while estimates kept growing (separation). */
+  diverged: boolean;
+  /** Per parameter: 1 when the estimate is not identified or runs off to infinity. */
+  unstable: Uint8Array;
   /** Fitted category probabilities, row-major n x J. */
   probs: Float64Array;
 }
@@ -148,16 +154,14 @@ export function fitCumulativeLogit(
     return { g, H };
   };
 
-  let converged = false, singular = false, iterations = 0;
+  let converged = false, singular = false, diverged = false, iterations = 0;
+  const diverging = divergenceTracker();
   for (let iter = 1; iter <= maxIter; iter++) {
     iterations = iter;
     const { g, H } = derivatives(params);
-    const L = cholesky(H);
-    if (!L) {
-      singular = true;
-      break;
-    }
-    const step = choleskySolve(L, g);
+    const sol = spdSolveRobust(H, g);
+    if (sol.rankDeficient) singular = true;
+    const step = sol.x;
     let t = 1;
     const next = new Float64Array(P);
     let llNext = -Infinity;
@@ -183,18 +187,21 @@ export function fitCumulativeLogit(
       converged = true;
       break;
     }
+    if (diverging(dll, ll, maxStep)) {
+      diverged = true;
+      break;
+    }
   }
   const { H } = derivatives(params);
-  const L = cholesky(H);
-  let cov: Matrix;
-  if (L) cov = choleskyInverse(L);
-  else {
-    singular = true;
-    cov = zeros(P, P);
-    cov.data.fill(NaN);
-  }
+  const inv = spdInverseRobust(H);
+  if (inv.rankDeficient) singular = true;
+  const cov: Matrix = inv.inv;
   const se = new Float64Array(P);
   for (let r = 0; r < P; r++) se[r] = Math.sqrt(cov.data[r * P + r]);
+  const xs = columnScales(X, w);
+  const scales = new Float64Array(P);
+  for (let e = 0; e < (general ? J - 1 : 1); e++) for (let j = 0; j < q; j++) scales[betaIdx(e, j)] = xs[j];
+  const unstable = unstableParams(params, se, inv.nullLoading, scales);
   const probs = new Float64Array(n * J);
   for (let i = 0; i < n; i++) {
     let prev = 0;
@@ -204,7 +211,7 @@ export function fitCumulativeLogit(
       prev = cum;
     }
   }
-  return { J, q, general, params, cov, se, logLik: ll, m2ll: -2 * ll, iterations, converged, singular, probs };
+  return { J, q, general, params, cov, se, logLik: ll, m2ll: -2 * ll, iterations, converged, singular, diverged, unstable, probs };
 }
 
 /** Log-likelihood of the thresholds-only model (closed form). */

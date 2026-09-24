@@ -8,7 +8,7 @@ import type { Dataset } from '../../../core/types';
 import { reportData, reportHtml, segmentTable } from '../../../lib/coding/exports';
 import { codebookToCsv, codebookToJson, mergeCodebook, parseCodebookCsv, parseCodebookJson } from '../../../lib/coding/codebookIO';
 import { decodeText } from '../../../lib/coding/importers';
-import { buildCodeVariables } from '../../../lib/coding/toDataset';
+import { applyCodeVariables, buildCodeVariables, type ExportMode } from '../../../lib/coding/toDataset';
 import { descendantIds } from '../../../lib/coding/tree';
 import { replaceCodebook } from '../actions';
 import { useOrderedCodes, saveAndReport, saveCsv, saveXlsx, toast, plural } from '../hooks';
@@ -153,13 +153,17 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
   const [chosen, setChosen] = useState<Set<string>>(() => new Set(usedCodes.map((c) => c.id)));
   const [coder, setCoder] = useState('');
   const [countVar, setCountVar] = useState(true);
+  const [mode, setMode] = useState<ExportMode>('update');
   const coders = useMemo(() => [...new Set(project.segments.filter((s) => linkedIds.has(s.docId)).map((s) => s.coder))], [project.segments, linkedIds]);
 
   const build = useMemo(() => {
     if (!ds || !question) return null;
     const ids = usedCodes.filter((c) => chosen.has(c.id)).map((c) => c.id);
-    return buildCodeVariables(ds, project.codes, project.docs, project.segments, ids, { sourceVarId: question, coder: coder || null, countVariable: countVar, members });
-  }, [ds, question, usedCodes, chosen, project, coder, countVar, members]);
+    return buildCodeVariables(ds, project.codes, project.docs, project.segments, ids, { sourceVarId: question, coder: coder || null, countVariable: countVar, members, mode });
+  }, [ds, question, usedCodes, chosen, project, coder, countVar, members, mode]);
+  const previous = build?.previous ?? [];
+  const nUpdate = build?.plans.filter((p) => p.replaces).length ?? 0;
+  const nAdd = (build?.plans.length ?? 0) - nUpdate;
 
   if (!ds || !linked.length) {
     return (
@@ -174,24 +178,21 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
   const apply = () => {
     if (!build || !build.plans.length) return;
     const plans = build.plans;
-    mutateDataset((d: Dataset) => {
-      const variables = d.variables.slice();
-      const columns = { ...d.columns };
-      const at = variables.findIndex((v) => v.id === question);
-      let insert = at >= 0 ? at + 1 : variables.length;
-      for (const p of plans) {
-        variables.splice(insert++, 0, p.variable);
-        columns[p.variable.id] = p.column;
-      }
-      return { ...d, variables, columns, version: d.version + 1 };
-    });
-    const names = plans.map((p) => p.variable.name);
+    // One dataset update, so a single Undo reverts both the updated values and the new variables.
+    mutateDataset((d: Dataset) => applyCodeVariables(d, plans, question));
+    const listNames = (names: string[]) => `${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`;
+    const updated = plans.filter((p) => p.replaces).map((p) => p.variable.name);
+    const added = plans.filter((p) => !p.replaces).map((p) => p.variable.name);
+    const parts: string[] = [];
+    if (updated.length) parts.push(`Updated ${plural(updated.length, 'existing variable')} (${listNames(updated)})`);
+    if (added.length) parts.push(`${updated.length ? 'added' : 'Added'} ${plural(added.length, 'variable')} (${listNames(added)}) after ${ds.variables.find((v) => v.id === question)?.name}`);
     toast(
-      `Added ${plural(names.length, 'variable')} (${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}) after ${ds.variables.find((v) => v.id === question)?.name}. 1 = mentioned, 0 = not mentioned, blank = no answer. Compare groups with Crosstabs (chi-square). Undo in the Edit menu removes them.`,
+      `${parts.join(' and ')}. 1 = mentioned, 0 = not mentioned, blank = no answer. Compare groups with Crosstabs (chi-square). Undo in the Edit menu reverts this.`,
       'success',
     );
     props.onClose();
   };
+  const applyLabel = nUpdate && nAdd ? `Update ${nUpdate}, add ${nAdd}` : nUpdate ? `Update ${plural(nUpdate, 'variable')}` : `Add ${plural(nAdd, 'variable')}`;
 
   return (
     <Modal
@@ -201,7 +202,7 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
       footer={
         <>
           <button className="btn" onClick={props.onClose}>Cancel</button>
-          <button className="btn btn-primary" disabled={!build?.plans.length} onClick={apply}>Add {plural(build?.plans.length ?? 0, 'variable')}</button>
+          <button className="btn btn-primary" disabled={!build?.plans.length} onClick={apply}>{applyLabel}</button>
         </>
       }
     >
@@ -226,6 +227,20 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
           ) : null}
         </div>
         {!usedCodes.length ? <div className="callout callout-info">None of these responses are coded yet.</div> : null}
+        {previous.length ? (
+          <div className="callout callout-info stack" style={{ gap: 6 }} role="radiogroup" aria-label="Variables exported before">
+            <span>
+              {previous.length === 1 ? 'A variable for these codes was' : `${previous.length} variables for these codes were`} already exported from this question (
+              <span className="mono">{previous.slice(0, 4).map((v) => v.name).join(', ')}{previous.length > 4 ? '…' : ''}</span>).
+            </span>
+            <label className="check">
+              <input type="radio" name="cw-export-mode" checked={mode === 'update'} onChange={() => setMode('update')} /> Update the existing variables (replace their values; names, labels and position stay)
+            </label>
+            <label className="check">
+              <input type="radio" name="cw-export-mode" checked={mode === 'new'} onChange={() => setMode('new')} /> Create new copies (the earlier variables are kept as they are)
+            </label>
+          </div>
+        ) : null}
         <div className="row">
           <b>Codes</b>
           <span className="spacer" />
@@ -233,7 +248,7 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
         </div>
         <table className="table">
           <thead>
-            <tr><th style={{ width: 32 }} /><th>Code</th><th>New variable</th><th className="num">Mentioned</th></tr>
+            <tr><th style={{ width: 32 }} /><th>Code</th><th>{nUpdate ? 'Variable' : 'New variable'}</th><th className="num">Mentioned</th></tr>
           </thead>
           <tbody>
             {usedCodes.map((c) => {
@@ -242,7 +257,7 @@ export function ExportToDatasetDialog(props: { onClose: () => void }) {
                 <tr key={c.id}>
                   <td><input type="checkbox" checked={chosen.has(c.id)} onChange={() => setChosen((s) => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })} aria-label={`Export ${c.name}`} /></td>
                   <td style={{ paddingLeft: 8 + (depthOf.get(c.id) ?? 0) * 16 }}><span className="row" style={{ gap: 6 }}><Swatch color={c.color} />{c.name}{members[c.id] ? <span className="faint">theme: 1 if any of its sub-codes applies</span> : null}</span></td>
-                  <td className="mono">{plan?.variable.name ?? ''}</td>
+                  <td className="mono">{plan?.variable.name ?? ''}{plan?.replaces ? <span className="faint"> (update)</span> : null}</td>
                   <td className="num">{plan ? `${plan.nMentioned} of ${build!.nLinked}` : ''}</td>
                 </tr>
               );

@@ -19,10 +19,12 @@ import {
   countPatterns,
   describeCols,
   dfText,
+  emptyOutcomeCells,
   fmtP,
   footName,
   hcell,
   heading,
+  HESSIAN_SINGULARITY_WARNING,
   levelsOf,
   listText,
   makeItem,
@@ -139,7 +141,43 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const nPatterns = countPatterns(X, y.length);
 
   const blocks: OutputBlock[] = [heading(`Ordinal Regression: ${footName(depVar)}`)];
-  if (!fit.converged) warnings.push(`The model did not converge within ${maxIter} iterations${fit.singular ? ' (the information matrix is singular)' : ''}. Estimates are unreliable; this usually means sparse categories or complete separation. Merge rare outcome or predictor categories.`);
+  const isUnstable = (r: number) => fit.unstable[r] === 1;
+  const anyUnstable = fit.unstable.some((u) => u === 1);
+  const separated = fit.singular || fit.diverged || anyUnstable;
+  if (separated) {
+    if (fit.singular) warnings.push(`${HESSIAN_SINGULARITY_WARNING} The procedure continues despite this warning; the results shown are based on the last iteration.`);
+    const usedTerms = terms.filter((t) => cols.some((c) => c.term === t));
+    const catLab = (j: number) => categoryLabel(depVar, depLevels[j].value);
+    const cells = emptyOutcomeCells(usedTerms, y, J, w)
+      .map((c) => ({ c, only: [...Array(J).keys()].filter((j) => !c.empty.includes(j)) }))
+      .filter(({ only }) => only.length === 1 && (only[0] === 0 || only[0] === J - 1));
+    const affected: string[] = [];
+    for (let r = 0; r < fit.params.length; r++) {
+      if (!isUnstable(r)) continue;
+      if (r < J - 1) affected.push(`the threshold for ${depVar.name} = "${catLab(r)}"`);
+      else {
+        const c = cols[r - (J - 1)];
+        affected.push(c.term.kind === 'factor' ? `${c.term.variable.name} = "${c.term.levelLabels[c.level]}"` : c.name);
+      }
+    }
+    const parts: string[] = [];
+    if (cells.length)
+      parts.push(
+        `Quasi-complete separation: ${cells
+          .map(({ c, only }) => `all cases with ${c.term.variable.name} = "${c.label}" have ${depVar.name} = "${catLab(only[0])}", the ${only[0] === 0 ? 'lowest' : 'highest'} category`)
+          .join('; ')}. The model can always fit those cases better by moving their estimate further towards infinity, so no finite best estimate exists.`,
+      );
+    else parts.push('Separation: some predictor values perfectly predict the outcome category, so some estimates grow without limit and no finite best estimate exists.');
+    if (affected.length)
+      parts.push(
+        affected.length === 1
+          ? `The estimate for ${affected[0]} is affected: it is marked b in the Parameter Estimates table, its standard error is huge, and its test is meaningless. The other estimates, standard errors and tests are not affected and can be read as usual.`
+          : `The estimates for ${listText(affected)} are affected: they are marked b in the Parameter Estimates table, their standard errors are huge, and their tests are meaningless. The other estimates, standard errors and tests are not affected and can be read as usual.`,
+      );
+    parts.push(cells.length ? `To get usable estimates for every parameter, ${cells.map(({ c }) => `merge "${c.label}" with another category of ${c.term.variable.name}`).join(', or ')}, or merge sparse outcome categories.` : 'Merge sparse categories or leave out the predictor involved.');
+    warnings.push(parts.join(' '));
+  } else if (!fit.converged)
+    warnings.push(`The model did not converge within ${maxIter} iterations. Estimates are unreliable; this usually means sparse categories. Merge rare outcome or predictor categories, or allow more iterations.`);
   const factorTerms = terms.filter((t) => t.kind === 'factor' && t.cols.length > 0);
   blocks.push(tbl(marginalCaseSummary(depVar, depLevels, factorTerms, sel, nPatterns)));
   blocks.push(
@@ -192,11 +230,17 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
       [hcell('', { colSpan: 2, rowSpan: 2 }), hcell('Estimate', { rowSpan: 2 }), hcell('Std. Error', { rowSpan: 2 }), hcell('Wald', { rowSpan: 2 }), hcell('df', { rowSpan: 2 }), hcell('Sig.', { rowSpan: 2 }), hcell(`${confPct.toFixed(0)}% Confidence Interval`, { colSpan: 2 })],
       [hcell('Lower Bound'), hcell('Upper Bound')],
     ];
+    let anyMarked = false;
     const paramRow = (label: string, r: number): Cell[] => {
       const est = fit.params[r], se = fit.se[r];
       const wald = (est / se) ** 2;
       const [lo, hi] = waldCI(est, se, conf);
-      return [cell(label, 'text'), coefCell(est), coefCell(se), cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1)), coefCell(lo), coefCell(hi)];
+      const seCell = coefCell(se);
+      if (isUnstable(r)) {
+        seCell.mark = 'b';
+        anyMarked = true;
+      }
+      return [cell(label, 'text'), coefCell(est), seCell, cell(wald, 'dec3'), cell(1, 'int'), pCell(chi2Sf(wald, 1)), coefCell(lo), coefCell(hi)];
     };
     const thrRows: Cell[][] = [];
     for (let j = 0; j < J - 1; j++) thrRows.push(paramRow(`[${depVar.name} = ${categoryLabel(depVar, depLevels[j].value)}]`, j));
@@ -222,6 +266,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     ];
     const foot = ['Link function: Logit. Model: logit P(Y ≤ j) = Threshold_j − Location, so a positive location estimate means higher categories are more likely.'];
     if (anyRedundant) foot.push('a. This parameter is set to zero because it is redundant (reference category).');
+    if (anyMarked) foot.push('b. Not a real estimate: because of separation (see the warnings) this parameter grows without limit with every iteration, so the value shown is where the iterations stopped. Its standard error is huge and its Wald test and significance are meaningless.');
     blocks.push(tbl({ title: 'Parameter Estimates', header, rows, stubColumns: 2, ruleBefore: locRows.length ? [thrRows.length] : [], footnotes: foot }));
   }
 
@@ -242,7 +287,8 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
         'The null hypothesis states that the location parameters (slope coefficients) are the same across response categories.',
         'Link function: Logit.',
       ];
-      if (!gen.converged) foot.push('The general model did not converge; the test may be inaccurate.');
+      if (gen.diverged || gen.singular || gen.unstable.some((u) => u === 1)) foot.push('Some estimates of the general model grow without limit (separation); the test may be inaccurate.');
+      else if (!gen.converged) foot.push('The general model did not converge; the test may be inaccurate.');
       blocks.push(
         tbl({
           title: 'Test of Parallel Lines',
@@ -265,7 +311,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   if (W / nPar < 10) warnings.push(`Only ${num(W / nPar, 1)} cases per estimated parameter (${nPar} parameters). Estimates may be unstable.`);
   const minCat = Math.min(...depLevels.map((l) => l.count));
   if (minCat < 5) warnings.push(`Some categories of ${depVar.name} have very few cases (smallest: ${num(minCat, 0)}). Consider merging adjacent categories.`);
-  const bigSE = cols.filter((_, j) => fit.se[J - 1 + j] > 5).map((c) => c.name);
+  const bigSE = cols.filter((_, j) => fit.se[J - 1 + j] > 5 && !isUnstable(J - 1 + j)).map((c) => c.name);
   if (bigSE.length) warnings.push(`Very large standard errors for ${listText(bigSE)} suggest sparse categories or separation. Interpret these estimates with great care.`);
   if (J === 2) notes.push(`${depVar.name} has only two categories, so this model is equivalent to a binary logistic regression (with the sign of the estimates reversed relative to the thresholds).`);
   for (const t of warnings) blocks.push(textBlock('warning', t));
@@ -283,6 +329,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   const nonsig: Col[] = [];
   cols.forEach((c, j) => {
     const r = J - 1 + j;
+    if (isUnstable(r)) return;
     const pv = chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1);
     const or = Math.exp(fit.params[r]);
     if (!(pv < 0.05)) {
@@ -295,6 +342,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   });
   sig.forEach((s, i) => ip.push(i === 0 && q > 1 ? `Holding the other predictors constant, ${s}.` : `${capitalize(s)}.`));
   if (nonsig.length) ip.push(`Not significantly related to ${depText} (p ≥ .05): ${listText(describeCols(nonsig))}.`);
+  if (anyUnstable) ip.push('Estimates affected by separation (marked b in the Parameter Estimates table) are left out of this summary.');
   if (J > 2) {
     const l0 = categoryLabel(depVar, depLevels[0].value), l1 = categoryLabel(depVar, depLevels[1].value);
     ip.push(`The odds ratios (exp of the location estimates) apply at every cut-point of the outcome: above "${l0}" versus at it, above "${l1}" versus at or below it, and so on.`);
@@ -308,7 +356,7 @@ function runOrdinal(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   if (Number.isFinite(parallelP)) apa.push(`The assumption of proportional odds was ${parallelP < 0.05 ? 'not ' : ''}supported by the test of parallel lines, ${fmtP(parallelP)}.`);
   const sigApa = cols
     .map((c, j) => ({ c, r: J - 1 + j }))
-    .filter(({ r }) => chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1) < 0.05)
+    .filter(({ r }) => !isUnstable(r) && chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1) < 0.05)
     .map(({ c, r }) => {
       const [lo, hi] = waldCI(fit.params[r], fit.se[r], conf);
       return `${c.name} (b = ${num(fit.params[r], 2)}, SE = ${num(fit.se[r], 2)}, OR = ${num(Math.exp(fit.params[r]), 2)}, ${confPct.toFixed(0)}% CI [${num(Math.exp(lo), 2)}, ${num(Math.exp(hi), 2)}], ${fmtP(chi2Sf((fit.params[r] / fit.se[r]) ** 2, 1))})`;

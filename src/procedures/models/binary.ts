@@ -266,9 +266,11 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     }),
   );
   const convNote = fit.converged
-    ? `Estimation terminated at iteration number ${fit.iterations} because the parameter estimates converged.`
-    : fit.singular
-      ? `Estimation stopped at iteration number ${fit.iterations} because the information matrix became singular. Final solution cannot be found.`
+    ? fit.singular
+      ? `Estimation terminated at iteration number ${fit.iterations} because the parameter estimates converged, but the information matrix is singular, so some parameters are not identified.`
+      : `Estimation terminated at iteration number ${fit.iterations} because the parameter estimates converged.`
+    : fit.diverged
+      ? `Estimation terminated at iteration number ${fit.iterations} because the log-likelihood stopped improving while some estimates kept growing (separation). Final solution cannot be found.`
       : `Estimation terminated at iteration number ${fit.iterations} because the maximum number of iterations was reached. Final solution cannot be found.`;
   blocks.push(
     tbl({
@@ -313,9 +315,15 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
       header.push([hcell('Lower'), hcell('Upper')]);
     }
     const body: Cell[][] = [];
+    let anyMarked = false;
     const coefRow = (label: string, j: number, indent = 0): Cell[] => {
       const b = fit.coef[j], se = fit.se[j];
-      const r: Cell[] = [cell(label, 'text', { indent }), coefCell(b), coefCell(se), cell(fit.wald[j], 'dec3'), cell(1, 'int'), pCell(fit.p[j]), cell(Math.exp(b), 'dec3')];
+      const seCell = coefCell(se);
+      if (fit.unstable[j]) {
+        seCell.mark = 'a';
+        anyMarked = true;
+      }
+      const r: Cell[] = [cell(label, 'text', { indent }), coefCell(b), seCell, cell(fit.wald[j], 'dec3'), cell(1, 'int'), pCell(fit.p[j]), cell(Math.exp(b), 'dec3')];
       if (showCI) {
         const [lo, hi] = expCI(b, se, conf);
         r.push(cell(lo, 'dec3'), cell(hi, 'dec3'));
@@ -338,16 +346,17 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
     const rows = body.map((r, i) => (i === 0 ? [cell('Step 1', 'text', { rowSpan: body.length }), ...r] : r));
     const foot = [`Variable(s) entered on step 1: ${terms.map((t) => t.variable.name).join(', ')}.`];
     if (factorTerms.length) foot.push('Categorical predictors are indicator-coded; each category is compared with the reference category.');
-    if (!fit.converged) foot.push('The estimates did not converge and should not be trusted.');
+    if (anyMarked) foot.push('a. Not a real estimate: because of separation (see the warnings) this coefficient grows without limit with every iteration, so the value shown is where the iterations stopped. Its standard error is huge and its Wald test, significance and odds ratio are meaningless.');
+    if (!fit.converged && !anyMarked && !sep) foot.push('The estimates did not converge and should not be trusted.');
     blocks.push(tbl({ title: 'Variables in the Equation', header, rows, stubColumns: 2, footnotes: foot }));
   }
 
   // ----- Warnings -----
-  if (sep) warnings.push(separationText(sep, cols, depVar, eventLabel, nonEventLabel));
+  if (sep) warnings.push(separationText(sep, cols, depVar, eventLabel, nonEventLabel, fit.unstable.some((u, j) => j > 0 && u === 1)));
   else if (!fit.converged) warnings.push(`The model did not converge within ${maxIter} iterations. The estimates are not reliable. Try fewer predictors or merge sparse categories.`);
   const rare = Math.min(nEvents, W - nEvents);
   if (p > 0 && rare / p < 10) warnings.push(`Only ${num(rare / p, 1)} cases of the rarer outcome per predictor (${num(rare, 0)} cases, ${p} parameters). A common rule of thumb asks for at least 10; with fewer, odds ratios can be biased and unstable.`);
-  const bigSE = cols.filter((_, j) => fit.se[j + 1] > 5 && !(sep && sep.variables.includes(j))).map((c) => c.name);
+  const bigSE = cols.filter((_, j) => fit.se[j + 1] > 5 && !fit.unstable[j + 1] && !(sep && sep.variables.includes(j))).map((c) => c.name);
   if (bigSE.length) warnings.push(`Very large standard errors for ${listText(bigSE)} suggest sparse categories or near-separation. Interpret those odds ratios with great care.`);
   if (hl && hl.p < 0.05) warnings.push(`The Hosmer-Lemeshow test is significant (${fmtP(hl.p)}): predicted probabilities do not match observed rates well in some groups. Consider adding interactions or non-linear terms.`);
   if (hl && hl.df < 1) notes.push('The Hosmer-Lemeshow test needs at least three groups of distinct predicted probabilities, so it could not be computed.');
@@ -370,8 +379,8 @@ function runBinary(ds: Dataset, vars: SlotValues, opts: OptionValues) {
   cols.forEach((c, j) => {
     const pv = fit.p[j + 1];
     const or = Math.exp(fit.coef[j + 1]);
-    if (!(pv < 0.05) || (sep && sep.variables.includes(j))) {
-      if (!(pv < 0.05)) nonsig.push(c);
+    if (!(pv < 0.05) || (sep && sep.variables.includes(j)) || fit.unstable[j + 1]) {
+      if (!(pv < 0.05) && !fit.unstable[j + 1] && !(sep && sep.variables.includes(j))) nonsig.push(c);
       return;
     }
     if (c.term.kind === 'factor') sigRows.push(`compared with ${c.term.variable.name} = ${c.term.refLabel}, ${oddsOf} were ${oddsPhrase(or)} for ${c.term.levelLabels[c.level]} (${fmtP(pv)})`);
@@ -473,7 +482,7 @@ function classificationTable(y: Float64Array, prob: ArrayLike<number>, w: ArrayL
   });
 }
 
-function separationText(sep: NonNullable<ReturnType<typeof detectSeparation>>, cols: Col[], depVar: Variable, eventLabel: string, nonEventLabel: string): string {
+function separationText(sep: NonNullable<ReturnType<typeof detectSeparation>>, cols: Col[], depVar: Variable, eventLabel: string, nonEventLabel: string, marked: boolean): string {
   const parts: string[] = [];
   sep.variables.forEach((j, k) => {
     const c = cols[j];
@@ -492,7 +501,10 @@ function separationText(sep: NonNullable<ReturnType<typeof detectSeparation>>, c
   const kind = sep.kind === 'complete' ? 'Complete separation' : 'Quasi-complete separation';
   return (
     `${kind} detected: ${parts.join('; ')}. ` +
-    'When a predictor perfectly predicts the outcome for some cases, the maximum-likelihood estimate is infinite, so the B, S.E. and odds ratio for that variable are meaningless. ' +
+    'When a predictor perfectly predicts the outcome for some cases, the maximum-likelihood estimate is infinite, so the B, S.E. and odds ratio for that variable are meaningless' +
+    (marked && sep.kind === 'quasi-complete'
+      ? ' (marked a in the Variables in the Equation table, with a huge standard error). The other estimates, standard errors and tests are not affected and can be read as usual. '
+      : '. ') +
     'Merge sparse categories, drop the variable, or collect more data.'
   );
 }

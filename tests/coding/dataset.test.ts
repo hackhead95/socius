@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { makeDataset, makeVariable } from '../../src/core/types';
 import type { CodeDef, CodedSegment } from '../../src/core/coding-types';
-import { buildCodeVariables, codeVarStem } from '../../src/lib/coding/toDataset';
+import { applyCodeVariables, buildCodeVariables, codeVarStem, CODE_ATTR, COUNT_CODE, findExportedVariable, SOURCE_ATTR } from '../../src/lib/coding/toDataset';
+import { exportSav, importFile } from '../../src/lib/io';
+import { useStore } from '../../src/core/store';
 import { buildResponseDocs } from '../../src/lib/coding/survey';
 
 function dataset() {
@@ -90,5 +92,93 @@ describe('export codes to dataset', () => {
   });
   it('makes readable stems', () => {
     expect(codeVarStem('Café / discrimination at work')).toBe('c_cafe_discrimination_at');
+  });
+});
+
+describe('exporting the same codes to the dataset again', () => {
+  const codes: CodeDef[] = [
+    { id: 'k1', name: 'Work', description: '', color: '#000', parentId: null, createdAt: 0 },
+    { id: 'k2', name: 'Family & kin', description: '', color: '#000', parentId: null, createdAt: 0 },
+  ];
+  const setup = () => {
+    const ds = dataset();
+    const { docs } = buildResponseDocs(ds, 'v_ans', [], null, []);
+    const seg = (d: number, codeId: string): CodedSegment => ({ id: `${d}${codeId}`, docId: docs[d].id, codeId, start: 0, end: docs[d].text.length, coder: 'A', origin: 'manual', createdAt: 0 });
+    return { ds, docs, seg };
+  };
+
+  it('records the code and source question as variable attributes', () => {
+    const { ds, docs, seg } = setup();
+    const out = buildCodeVariables(ds, codes, docs, [seg(0, 'k1')], ['k1'], { sourceVarId: 'v_ans', countVariable: true });
+    expect(out.previous).toEqual([]);
+    expect(out.plans.every((p) => p.replaces === null)).toBe(true);
+    expect(out.plans[0].variable.attributes).toEqual({ coding_code: 'Work', [CODE_ATTR]: 'k1', [SOURCE_ATTR]: 'v_ans' });
+    expect(out.plans[1].variable.attributes).toEqual({ [CODE_ATTR]: COUNT_CODE, [SOURCE_ATTR]: 'v_ans' });
+    // Without an explicit question, the only question among the linked responses is used.
+    const implicit = buildCodeVariables(ds, codes, docs, [seg(0, 'k1')], ['k1'], {});
+    expect(implicit.plans[0].variable.attributes?.[SOURCE_ATTR]).toBe('v_ans');
+  });
+
+  it('update mode overwrites the earlier variables in place, keeping names and edits', () => {
+    const { ds, docs, seg } = setup();
+    const first = buildCodeVariables(ds, codes, docs, [seg(0, 'k1')], ['k1'], { sourceVarId: 'v_ans', countVariable: true });
+    let d1 = applyCodeVariables(ds, first.plans, 'v_ans');
+    expect(d1.variables.map((v) => v.name)).toEqual(['resp_id', 'gender', 'q12_open', 'c_work_1', 'c_count', 'c_work']);
+    const workId = first.plans[0].variable.id;
+    // The user relabels the variable and moves it to the end before coding more and exporting again.
+    d1 = { ...d1, variables: [...d1.variables.filter((v) => v.id !== workId), { ...d1.variables.find((v) => v.id === workId)!, label: 'Mentions work (recoded)' }] };
+    expect(findExportedVariable(d1, 'k1', 'v_ans')?.id).toBe(workId);
+    expect(findExportedVariable(d1, 'k1', 'v_other')).toBeUndefined();
+
+    const second = buildCodeVariables(d1, codes, docs, [seg(0, 'k1'), seg(2, 'k1'), seg(2, 'k2')], ['k1', 'k2'], { sourceVarId: 'v_ans', countVariable: true, mode: 'update' });
+    expect(second.previous.map((v) => v.name)).toEqual(['c_work_1', 'c_count']);
+    expect(second.plans.map((p) => [p.variable.name, p.replaces !== null])).toEqual([['c_work_1', true], ['c_family_kin', false], ['c_count', true]]);
+    const d2 = applyCodeVariables(d1, second.plans, 'v_ans');
+    expect(d2.variables.map((v) => v.name)).toEqual(['resp_id', 'gender', 'q12_open', 'c_family_kin', 'c_count', 'c_work', 'c_work_1']);
+    const work = d2.variables.find((v) => v.id === workId)!;
+    expect(work.label).toBe('Mentions work (recoded)');
+    expect(Array.from(d2.columns[workId] as Float64Array)).toEqual([1, NaN, 0, 1, NaN]);
+    const countVar = d2.variables.find((v) => v.name === 'c_count')!;
+    expect(countVar.id).toBe(first.plans[1].variable.id);
+    expect(Array.from(d2.columns[countVar.id] as Float64Array)).toEqual([1, NaN, 0, 2, NaN]);
+    expect(d2.variables.filter((v) => /^c_work_\d$/.test(v.name))).toHaveLength(1);
+  });
+
+  it('new mode creates suffixed copies and leaves the earlier variables alone', () => {
+    const { ds, docs, seg } = setup();
+    const first = buildCodeVariables(ds, codes, docs, [seg(0, 'k1')], ['k1'], { sourceVarId: 'v_ans' });
+    const d1 = applyCodeVariables(ds, first.plans, 'v_ans');
+    const again = buildCodeVariables(d1, codes, docs, [seg(0, 'k1'), seg(2, 'k1')], ['k1'], { sourceVarId: 'v_ans', mode: 'new' });
+    expect(again.previous.map((v) => v.name)).toEqual(['c_work_1']);
+    expect(again.plans[0].replaces).toBeNull();
+    expect(again.plans[0].variable.name).toBe('c_work_2');
+    const d2 = applyCodeVariables(d1, again.plans, 'v_ans');
+    expect(Array.from(d2.columns[first.plans[0].variable.id] as Float64Array)).toEqual([1, NaN, 0, 0, NaN]);
+    expect(Array.from(d2.columns[again.plans[0].variable.id] as Float64Array)).toEqual([1, NaN, 0, 1, NaN]);
+  });
+
+  it('updating is a single undo step in the store', () => {
+    const { ds, docs, seg } = setup();
+    const first = buildCodeVariables(ds, codes, docs, [seg(0, 'k1')], ['k1'], { sourceVarId: 'v_ans' });
+    useStore.getState().setDataset(applyCodeVariables(ds, first.plans, 'v_ans'));
+    const before = useStore.getState().dataset!;
+    const second = buildCodeVariables(before, codes, docs, [seg(0, 'k1'), seg(1, 'k1'), seg(2, 'k2')], ['k1', 'k2'], { sourceVarId: 'v_ans', mode: 'update' });
+    useStore.getState().mutateDataset((d) => applyCodeVariables(d, second.plans, 'v_ans'));
+    const after = useStore.getState().dataset!;
+    expect(after.variables).toHaveLength(before.variables.length + 1);
+    expect(Array.from(after.columns[first.plans[0].variable.id] as Float64Array)).toEqual([1, NaN, 1, 0, NaN]);
+    expect(useStore.getState().past).toHaveLength(1);
+    useStore.getState().undo();
+    expect(useStore.getState().dataset).toBe(before);
+    useStore.getState().setDataset(null);
+  });
+
+  it('the origin attributes survive a .sav round trip', async () => {
+    const { ds, docs, seg } = setup();
+    const out = buildCodeVariables(ds, codes, docs, [seg(0, 'k1')], ['k1'], { sourceVarId: 'v_ans', countVariable: true });
+    const back = (await importFile('x.sav', exportSav(applyCodeVariables(ds, out.plans, 'v_ans')))).dataset;
+    const work = back.variables.find((v) => v.name === 'c_work_1')!;
+    expect(work.attributes).toMatchObject({ [CODE_ATTR]: 'k1', [SOURCE_ATTR]: 'v_ans' });
+    expect(back.variables.find((v) => v.name === 'c_count')!.attributes).toMatchObject({ [CODE_ATTR]: COUNT_CODE });
   });
 });
